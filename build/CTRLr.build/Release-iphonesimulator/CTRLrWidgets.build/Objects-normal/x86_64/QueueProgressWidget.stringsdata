@@ -1,0 +1,120 @@
+{
+  "source": "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/CTRLrWidgets/QueueProgressWidget.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "active",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 75
+        }
+      },
+      {
+        "comment": "",
+        "key": "Downloads",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 65
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld item%@",
+        "location": {
+          "startingColumn": 14,
+          "startingLine": 243
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 269
+        }
+      },
+      {
+        "comment": "",
+        "key": "CTRLr — no data",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 304
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld active",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 298
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld downloads · %@/s",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 316
+        }
+      },
+      {
+        "comment": "",
+        "key": "No downloads",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 320
+        }
+      },
+      {
+        "comment": "",
+        "key": "Downloads",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 334
+        }
+      },
+      {
+        "comment": "",
+        "key": "Shows active qBittorrent downloads and transfer speeds.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 335
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recently Added",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 352
+        }
+      },
+      {
+        "comment": "",
+        "key": "Poster grid of recently added movies and TV shows from Plex.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 353
+        }
+      },
+      {
+        "comment": "",
+        "key": "No recently added",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 382
+        }
+      }
+    ]
+  },
+  "version": 1
+}

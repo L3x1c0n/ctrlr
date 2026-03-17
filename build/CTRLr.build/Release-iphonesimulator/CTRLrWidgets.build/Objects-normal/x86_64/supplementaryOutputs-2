@@ -1,0 +1,12 @@
+{
+  "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/CTRLrWidgets/CTRLrWidgets.swift" : {
+    "abi-baseline-json" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets.abi.json",
+    "const-values" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets-primary.swiftconstvalues",
+    "dependencies" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets-primary.d",
+    "diagnostics" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets-primary.dia",
+    "objc-header" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets-Swift.h",
+    "swiftdoc" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets.swiftdoc",
+    "swiftmodule" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets.swiftmodule",
+    "swiftsourceinfo" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets.swiftsourceinfo"
+  }
+}

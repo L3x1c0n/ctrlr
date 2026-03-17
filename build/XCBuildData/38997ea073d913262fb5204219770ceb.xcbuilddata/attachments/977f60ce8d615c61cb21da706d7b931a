@@ -1,0 +1,46 @@
+{
+  "" : {
+    "const-values" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets-primary.swiftconstvalues",
+    "dependencies" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets-primary.d",
+    "diagnostics" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets-primary.dia",
+    "emit-module-dependencies" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets-primary-emit-module.dia",
+    "pch" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets-primary.swiftdeps"
+  },
+  "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/CTRLr/Views/Components/PosterGlassOverlay.swift" : {
+    "index-unit-output-path" : "/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/PosterGlassOverlay.o",
+    "llvm-bc" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/PosterGlassOverlay.bc",
+    "object" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/PosterGlassOverlay.o"
+  },
+  "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/CTRLrWidgets/CTRLrWidgets.swift" : {
+    "index-unit-output-path" : "/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets.o",
+    "llvm-bc" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets.bc",
+    "object" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/CTRLrWidgets.o"
+  },
+  "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/CTRLrWidgets/DownloadLiveActivity.swift" : {
+    "index-unit-output-path" : "/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/DownloadLiveActivity.o",
+    "llvm-bc" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/DownloadLiveActivity.bc",
+    "object" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/DownloadLiveActivity.o"
+  },
+  "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/CTRLrWidgets/QueueProgressWidget.swift" : {
+    "index-unit-output-path" : "/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/QueueProgressWidget.o",
+    "llvm-bc" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/QueueProgressWidget.bc",
+    "object" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/QueueProgressWidget.o"
+  },
+  "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/CTRLrWidgets/WidgetSharedModels.swift" : {
+    "index-unit-output-path" : "/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/WidgetSharedModels.o",
+    "llvm-bc" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/WidgetSharedModels.bc",
+    "object" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/WidgetSharedModels.o"
+  },
+  "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/Shared/DownloadActivityAttributes.swift" : {
+    "index-unit-output-path" : "/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/DownloadActivityAttributes.o",
+    "llvm-bc" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/DownloadActivityAttributes.bc",
+    "object" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/DownloadActivityAttributes.o"
+  },
+  "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/Shared/SharedDefaults.swift" : {
+    "index-unit-output-path" : "/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/SharedDefaults.o",
+    "llvm-bc" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/SharedDefaults.bc",
+    "object" : "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/build/CTRLr.build/Release-iphonesimulator/CTRLrWidgets.build/Objects-normal/x86_64/SharedDefaults.o"
+  }
+}

@@ -1,0 +1,814 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1000001 /* CTRLrApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000001 /* CTRLrApp.swift */; };
+		A1000002 /* CredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000002 /* CredentialStore.swift */; };
+		A1000003 /* NetworkClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000003 /* NetworkClient.swift */; };
+		A1000004 /* QBittorrentClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000004 /* QBittorrentClient.swift */; };
+		A1000005 /* MediaModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000005 /* MediaModels.swift */; };
+		A1000006 /* ArtworkCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000006 /* ArtworkCache.swift */; };
+		A1000007 /* AmbientColorExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000007 /* AmbientColorExtractor.swift */; };
+		A1000008 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000008 /* DashboardViewModel.swift */; };
+		A1000009 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000009 /* DashboardView.swift */; };
+		A1000010 /* HeroSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000010 /* HeroSection.swift */; };
+		A1000011 /* DownloadQueueSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000011 /* DownloadQueueSection.swift */; };
+		A1000012 /* DownloadQueueRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000012 /* DownloadQueueRow.swift */; };
+		A1000013 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000013 /* SettingsView.swift */; };
+		A1000014 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000014 /* GlassCard.swift */; };
+		A1000015 /* PosterImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000015 /* PosterImageView.swift */; };
+		A1000016 /* SharedDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000016 /* SharedDefaults.swift */; };
+		A1000017 /* QBIntentClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000017 /* QBIntentClient.swift */; };
+		A1000018 /* TorrentEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000018 /* TorrentEntity.swift */; };
+		A1000019 /* DownloadIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000019 /* DownloadIntents.swift */; };
+		A1000020 /* CTRLrShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000020 /* CTRLrShortcuts.swift */; };
+		A1000021 /* BackgroundTaskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000021 /* BackgroundTaskManager.swift */; };
+		A1000022 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000022 /* NotificationManager.swift */; };
+		A1000023 /* FocusFilterIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000023 /* FocusFilterIntent.swift */; };
+		A1000024 /* WidgetSharedModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000003 /* WidgetSharedModels.swift */; };
+		A1000025 /* ServiceBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000025 /* ServiceBadge.swift */; };
+		A1000026 /* DownloadActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000026 /* DownloadActivityAttributes.swift */; };
+		A1000027 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000027 /* LiveActivityManager.swift */; };
+		A1000028 /* PosterGlassOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000028 /* PosterGlassOverlay.swift */; };
+		A1000029 /* MotionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000029 /* MotionManager.swift */; };
+		A1000030 /* TiltRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000030 /* TiltRecognizer.swift */; };
+		A1000031 /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000031 /* SectionHeader.swift */; };
+		A1000032 /* OverseerrClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000032 /* OverseerrClient.swift */; };
+		A1000033 /* RequestsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000033 /* RequestsSection.swift */; };
+		A1000034 /* TautulliClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000034 /* TautulliClient.swift */; };
+		A1000035 /* NowPlayingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000035 /* NowPlayingSection.swift */; };
+		A1000036 /* CertificatePinner.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000036 /* CertificatePinner.swift */; };
+		B1000001 /* CTRLrWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000001 /* CTRLrWidgets.swift */; };
+		B1000002 /* QueueProgressWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000002 /* QueueProgressWidget.swift */; };
+		B1000003 /* WidgetSharedModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000003 /* WidgetSharedModels.swift */; };
+		B1000004 /* SharedDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000016 /* SharedDefaults.swift */; };
+		B1000005 /* DownloadActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000026 /* DownloadActivityAttributes.swift */; };
+		B1000006 /* DownloadLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000004 /* DownloadLiveActivity.swift */; };
+		B1000007 /* PosterGlassOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000028 /* PosterGlassOverlay.swift */; };
+		CA92790E2F60384D004D0895 /* RadarrClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA92790C2F60384D004D0895 /* RadarrClient.swift */; };
+		CA92790F2F60384D004D0895 /* SonarrClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA92790D2F60384D004D0895 /* SonarrClient.swift */; };
+		CA9279112F603877004D0895 /* UpcomingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9279102F603877004D0895 /* UpcomingSection.swift */; };
+		CA9279122F603900004D0895 /* PlexClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9279132F603900004D0895 /* PlexClient.swift */; };
+		CA9279142F603900004D0895 /* NtfyClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9279152F603900004D0895 /* NtfyClient.swift */; };
+		E1000001 /* CTRLrWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = P2000001 /* CTRLrWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		E4000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F4000001 /* Assets.xcassets */; };
+		E4000002 /* VT323-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F4000002 /* VT323-Regular.ttf */; };
+		A1000037 /* CTRLrIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000037 /* CTRLrIconView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C1000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = PROJ000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = T2000001;
+			remoteInfo = CTRLrWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BP000001 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E1000001 /* CTRLrWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		CA92790C2F60384D004D0895 /* RadarrClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarrClient.swift; sourceTree = "<group>"; };
+		CA92790D2F60384D004D0895 /* SonarrClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SonarrClient.swift; sourceTree = "<group>"; };
+		CA9279102F603877004D0895 /* UpcomingSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpcomingSection.swift; sourceTree = "<group>"; };
+		CA9279132F603900004D0895 /* PlexClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexClient.swift; sourceTree = "<group>"; };
+		CA9279152F603900004D0895 /* NtfyClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NtfyClient.swift; sourceTree = "<group>"; };
+		EN000001 /* CTRLr.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CTRLr.entitlements; sourceTree = "<group>"; };
+		EN000002 /* CTRLrWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CTRLrWidgets.entitlements; sourceTree = "<group>"; };
+		F1000001 /* CTRLrApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTRLrApp.swift; sourceTree = "<group>"; };
+		F1000002 /* CredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialStore.swift; sourceTree = "<group>"; };
+		F1000003 /* NetworkClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkClient.swift; sourceTree = "<group>"; };
+		F1000004 /* QBittorrentClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QBittorrentClient.swift; sourceTree = "<group>"; };
+		F1000005 /* MediaModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaModels.swift; sourceTree = "<group>"; };
+		F1000006 /* ArtworkCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkCache.swift; sourceTree = "<group>"; };
+		F1000007 /* AmbientColorExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmbientColorExtractor.swift; sourceTree = "<group>"; };
+		F1000008 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
+		F1000009 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		F1000010 /* HeroSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroSection.swift; sourceTree = "<group>"; };
+		F1000011 /* DownloadQueueSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadQueueSection.swift; sourceTree = "<group>"; };
+		F1000012 /* DownloadQueueRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadQueueRow.swift; sourceTree = "<group>"; };
+		F1000013 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F1000014 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
+		F1000015 /* PosterImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosterImageView.swift; sourceTree = "<group>"; };
+		F1000016 /* SharedDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
+		F1000017 /* QBIntentClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QBIntentClient.swift; sourceTree = "<group>"; };
+		F1000018 /* TorrentEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentEntity.swift; sourceTree = "<group>"; };
+		F1000019 /* DownloadIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadIntents.swift; sourceTree = "<group>"; };
+		F1000020 /* CTRLrShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTRLrShortcuts.swift; sourceTree = "<group>"; };
+		F1000021 /* BackgroundTaskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskManager.swift; sourceTree = "<group>"; };
+		F1000022 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		F1000023 /* FocusFilterIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFilterIntent.swift; sourceTree = "<group>"; };
+		F1000025 /* ServiceBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceBadge.swift; sourceTree = "<group>"; };
+		F1000026 /* DownloadActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadActivityAttributes.swift; sourceTree = "<group>"; };
+		F1000027 /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
+		F1000028 /* PosterGlassOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosterGlassOverlay.swift; sourceTree = "<group>"; };
+		F1000029 /* MotionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionManager.swift; sourceTree = "<group>"; };
+		F1000030 /* TiltRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiltRecognizer.swift; sourceTree = "<group>"; };
+		F1000031 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
+		F1000032 /* OverseerrClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverseerrClient.swift; sourceTree = "<group>"; };
+		F1000033 /* RequestsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RequestsSection.swift; sourceTree = "<group>"; };
+		F1000034 /* TautulliClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TautulliClient.swift; sourceTree = "<group>"; };
+		F1000035 /* NowPlayingSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingSection.swift; sourceTree = "<group>"; };
+		F1000036 /* CertificatePinner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CertificatePinner.swift; sourceTree = "<group>"; };
+		F2000001 /* CTRLrWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTRLrWidgets.swift; sourceTree = "<group>"; };
+		F2000002 /* QueueProgressWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueProgressWidget.swift; sourceTree = "<group>"; };
+		F2000003 /* WidgetSharedModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSharedModels.swift; sourceTree = "<group>"; };
+		F2000004 /* DownloadLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadLiveActivity.swift; sourceTree = "<group>"; };
+		F3000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F4000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F4000002 /* VT323-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Resources/Fonts/VT323-Regular.ttf"; sourceTree = "<group>"; };
+		F1000037 /* CTRLrIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTRLrIconView.swift; sourceTree = "<group>"; };
+		P1000001 /* CTRLr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CTRLr.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		P2000001 /* CTRLrWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CTRLrWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FR000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FR000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		GR000000 = {
+			isa = PBXGroup;
+			children = (
+				GR000001 /* CTRLr */,
+				GR000020 /* CTRLrWidgets */,
+				GR000030 /* Shared */,
+				GR000099 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		GR000001 /* CTRLr */ = {
+			isa = PBXGroup;
+			children = (
+				GR000002 /* App */,
+				GR000003 /* Core */,
+				GR000010 /* ViewModels */,
+				GR000011 /* Views */,
+				GR000016 /* Intents */,
+				GR000017 /* Background */,
+				GR000018 /* Notifications */,
+				EN000001 /* CTRLr.entitlements */,
+				F4000001 /* Assets.xcassets */,
+				F4000002 /* VT323-Regular.ttf */,
+			);
+			path = CTRLr;
+			sourceTree = "<group>";
+		};
+		GR000002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				F1000001 /* CTRLrApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		GR000003 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				GR000004 /* Credentials */,
+				GR000005 /* Networking */,
+				GR000006 /* Models */,
+				GR000007 /* ImageCache */,
+				GR000019 /* LiveActivity */,
+				GR000021 /* Motion */,
+				GR000022 /* Security */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		GR000004 /* Credentials */ = {
+			isa = PBXGroup;
+			children = (
+				F1000002 /* CredentialStore.swift */,
+			);
+			path = Credentials;
+			sourceTree = "<group>";
+		};
+		GR000005 /* Networking */ = {
+			isa = PBXGroup;
+			children = (
+				CA92790C2F60384D004D0895 /* RadarrClient.swift */,
+				CA92790D2F60384D004D0895 /* SonarrClient.swift */,
+				CA9279132F603900004D0895 /* PlexClient.swift */,
+				CA9279152F603900004D0895 /* NtfyClient.swift */,
+				F1000032 /* OverseerrClient.swift */,
+				F1000034 /* TautulliClient.swift */,
+				F1000003 /* NetworkClient.swift */,
+				F1000004 /* QBittorrentClient.swift */,
+			);
+			path = Networking;
+			sourceTree = "<group>";
+		};
+		GR000006 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				F1000005 /* MediaModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		GR000007 /* ImageCache */ = {
+			isa = PBXGroup;
+			children = (
+				F1000006 /* ArtworkCache.swift */,
+				F1000007 /* AmbientColorExtractor.swift */,
+			);
+			path = ImageCache;
+			sourceTree = "<group>";
+		};
+		GR000010 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				F1000008 /* DashboardViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		GR000011 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				GR000012 /* Dashboard */,
+				GR000013 /* Cards */,
+				GR000014 /* Settings */,
+				GR000015 /* Components */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		GR000012 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				CA9279102F603877004D0895 /* UpcomingSection.swift */,
+				F1000009 /* DashboardView.swift */,
+				F1000010 /* HeroSection.swift */,
+				F1000011 /* DownloadQueueSection.swift */,
+				F1000033 /* RequestsSection.swift */,
+				F1000035 /* NowPlayingSection.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		GR000013 /* Cards */ = {
+			isa = PBXGroup;
+			children = (
+				F1000012 /* DownloadQueueRow.swift */,
+			);
+			path = Cards;
+			sourceTree = "<group>";
+		};
+		GR000014 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				F1000013 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		GR000015 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				F1000014 /* GlassCard.swift */,
+				F1000015 /* PosterImageView.swift */,
+				F1000025 /* ServiceBadge.swift */,
+				F1000028 /* PosterGlassOverlay.swift */,
+				F1000030 /* TiltRecognizer.swift */,
+				F1000031 /* SectionHeader.swift */,
+				F1000037 /* CTRLrIconView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		GR000016 /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				F1000017 /* QBIntentClient.swift */,
+				F1000018 /* TorrentEntity.swift */,
+				F1000019 /* DownloadIntents.swift */,
+				F1000020 /* CTRLrShortcuts.swift */,
+				F1000023 /* FocusFilterIntent.swift */,
+			);
+			path = Intents;
+			sourceTree = "<group>";
+		};
+		GR000017 /* Background */ = {
+			isa = PBXGroup;
+			children = (
+				F1000021 /* BackgroundTaskManager.swift */,
+			);
+			path = Background;
+			sourceTree = "<group>";
+		};
+		GR000018 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				F1000022 /* NotificationManager.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
+		GR000019 /* LiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				F1000027 /* LiveActivityManager.swift */,
+			);
+			path = LiveActivity;
+			sourceTree = "<group>";
+		};
+		GR000020 /* CTRLrWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				F2000001 /* CTRLrWidgets.swift */,
+				F2000002 /* QueueProgressWidget.swift */,
+				F2000004 /* DownloadLiveActivity.swift */,
+				F2000003 /* WidgetSharedModels.swift */,
+				EN000002 /* CTRLrWidgets.entitlements */,
+				F3000001 /* Info.plist */,
+			);
+			path = CTRLrWidgets;
+			sourceTree = "<group>";
+		};
+		GR000021 /* Motion */ = {
+			isa = PBXGroup;
+			children = (
+				F1000029 /* MotionManager.swift */,
+			);
+			path = Motion;
+			sourceTree = "<group>";
+		};
+		GR000022 /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				F1000036 /* CertificatePinner.swift */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		GR000030 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				F1000016 /* SharedDefaults.swift */,
+				F1000026 /* DownloadActivityAttributes.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		GR000099 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				P1000001 /* CTRLr.app */,
+				P2000001 /* CTRLrWidgets.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		T1000001 /* CTRLr */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = XC000001 /* Build configuration list for PBXNativeTarget "CTRLr" */;
+			buildPhases = (
+				SR000001 /* Sources */,
+				FR000001 /* Frameworks */,
+				RS000001 /* Resources */,
+				BP000001 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DP000001 /* PBXTargetDependency */,
+			);
+			name = CTRLr;
+			productName = CTRLr;
+			productReference = P1000001 /* CTRLr.app */;
+			productType = "com.apple.product-type.application";
+		};
+		T2000001 /* CTRLrWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = XC000002 /* Build configuration list for PBXNativeTarget "CTRLrWidgets" */;
+			buildPhases = (
+				SR000002 /* Sources */,
+				FR000002 /* Frameworks */,
+				RS000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CTRLrWidgets;
+			productName = CTRLrWidgets;
+			productReference = P2000001 /* CTRLrWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		PROJ000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 2630;
+				TargetAttributes = {
+					T1000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					T2000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = XC000000 /* Build configuration list for PBXProject "CTRLr" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = GR000000;
+			productRefGroup = GR000099 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				T1000001 /* CTRLr */,
+				T2000001 /* CTRLrWidgets */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		RS000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E4000001 /* Assets.xcassets in Resources */,
+				E4000002 /* VT323-Regular.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		RS000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		SR000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000001 /* CTRLrApp.swift in Sources */,
+				A1000002 /* CredentialStore.swift in Sources */,
+				A1000003 /* NetworkClient.swift in Sources */,
+				A1000004 /* QBittorrentClient.swift in Sources */,
+				A1000005 /* MediaModels.swift in Sources */,
+				A1000006 /* ArtworkCache.swift in Sources */,
+				A1000007 /* AmbientColorExtractor.swift in Sources */,
+				A1000008 /* DashboardViewModel.swift in Sources */,
+				A1000009 /* DashboardView.swift in Sources */,
+				CA9279112F603877004D0895 /* UpcomingSection.swift in Sources */,
+				A1000010 /* HeroSection.swift in Sources */,
+				A1000011 /* DownloadQueueSection.swift in Sources */,
+				A1000012 /* DownloadQueueRow.swift in Sources */,
+				A1000013 /* SettingsView.swift in Sources */,
+				A1000014 /* GlassCard.swift in Sources */,
+				A1000015 /* PosterImageView.swift in Sources */,
+				A1000025 /* ServiceBadge.swift in Sources */,
+				A1000016 /* SharedDefaults.swift in Sources */,
+				A1000017 /* QBIntentClient.swift in Sources */,
+				A1000018 /* TorrentEntity.swift in Sources */,
+				A1000019 /* DownloadIntents.swift in Sources */,
+				A1000020 /* CTRLrShortcuts.swift in Sources */,
+				A1000021 /* BackgroundTaskManager.swift in Sources */,
+				A1000022 /* NotificationManager.swift in Sources */,
+				A1000023 /* FocusFilterIntent.swift in Sources */,
+				CA92790E2F60384D004D0895 /* RadarrClient.swift in Sources */,
+				CA92790F2F60384D004D0895 /* SonarrClient.swift in Sources */,
+				CA9279122F603900004D0895 /* PlexClient.swift in Sources */,
+				CA9279142F603900004D0895 /* NtfyClient.swift in Sources */,
+				A1000024 /* WidgetSharedModels.swift in Sources */,
+				A1000026 /* DownloadActivityAttributes.swift in Sources */,
+				A1000027 /* LiveActivityManager.swift in Sources */,
+				A1000028 /* PosterGlassOverlay.swift in Sources */,
+				A1000029 /* MotionManager.swift in Sources */,
+				A1000030 /* TiltRecognizer.swift in Sources */,
+				A1000031 /* SectionHeader.swift in Sources */,
+				A1000032 /* OverseerrClient.swift in Sources */,
+				A1000033 /* RequestsSection.swift in Sources */,
+				A1000034 /* TautulliClient.swift in Sources */,
+				A1000035 /* NowPlayingSection.swift in Sources */,
+				A1000036 /* CertificatePinner.swift in Sources */,
+				A1000037 /* CTRLrIconView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		SR000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1000001 /* CTRLrWidgets.swift in Sources */,
+				B1000002 /* QueueProgressWidget.swift in Sources */,
+				B1000003 /* WidgetSharedModels.swift in Sources */,
+				B1000004 /* SharedDefaults.swift in Sources */,
+				B1000005 /* DownloadActivityAttributes.swift in Sources */,
+				B1000006 /* DownloadLiveActivity.swift in Sources */,
+				B1000007 /* PosterGlassOverlay.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DP000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = T2000001 /* CTRLrWidgets */;
+			targetProxy = C1000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		BC000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 6MQRXG72FQ;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		BC000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 6MQRXG72FQ;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		BC000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = CTRLr/CTRLr.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "CTRLr/Info-Supplemental.plist";
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = com.attakrit.CTRLr.refresh;
+				INFOPLIST_KEY_CFBundleDisplayName = CTRLr;
+				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "CTRLr notifies you when downloads complete, media imports finish, or new requests arrive.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.attakrit.CTRLr;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		BC000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = CTRLr/CTRLr.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "CTRLr/Info-Supplemental.plist";
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = com.attakrit.CTRLr.refresh;
+				INFOPLIST_KEY_CFBundleDisplayName = CTRLr;
+				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "CTRLr notifies you when downloads complete, media imports finish, or new requests arrive.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.attakrit.CTRLr;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		BC000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = CTRLrWidgets/CTRLrWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CTRLrWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.attakrit.CTRLr.CTRLrWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		BC000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = CTRLrWidgets/CTRLrWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CTRLrWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.attakrit.CTRLr.CTRLrWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		XC000000 /* Build configuration list for PBXProject "CTRLr" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC000001 /* Debug */,
+				BC000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		XC000001 /* Build configuration list for PBXNativeTarget "CTRLr" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC000003 /* Debug */,
+				BC000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		XC000002 /* Build configuration list for PBXNativeTarget "CTRLrWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC000005 /* Debug */,
+				BC000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = PROJ000001 /* Project object */;
+}

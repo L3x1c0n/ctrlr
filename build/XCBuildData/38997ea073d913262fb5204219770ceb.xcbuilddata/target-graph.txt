@@ -1,0 +1,4 @@
+Target dependency graph (2 targets)
+Target 'CTRLr' in project 'CTRLr'
+➜ Explicit dependency on target 'CTRLrWidgets' in project 'CTRLr'
+Target 'CTRLrWidgets' in project 'CTRLr' (no dependencies)

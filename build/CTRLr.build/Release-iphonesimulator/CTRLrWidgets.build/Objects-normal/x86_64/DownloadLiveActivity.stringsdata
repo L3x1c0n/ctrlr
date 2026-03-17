@@ -1,0 +1,16 @@
+{
+  "source": "/Users/attakritsinghaseni/Documents/GitHub/CTRLr/CTRLrWidgets/DownloadLiveActivity.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "+%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 60
+        }
+      }
+    ]
+  },
+  "version": 1
+}
