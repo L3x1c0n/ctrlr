@@ -157,18 +157,18 @@ export default function SeerSection() {
             <thead>
               <tr className="text-[#999] text-xs uppercase border-b border-[#1a1a2e]">
                 <th className="py-1 pr-3 w-6"></th>
-                <th className="text-left py-1 pr-4 w-[140px] md:w-auto">Title</th>
+                <th className="text-left py-1 pr-4">Title</th>
                 <th className="text-right pr-4 hidden md:table-cell">Type</th>
-                <th className="text-right pr-4">Status</th>
+                <th className="text-right pr-4 w-[76px]">Status</th>
                 <th className="text-right pr-4 hidden md:table-cell">By</th>
-                <th className="text-right">Actions</th>
+                <th className="text-right w-[108px]">Actions</th>
               </tr>
             </thead>
             <tbody>
               {requests.slice(0, 10).map((r, i) => (
                 <tr key={r.id} className="border-b border-[#0f0f1a]">
                   <td className="py-1 pr-3 text-right text-[#7070a8] tabular-nums select-none text-xs w-6">{i + 1}</td>
-                  <td className="py-1 pr-4 text-white max-w-xs">
+                  <td className="py-1 pr-4 text-white min-w-0">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setSelected(r)}
