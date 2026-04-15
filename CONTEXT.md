@@ -1,7 +1,7 @@
 # CTRLr — Project Context
 
 This file is the shared brain between Claude instances. Keep it updated as the project evolves.
-Last updated: 2026-04-15
+Last updated: 2026-04-15 (app section populated)
 
 ---
 
@@ -11,7 +11,7 @@ CTRLr is a personal media stack control panel built for **gh05t** (GitHub: L3x1c
 It has two components:
 
 - **`web/`** — a Next.js dashboard running on a self-hosted server called MORIARTY
-- **`ios/`** — a native iPadOS companion app (in planning/early development)
+- **`CTRLr/`** — a native iPadOS/iOS companion app (SwiftUI, Xcode)
 
 The two are developed in this monorepo so features, issues, and API contracts stay aligned.
 
@@ -87,15 +87,64 @@ All service URLs and API keys live here. On MORIARTY they point to `localhost`. 
 
 ---
 
-## iOS app — `ios/`
+## iPadOS app — `CTRLr/`
 
-To be populated by the iOS/iPadOS development context. The iOS app is planned as a companion to the web dashboard — native iPadOS client for the same media stack.
+Native iPadOS/iOS companion app — a unified media control dashboard for the same MORIARTY stack. Built in SwiftUI, targeting iPadOS 16+.
 
-When the iOS Claude instance sets up context, it should document here:
-- App architecture and patterns
-- Which web API endpoints the app consumes (or plans to)
-- Any shared data contracts or types
-- Current state and backlog
+### Stack & architecture
+- SwiftUI, Swift 5.9+, Xcode project at `CTRLr.xcodeproj`
+- Glass morphism UI on `#0A0A0F` background (`GlassCard.swift`)
+- `DashboardViewModel.swift` — central state, owns all service clients
+- Credential storage: Keychain via `CredentialStore.swift`
+- `CTRLrWidgets/` — WidgetKit extension (lock screen, StandBy, queue progress)
+- `Shared/` — `SharedDefaults` for app ↔ widget data sharing
+- App Intents (`CTRLr/Intents/`) — Siri/Shortcuts integration, Focus Filter
+- Background refresh: `BGTaskScheduler`, 15-min interval (`BackgroundTaskManager.swift`)
+- Notifications: 4 categories (`NotificationManager.swift`)
+
+### Service clients
+| Client | File | Notes |
+|---|---|---|
+| qBittorrent | `QBittorrentClient.swift` | Polling, full torrent control |
+| Radarr | `RadarrClient.swift` | One-shot fetch, ntfy-triggered |
+| Sonarr | `SonarrClient.swift` | One-shot fetch, ntfy-triggered |
+| Plex | `PlexClient.swift` | Auto-discovery via plex.tv, no server URL needed |
+| Tautulli | `TautulliClient.swift` | Active sessions, poster proxy |
+| Overseerr | `OverseerrClient.swift` | Request management |
+| ntfy | `NtfyClient.swift` | WebSocket `wss://ntfy.sh/{topic}/ws`, triggers Radarr/Sonarr/Plex refresh |
+| TMDB | `TMDBClient.swift` | Metadata |
+| Trakt | `TraktClient.swift` | Watch history / discovery |
+
+### Dashboard sections
+1. **DownloadQueueSection** — qBittorrent torrent queue with speed graph
+2. **HeroSection** — Plex recently added (Movies + TV, watched badge)
+3. **NowPlayingSection** — Tautulli active streams with progress + transcode info
+4. **UpcomingSection** — calendar / arr upcoming (scaffolded)
+5. **RequestsSection** — Overseerr requests
+6. **DiscoverSectionView** — TMDB/Trakt discovery (scaffolded)
+
+Sections are togglable and reorderable via `@AppStorage` + `SectionArrangerView.swift`.
+
+### Connecting to MORIARTY
+The app talks directly to MORIARTY's services — same endpoints as the dashboard:
+- qBittorrent: `192.168.1.137:22388` (LAN) or SSH tunnel
+- Arr services: `sonarr.gh05t.duckdns.org`, `radarr.gh05t.duckdns.org`
+- Plex: auto-discovered via plex.tv token (no URL needed)
+- Tautulli: `192.168.1.137:8181`
+- Overseerr: `overseerr.gh05t.duckdns.org`
+- ntfy topics stored in Radarr/Sonarr `username` credential field
+
+### Current state (as of 2026-04-15)
+- Phases 1 (qBittorrent), 2 (Radarr/Sonarr/Plex/ntfy), 3 (Tautulli) complete
+- Build is clean (verified via xcodebuild)
+- WidgetKit, App Intents, Background Tasks, Notifications all wired up
+- Phase 4 (Overseerr), Trakt/TMDB discovery, and calendar section in progress
+
+### Known gotchas
+- `GENERATE_INFOPLIST_FILE = YES` — do NOT create a manual `Info.plist`, breaks `fullScreenCover` on iOS 26
+- `formatBytes` is defined globally — do not redeclare in individual view files
+- SourceKit false positives for cross-target types (`UIImage`, `Color(hex:)`) — not real build errors
+- Notification `requestAuthorization` must NOT be called in `onAppear` — blocks `fullScreenCover`; request from Settings UI instead
 
 ---
 
