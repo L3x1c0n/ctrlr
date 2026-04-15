@@ -22,7 +22,8 @@ export interface Release {
   rejections: string[]
 }
 
-type SortKey = 'seeders' | 'leechers' | 'size' | 'quality' | 'age' | 'indexer' | 'title'
+type SortKey = 'age' | 'title' | 'size' | 'peers'
+type QualityTier = 'all' | 'SD' | 'HD' | 'UHD'
 
 function fmtSize(bytes: number): string {
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(0)} MB`
@@ -34,8 +35,14 @@ function fmtAge(hours: number): string {
   if (hours < 24) return `${Math.round(hours)}h`
   const days = Math.round(hours / 24)
   if (days < 30) return `${days}d`
-  const months = Math.round(days / 30)
-  return `${months}mo`
+  return `${Math.round(days / 30)}mo`
+}
+
+function qualityTier(name: string): QualityTier {
+  const n = name.toLowerCase()
+  if (n.includes('2160') || n.includes('4k') || n.includes('uhd')) return 'UHD'
+  if (n.includes('1080') || n.includes('720')) return 'HD'
+  return 'SD'
 }
 
 interface Props {
@@ -48,16 +55,11 @@ interface Props {
 
 export default function ReleaseSearchResults({ releases, loading, error, acting, onGrab }: Props) {
   const [filter, setFilter]           = useState('')
-  const [sort, setSort]               = useState<SortKey>('seeders')
+  const [sort, setSort]               = useState<SortKey>('peers')
   const [sortDir, setSortDir]         = useState<'asc' | 'desc'>('desc')
   const [hideRejected, setHideRejected] = useState(false)
   const [protocol, setProtocol]       = useState<'all' | 'torrent' | 'usenet'>('all')
-  const [indexerFilter, setIndexerFilter] = useState('all')
-
-  const indexers = useMemo(() => {
-    if (!releases) return []
-    return Array.from(new Set(releases.map(r => r.indexer))).sort()
-  }, [releases])
+  const [quality, setQuality]         = useState<QualityTier>('all')
 
   const visible = useMemo(() => {
     if (!releases) return []
@@ -65,44 +67,49 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
       .filter(r => {
         if (hideRejected && r.rejected) return false
         if (protocol !== 'all' && r.protocol !== protocol) return false
-        if (indexerFilter !== 'all' && r.indexer !== indexerFilter) return false
+        if (quality !== 'all' && qualityTier(r.quality.quality.name) !== quality) return false
         if (filter && !r.title.toLowerCase().includes(filter.toLowerCase())) return false
         return true
       })
       .sort((a, b) => {
         let cmp = 0
         switch (sort) {
-          case 'seeders':  cmp = (a.seeders ?? 0) - (b.seeders ?? 0); break
-          case 'leechers': cmp = (a.leechers ?? 0) - (b.leechers ?? 0); break
-          case 'size':     cmp = a.size - b.size; break
-          case 'age':      cmp = a.ageHours - b.ageHours; break
-          case 'quality':  cmp = a.quality.quality.name.localeCompare(b.quality.quality.name); break
-          case 'indexer':  cmp = a.indexer.localeCompare(b.indexer); break
-          case 'title':    cmp = a.title.localeCompare(b.title); break
+          case 'age':   cmp = a.ageHours - b.ageHours; break
+          case 'title': cmp = a.title.localeCompare(b.title); break
+          case 'size':  cmp = a.size - b.size; break
+          case 'peers': {
+            const ra = (a.seeders ?? 0) / Math.max(a.leechers ?? 1, 1)
+            const rb = (b.seeders ?? 0) / Math.max(b.leechers ?? 1, 1)
+            cmp = ra - rb
+            break
+          }
         }
         return sortDir === 'desc' ? -cmp : cmp
       })
-  }, [releases, filter, sort, sortDir, hideRejected, protocol, indexerFilter])
+  }, [releases, filter, sort, sortDir, hideRejected, protocol, quality])
 
   function toggleSort(key: SortKey) {
-    if (sort === key) {
-      setSortDir(d => d === 'desc' ? 'asc' : 'desc')
-    } else {
-      setSort(key)
-      setSortDir('desc')
-    }
+    if (sort === key) setSortDir(d => d === 'desc' ? 'asc' : 'desc')
+    else { setSort(key); setSortDir('desc') }
+  }
+
+  function toggleBtn<T extends string>(current: T, val: T, set: (v: T) => void) {
+    set(current === val ? 'all' as T : val)
   }
 
   if (loading) return <Spinner />
   if (error) return <p className="text-red-500 text-xs font-mono mt-2">// error: {error}</p>
   if (!releases) return null
 
+  const btnCls = (active: boolean) =>
+    `px-1.5 py-0.5 border text-[10px] font-mono ${active ? 'border-[#7070a8] text-[#aaa]' : 'border-[#1a1a2e] text-[#555] hover:text-[#888]'}`
+
   return (
     <div>
       <p className="text-[#7070a8] text-xs mb-2">{`/* releases (${visible.length}/${releases.length}) */`}</p>
 
-      {/* filters row 1: text + protocol + indexer */}
-      <div className="flex flex-wrap gap-1.5 mb-1.5">
+      {/* text filter */}
+      <div className="flex gap-1.5 mb-1.5">
         <input
           type="text"
           placeholder="filter..."
@@ -110,38 +117,17 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
           onChange={e => setFilter(e.target.value)}
           className="bg-[#0f0f1a] border border-[#1a1a2e] text-white text-xs font-mono px-2 py-1 flex-1 min-w-0 focus:outline-none focus:border-[#888] placeholder-[#999]"
         />
-        <select
-          value={protocol}
-          onChange={e => setProtocol(e.target.value as typeof protocol)}
-          className="bg-[#0f0f1a] border border-[#1a1a2e] text-white text-xs font-mono px-2 py-1 focus:outline-none focus:border-[#888]"
-        >
-          <option value="all">all</option>
-          <option value="torrent">torrent</option>
-          <option value="usenet">usenet</option>
-        </select>
-        {indexers.length > 1 && (
-          <select
-            value={indexerFilter}
-            onChange={e => setIndexerFilter(e.target.value)}
-            className="bg-[#0f0f1a] border border-[#1a1a2e] text-white text-xs font-mono px-2 py-1 focus:outline-none focus:border-[#888] max-w-[120px] truncate"
-          >
-            <option value="all">all indexers</option>
-            {indexers.map(i => <option key={i} value={i}>{i}</option>)}
-          </select>
-        )}
       </div>
 
-      {/* sort row */}
-      <div className="flex flex-wrap gap-1 mb-2 text-[10px] font-mono">
-        <span className="text-[#555] self-center">sort:</span>
-        {(['seeders', 'leechers', 'size', 'quality', 'age', 'indexer', 'title'] as SortKey[]).map(k => (
-          <button
-            key={k}
-            onClick={() => toggleSort(k)}
-            className={`px-1.5 py-0.5 border ${sort === k ? 'border-[#7070a8] text-[#aaa]' : 'border-[#1a1a2e] text-[#555] hover:text-[#888]'}`}
-          >
-            {k}{sort === k ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
-          </button>
+      {/* quality + protocol + rejected */}
+      <div className="flex flex-wrap gap-1 mb-1.5 text-[10px] font-mono">
+        <span className="text-[#555] self-center">quality:</span>
+        {(['SD', 'HD', 'UHD'] as QualityTier[]).map(q => (
+          <button key={q} onClick={() => toggleBtn(quality, q, setQuality)} className={btnCls(quality === q)}>{q}</button>
+        ))}
+        <span className="text-[#555] self-center ml-2">proto:</span>
+        {(['torrent', 'usenet'] as const).map(p => (
+          <button key={p} onClick={() => toggleBtn(protocol, p, setProtocol)} className={btnCls(protocol === p)}>{p}</button>
         ))}
         <button
           onClick={() => setHideRejected(v => !v)}
@@ -151,11 +137,21 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
         </button>
       </div>
 
+      {/* sort */}
+      <div className="flex flex-wrap gap-1 mb-2 text-[10px] font-mono">
+        <span className="text-[#555] self-center">sort:</span>
+        {(['age', 'title', 'size', 'peers'] as SortKey[]).map(k => (
+          <button key={k} onClick={() => toggleSort(k)} className={btnCls(sort === k)}>
+            {k}{sort === k ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+          </button>
+        ))}
+      </div>
+
       {releases.length === 0
         ? <p className="text-[#888] text-xs">no results</p>
         : (
           <div className="space-y-1 max-h-96 overflow-y-auto">
-            {visible.map((r) => {
+            {visible.map(r => {
               const grabKey = `grab-${r.guid}`
               const nonEng = r.languages?.filter(l => l.name && l.name.toLowerCase() !== 'english' && l.name.toLowerCase() !== 'unknown')
               return (
