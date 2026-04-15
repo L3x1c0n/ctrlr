@@ -17,7 +17,7 @@ function Chevron({ color }: { color: string }) {
       height={BAR_H}
       viewBox={`0 0 ${CHEV_W} ${BAR_H}`}
       preserveAspectRatio="none"
-      className="w-[6px] md:w-[11px]"
+      className="w-[4px] md:w-[11px]"
       style={{ display: 'block', flexShrink: 0, marginLeft: -1 }}
     >
       <polygon points={`0,0 ${CHEV_W},${BAR_H / 2} 0,${BAR_H}`} fill={color} />
