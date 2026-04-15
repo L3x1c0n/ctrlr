@@ -6,6 +6,7 @@ private struct SonarrCalendarItem: Decodable {
     let id:            Int
     let seriesId:      Int
     let title:         String
+    let overview:      String?
     let seasonNumber:  Int
     let episodeNumber: Int
     let airDate:       String?
@@ -18,6 +19,7 @@ private struct SonarrCalendarItem: Decodable {
 private struct SonarrSeries: Decodable {
     let title:  String
     let images: [SonarrImage]
+    let tmdbId: Int?
 }
 
 private struct SonarrImage: Decodable {
@@ -50,6 +52,7 @@ private struct SonarrQueueResponse: Decodable {
 private struct SonarrSeriesItem: Decodable {
     let id:     Int
     let title:  String
+    let tvdbId: Int?
     let images: [SonarrImage]
 }
 
@@ -85,21 +88,31 @@ final class SonarrClient: ObservableObject {
     @Published var isConnected = false
     @Published var error: String?
 
-    private var config: ServiceConfig { CredentialStore.shared.load(.sonarr) }
+    private var cachedConfig = ServiceConfig()
     private var pollTask: Task<Void, Never>?
     private var session = URLSession(configuration: .default)
 
     // One-shot fetch — called on launch, after settings save, and on ntfy import events.
     // No polling loop: Sonarr data changes only when something is grabbed/imported.
     func startPolling() {
+        cachedConfig = CredentialStore.shared.load(.sonarr)
         pollTask?.cancel()
         pollTask = Task { [weak self] in await self?.poll() }
     }
 
     func stopPolling() { pollTask?.cancel() }
 
+    /// Lightweight queue-only refresh — called when a new torrent hash appears in qBittorrent.
+    func refreshQueue() async {
+        let cfg = cachedConfig
+        guard cfg.enabled, !cfg.baseURL.isEmpty else { return }
+        if let queue = try? await fetchQueue(cfg) {
+            downloadQueue = queue
+        }
+    }
+
     private func poll() async {
-        let cfg = config
+        let cfg = cachedConfig
         guard cfg.enabled, !cfg.baseURL.isEmpty else {
             isConnected = false; return
         }
@@ -123,15 +136,19 @@ final class SonarrClient: ObservableObject {
     }
 
     private func fetchCalendar(_ cfg: ServiceConfig) async throws -> [UpcomingItem] {
-        let today = Calendar.current.startOfDay(for: Date())
-        guard let endDate = Calendar.current.date(byAdding: .day, value: 14, to: today) else {
+        let cal   = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        guard let startDate = cal.date(byAdding: .day, value: -7, to: today),
+              let endDate   = cal.date(byAdding: .day, value: 15, to: today) else {
             return []
         }
 
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withFullDate]
-        let startStr = isoFormatter.string(from: today)
-        let endStr   = isoFormatter.string(from: endDate)
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        df.locale = Locale(identifier: "en_US_POSIX")
+        // No explicit timezone → device local, so the date window matches displayed columns
+        let startStr = df.string(from: startDate)
+        let endStr   = df.string(from: endDate)
 
         guard var components = URLComponents(string: "\(cfg.baseURL)/api/v3/calendar") else {
             throw NetworkError.badURL
@@ -200,13 +217,15 @@ final class SonarrClient: ObservableObject {
             id:          "sonarr-\(item.id)",
             title:       item.series.title,
             subtitle:    subtitle,
+            overview:    item.overview,
             mediaType:   .tv,
             airDate:     airDate,
             releaseType: "Airing",
             hasFile:     item.hasFile,
             source:      .sonarr,
             posterURL:   postersByTitle[item.series.title.lowercased()],
-            posterData:  nil
+            posterData:  nil,
+            tmdbId:      item.series.tmdbId
         )
     }
 
@@ -216,7 +235,11 @@ final class SonarrClient: ObservableObject {
         guard var components = URLComponents(string: "\(cfg.baseURL)/api/v3/queue") else {
             throw NetworkError.badURL
         }
-        components.queryItems = [URLQueryItem(name: "pageSize", value: "100")]
+        components.queryItems = [
+            URLQueryItem(name: "pageSize",      value: "100"),
+            URLQueryItem(name: "includeSeries", value: "true"),
+            URLQueryItem(name: "includeEpisode", value: "true"),
+        ]
         guard let url = components.url else { throw NetworkError.badURL }
 
         var req = URLRequest(url: url)
@@ -226,9 +249,16 @@ final class SonarrClient: ObservableObject {
         let (data, _) = try await session.data(for: req)
         let response  = try JSONDecoder().decode(SonarrQueueResponse.self, from: data)
 
-        // Expand poster map with queue items (covers series outside the 14-day calendar window)
+        // Expand poster map — prefer public TMDb/TVDB remoteUrl (no auth, always reachable),
+        // fall back to local mediacover URL (needs X-Api-Key but works on LAN).
+        let headers = ["X-Api-Key": cfg.apiKey]
         for item in response.records {
-            if let series = item.series, let sid = item.seriesId {
+            guard let series = item.series else { continue }
+            let remoteURL = series.images.first(where: { $0.coverType == "poster" })?.remoteUrl
+                         ?? series.images.first?.remoteUrl
+            if let remoteURL, !remoteURL.isEmpty {
+                postersByTitle[series.title.lowercased()] = remoteURL
+            } else if let sid = item.seriesId {
                 postersByTitle[series.title.lowercased()] =
                     "\(cfg.baseURL)/api/v3/mediacover/\(sid)/poster.jpg"
             }
@@ -243,20 +273,27 @@ final class SonarrClient: ObservableObject {
             } else {
                 sub = nil
             }
+            // Prefer public TMDb/TVDB remoteUrl → falls back to local mediacover (needs header)
+            let remoteURL = item.series?.images.first(where: { $0.coverType == "poster" })?.remoteUrl
+                         ?? item.series?.images.first?.remoteUrl
             let poster: String?
-            if let sid = item.seriesId {
-                poster = "\(cfg.baseURL)/api/v3/mediacover/\(sid)/poster.jpg"
+            let posterHeaders: [String: String]
+            if let remoteURL, !remoteURL.isEmpty {
+                poster        = remoteURL
+                posterHeaders = [:]
+            } else if let sid = item.seriesId {
+                poster        = "\(cfg.baseURL)/api/v3/mediacover/\(sid)/poster.jpg"
+                posterHeaders = headers
             } else {
-                poster = item.series?.images.first(where: { $0.coverType == "poster" })?.remoteUrl
-                      ?? item.series?.images.first?.remoteUrl
+                poster        = nil
+                posterHeaders = [:]
             }
-            let headers = ["X-Api-Key": cfg.apiKey]
             return EnrichedDownload(
                 hash:          item.downloadId?.lowercased() ?? "",
                 title:         item.series?.title ?? item.title,
                 subtitle:      sub,
                 posterURL:     poster,
-                posterHeaders: poster?.hasPrefix(cfg.baseURL) == true ? headers : [:],
+                posterHeaders: posterHeaders,
                 source:        .sonarr
             )
         }
@@ -274,14 +311,13 @@ final class SonarrClient: ObservableObject {
         let (data, _) = try await session.data(for: req)
         let series = try JSONDecoder().decode([SonarrSeriesItem].self, from: data)
 
-        // Poster map from full library
+        // Poster map from full library — use public TMDb/TVDB remoteUrl (no auth needed)
         var map: [String: String] = [:]
         for show in series {
             let rawURL = show.images.first(where: { $0.coverType == "poster" })?.remoteUrl
                       ?? show.images.first?.remoteUrl
             if let url = rawURL, !url.isEmpty {
-                map[show.title.lowercased()] =
-                    "\(cfg.baseURL)/api/v3/mediacover/\(show.id)/poster.jpg"
+                map[show.title.lowercased()] = url
             }
         }
 
@@ -331,13 +367,134 @@ final class SonarrClient: ObservableObject {
 
     /// HTTP headers required when fetching Sonarr mediacover poster images.
     func posterHeaders() -> [String: String] {
-        ["X-Api-Key": config.apiKey]
+        ["X-Api-Key": cachedConfig.apiKey]
+    }
+
+    // MARK: - Episode search + detail
+
+    func triggerSearch(episodeId: Int) async {
+        let cfg = cachedConfig
+        guard !cfg.baseURL.isEmpty,
+              let url = URL(string: "\(cfg.baseURL)/api/v3/command") else { return }
+        var req = URLRequest(url: url, timeoutInterval: 10)
+        req.httpMethod = "POST"
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        req.setValue(cfg.baseURL + "/", forHTTPHeaderField: "Referer")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        struct Body: Encodable { let name: String; let episodeIds: [Int] }
+        req.httpBody = try? JSONEncoder().encode(Body(name: "EpisodeSearch", episodeIds: [episodeId]))
+        _ = try? await session.data(for: req)
+    }
+
+    /// Returns TVDB IDs for all series in the Sonarr library.
+    func fetchAllTvdbIds() async -> [Int] {
+        let cfg = cachedConfig
+        guard !cfg.baseURL.isEmpty, !cfg.apiKey.isEmpty,
+              let url = URL(string: "\(cfg.baseURL)/api/v3/series") else { return [] }
+        var req = URLRequest(url: url)
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        guard let (data, _) = try? await session.data(for: req),
+              let series = try? JSONDecoder().decode([SonarrSeriesItem].self, from: data)
+        else { return [] }
+        return series.compactMap { $0.tvdbId }
+    }
+
+    func fetchReleases(episodeId: Int) async -> [MediaRelease] {
+        let cfg = cachedConfig
+        guard !cfg.baseURL.isEmpty,
+              let url = URL(string: "\(cfg.baseURL)/api/v3/release?episodeId=\(episodeId)") else { return [] }
+        var req = URLRequest(url: url, timeoutInterval: 15)
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        req.setValue(cfg.baseURL + "/", forHTTPHeaderField: "Referer")
+        struct WireRelease: Decodable {
+            let guid: String; let title: String; let indexer: String
+            let size: Int64; let quality: WireQuality; let indexerId: Int
+            let seeders: Int?; let leechers: Int?; let approved: Bool; let rejections: [String]?
+            let downloadProtocol: String?; let ageHours: Double?
+            enum CodingKeys: String, CodingKey {
+                case guid, title, indexer, size, quality, indexerId
+                case seeders, leechers, approved, rejections, ageHours
+                case downloadProtocol = "protocol"
+            }
+        }
+        struct WireQuality: Decodable { let quality: WireQualityName }
+        struct WireQualityName: Decodable { let name: String }
+        guard let (data, _) = try? await session.data(for: req),
+              let releases  = try? JSONDecoder().decode([WireRelease].self, from: data)
+        else { return [] }
+        return releases.map {
+            MediaRelease(guid: $0.guid, title: $0.title, indexer: $0.indexer,
+                         size: $0.size, quality: $0.quality.quality.name,
+                         indexerId: $0.indexerId, seeders: $0.seeders,
+                         leechers: $0.leechers,
+                         approved: $0.approved, rejections: $0.rejections ?? [],
+                         releaseProtocol: $0.downloadProtocol ?? "",
+                         ageHours: $0.ageHours.map { Int($0) })
+        }
+    }
+
+    func downloadRelease(guid: String, indexerId: Int) async -> Bool {
+        let cfg = cachedConfig
+        guard !cfg.baseURL.isEmpty,
+              let url = URL(string: "\(cfg.baseURL)/api/v3/release") else { return false }
+        var req = URLRequest(url: url, timeoutInterval: 15)
+        req.httpMethod = "POST"
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        req.setValue(cfg.baseURL + "/", forHTTPHeaderField: "Referer")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        struct Body: Encodable { let guid: String; let indexerId: Int }
+        req.httpBody = try? JSONEncoder().encode(Body(guid: guid, indexerId: indexerId))
+        guard let (_, response) = try? await session.data(for: req),
+              let http = response as? HTTPURLResponse else { return false }
+        return (200...299).contains(http.statusCode)
+    }
+
+    func fetchEpisodeMonitored(episodeId: Int) async -> Bool? {
+        let cfg = cachedConfig
+        guard !cfg.baseURL.isEmpty,
+              let url = URL(string: "\(cfg.baseURL)/api/v3/episode/\(episodeId)") else { return nil }
+        var req = URLRequest(url: url, timeoutInterval: 10)
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        req.setValue(cfg.baseURL + "/", forHTTPHeaderField: "Referer")
+        struct Stub: Decodable { let monitored: Bool }
+        guard let (data, _) = try? await session.data(for: req),
+              let stub = try? JSONDecoder().decode(Stub.self, from: data)
+        else { return nil }
+        return stub.monitored
+    }
+
+    func setEpisodeMonitored(episodeId: Int, monitored: Bool) async {
+        let cfg = cachedConfig
+        guard !cfg.baseURL.isEmpty,
+              let url = URL(string: "\(cfg.baseURL)/api/v3/episode/monitor") else { return }
+        var req = URLRequest(url: url, timeoutInterval: 10)
+        req.httpMethod = "PUT"
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        req.setValue(cfg.baseURL + "/", forHTTPHeaderField: "Referer")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        struct Body: Encodable { let episodeIds: [Int]; let monitored: Bool }
+        req.httpBody = try? JSONEncoder().encode(Body(episodeIds: [episodeId], monitored: monitored))
+        _ = try? await session.data(for: req)
+    }
+
+    func fetchEpisodeOverview(episodeId: Int) async -> String? {
+        let cfg = cachedConfig
+        guard !cfg.baseURL.isEmpty,
+              let url = URL(string: "\(cfg.baseURL)/api/v3/episode/\(episodeId)") else { return nil }
+        var req = URLRequest(url: url, timeoutInterval: 10)
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        req.setValue(cfg.baseURL + "/", forHTTPHeaderField: "Referer")
+        struct EpisodeDetail: Decodable { let overview: String? }
+        guard let (data, _) = try? await session.data(for: req),
+              let detail = try? JSONDecoder().decode(EpisodeDetail.self, from: data)
+        else { return nil }
+        return detail.overview
     }
 
     // MARK: - Test connection (uses keychain config)
 
     func testConnection() async -> ConnectionResult {
-        return await testConnection(with: config)
+        return await testConnection(with: cachedConfig)
     }
 
     // MARK: - Test connection (uses provided config)

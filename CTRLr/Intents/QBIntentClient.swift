@@ -8,6 +8,10 @@ import Foundation
 
 actor QBIntentClient {
 
+    // Credentials loaded synchronously in init — before any async actor context exists.
+    // This avoids unsafeForcedSync warnings from calling Keychain inside async methods.
+    private let cfg: ServiceConfig
+
     private let session: URLSession = {
         let cfg = URLSessionConfiguration.ephemeral
         cfg.httpShouldSetCookies       = true
@@ -16,45 +20,43 @@ actor QBIntentClient {
         return URLSession(configuration: cfg)
     }()
 
+    init() {
+        cfg = CredentialStore.shared.load(.qbittorrent)
+    }
+
     // MARK: - Public API
 
     func fetchTorrents() async throws -> [TorrentEntity] {
-        let cfg = CredentialStore.shared.load(.qbittorrent)
         guard cfg.enabled, !cfg.baseURL.isEmpty else { throw IntentError.notConfigured }
         try await login(cfg)
         return try await getTorrents(cfg)
     }
 
     func transferStats() async throws -> (dlSpeed: Int, ulSpeed: Int) {
-        let cfg = CredentialStore.shared.load(.qbittorrent)
         guard cfg.enabled, !cfg.baseURL.isEmpty else { throw IntentError.notConfigured }
         try await login(cfg)
         return try await getTransferInfo(cfg)
     }
 
     func pauseAll() async throws {
-        let cfg = CredentialStore.shared.load(.qbittorrent)
         guard cfg.enabled, !cfg.baseURL.isEmpty else { throw IntentError.notConfigured }
         try await login(cfg)
         try await torrentAction("pause", hashes: "all", cfg: cfg)
     }
 
     func resumeAll() async throws {
-        let cfg = CredentialStore.shared.load(.qbittorrent)
         guard cfg.enabled, !cfg.baseURL.isEmpty else { throw IntentError.notConfigured }
         try await login(cfg)
         try await torrentAction("resume", hashes: "all", cfg: cfg)
     }
 
     func pause(hash: String) async throws {
-        let cfg = CredentialStore.shared.load(.qbittorrent)
         guard cfg.enabled, !cfg.baseURL.isEmpty else { throw IntentError.notConfigured }
         try await login(cfg)
         try await torrentAction("pause", hashes: hash, cfg: cfg)
     }
 
     func resume(hash: String) async throws {
-        let cfg = CredentialStore.shared.load(.qbittorrent)
         guard cfg.enabled, !cfg.baseURL.isEmpty else { throw IntentError.notConfigured }
         try await login(cfg)
         try await torrentAction("resume", hashes: hash, cfg: cfg)

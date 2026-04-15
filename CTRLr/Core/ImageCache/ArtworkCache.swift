@@ -118,6 +118,33 @@ actor ArtworkCache {
         SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
+    // MARK: - Cache size
+
+    /// Total bytes of artwork files on disk. Runs off-actor since it only touches nonisolated state.
+    nonisolated func diskCacheBytes() -> Int64 {
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: diskCacheURL, includingPropertiesForKeys: [.fileSizeKey], options: .skipsHiddenFiles
+        ) else { return 0 }
+        return files.reduce(0) { sum, url in
+            sum + Int64((try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+        }
+    }
+
+    // MARK: - Cache clearing
+
+    func clearAll() {
+        memory.removeAllObjects()
+        inFlight.values.forEach { $0.cancel() }
+        inFlight.removeAll()
+        let dir = diskCacheURL
+        Task.detached(priority: .utility) {
+            guard let files = try? FileManager.default.contentsOfDirectory(
+                at: dir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles
+            ) else { return }
+            for file in files { try? FileManager.default.removeItem(at: file) }
+        }
+    }
+
     private static func decodedCost(_ img: UIImage) -> Int {
         Int(img.size.width * img.scale * img.size.height * img.scale) * 4
     }

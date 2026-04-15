@@ -91,7 +91,7 @@ final class QBittorrentClient: ObservableObject {
 
     let downloadCompletedPublisher = PassthroughSubjectVoid()
 
-    private var config: ServiceConfig { CredentialStore.shared.load(.qbittorrent) }
+    private var cachedConfig = ServiceConfig()
     private var pollTask: Task<Void, Never>?
     private var session = URLSession(configuration: .default)
     private var previousStates = [String: String]()
@@ -101,6 +101,7 @@ final class QBittorrentClient: ObservableObject {
     private let seedingStates:     Set<String> = ["uploading", "forcedUP"]
 
     func startPolling() {
+        cachedConfig = CredentialStore.shared.load(.qbittorrent)
         pollTask?.cancel()
         // Fresh session so old cookies from previous credentials don't linger
         session = URLSession(configuration: .default)
@@ -116,7 +117,7 @@ final class QBittorrentClient: ObservableObject {
     func stopPolling() { pollTask?.cancel() }
 
     private func poll() async {
-        let cfg = config
+        let cfg = cachedConfig
         guard cfg.enabled, !cfg.baseURL.isEmpty else {
             isConnected = false; return
         }
@@ -125,10 +126,7 @@ final class QBittorrentClient: ObservableObject {
             async let t = fetchTorrents(cfg)
             async let i = fetchTransferInfo(cfg)
             let (newTorrents, info) = try await (t, i)
-            torrents = newTorrents.sorted {
-                if $0.isActiveDownload != $1.isActiveDownload { return $0.isActiveDownload }
-                return $0.addedOn > $1.addedOn
-            }
+            torrents = newTorrents.sorted { $0.addedOn > $1.addedOn }
             transferStats = QBTransferStats(dlSpeed: info.dl_info_speed, ulSpeed: info.up_info_speed)
             isConnected   = true
             error         = nil
@@ -144,12 +142,15 @@ final class QBittorrentClient: ObservableObject {
         let newStates = Dictionary(uniqueKeysWithValues: new.map { ($0.hash, $0.state) })
         defer { previousStates = newStates; statesInitialized = true }
         guard statesInitialized else { return }
-        let completed = new.contains { t in
-            let prev = previousStates[t.hash]
-            return prev.map { downloadingStates.contains($0) } == true
-                && seedingStates.contains(t.state)
+        var anyCompleted = false
+        for torrent in new {
+            guard let prev = previousStates[torrent.hash],
+                  downloadingStates.contains(prev),
+                  seedingStates.contains(torrent.state) else { continue }
+            anyCompleted = true
+            NotificationManager.shared.scheduleDownloadComplete(torrentName: torrent.name)
         }
-        if completed { downloadCompletedPublisher.send() }
+        if anyCompleted { downloadCompletedPublisher.send() }
     }
 
     private func login(_ cfg: ServiceConfig) async throws {
@@ -189,7 +190,7 @@ final class QBittorrentClient: ObservableObject {
     func pause(hash: String) { action("pause", hash: hash) }
     func resume(hash: String) { action("resume", hash: hash) }
     func delete(hash: String, deleteFiles: Bool = false) {
-        let cfg = config
+        let cfg = cachedConfig
         Task {
             guard let url = URL(string: "\(cfg.baseURL)/api/v2/torrents/delete") else { return }
             var req = URLRequest(url: url)
@@ -201,7 +202,7 @@ final class QBittorrentClient: ObservableObject {
     }
 
     private func action(_ name: String, hash: String) {
-        let cfg = config
+        let cfg = cachedConfig
         Task {
             guard let url = URL(string: "\(cfg.baseURL)/api/v2/torrents/\(name)") else { return }
             var req = URLRequest(url: url)

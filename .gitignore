@@ -11,18 +11,15 @@ web/.pnp
 web/.pnp.*
 
 # ── iOS / Xcode ───────────────────────────────────────────────────────────────
-ios/DerivedData/
-ios/build/
-ios/*.xcuserstate
-ios/xcuserdata/
-ios/*.xcworkspace/xcuserdata/
-ios/.DS_Store
-ios/**/.DS_Store
-ios/*.ipa
-ios/*.dSYM.zip
-ios/*.dSYM
-ios/Pods/
-ios/*.xcworkspace
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+**/*.xcworkspace/xcuserdata/
+*.ipa
+*.dSYM.zip
+*.dSYM
+Pods/
 
 # ── General ───────────────────────────────────────────────────────────────────
 .DS_Store

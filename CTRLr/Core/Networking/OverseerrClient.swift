@@ -6,6 +6,35 @@ private struct OverseerrRequestsResponse: Decodable {
     let results: [OverseerrWireRequest]
 }
 
+private struct OverseerrMeResponse: Decodable {
+    let id: Int
+}
+
+private struct OverseerrWatchDataResponse: Decodable {
+    let recentlyWatched: [OverseerrWatchedItem]?
+}
+
+private struct OverseerrWatchedItem: Decodable {
+    let tmdbId:    Int?
+    let mediaType: String?
+}
+
+private struct OverseerrRecsResponse: Decodable {
+    let results: [OverseerrRecResult]
+}
+
+private struct OverseerrRecResult: Decodable {
+    let id:              Int
+    let title:           String?
+    let name:            String?
+    let posterPath:      String?
+    let releaseDate:     String?
+    let firstAirDate:    String?
+    let overview:        String?
+    let mediaInfo:       OverseerrSearchMediaInfo?
+    let numberOfSeasons: Int?
+}
+
 private struct OverseerrWireRequest: Decodable {
     let id:          Int
     let status:      Int
@@ -203,8 +232,9 @@ private struct OverseerrWireProfile: Decodable {
 }
 
 private struct OverseerrWireRootFolder: Decodable {
-    let id:   Int
-    let path: String
+    let id:        Int
+    let path:      String
+    let freeSpace: Int64?
 }
 
 // MARK: - OverseerrClient
@@ -215,9 +245,19 @@ final class OverseerrClient: ObservableObject {
     @Published var isConnected: Bool = false
     @Published var error:       String?
 
-    private var config: ServiceConfig { CredentialStore.shared.load(.overseerr) }
+    var hasCredentials: Bool {
+        let cfg = CredentialStore.shared.load(.overseerr)
+        return cfg.enabled && !cfg.baseURL.isEmpty && !cfg.apiKey.isEmpty
+    }
+
+    private var cachedConfig = ServiceConfig()
     private var pollTask: Task<Void, Never>?
     private let session = URLSession(configuration: .default)
+
+    // Notification tracking
+    private var knownRequestIDs:    Set<Int> = []
+    private var knownAvailableIDs:  Set<Int> = []
+    private var requestsInitialized = false
 
     // Persisted media detail cache — survives app launches, eliminating per-card fetches
     private struct CachedMediaDetail: Codable {
@@ -246,14 +286,24 @@ final class OverseerrClient: ObservableObject {
 
     // force: true bypasses TTL — used by pull-to-refresh
     func startPolling(force: Bool = false) {
+        cachedConfig = CredentialStore.shared.load(.overseerr)
         pollTask?.cancel()
         pollTask = Task { [weak self] in await self?.poll(force: force) }
     }
 
     func stopPolling() { pollTask?.cancel() }
 
+    func clearCache() {
+        let ud = UserDefaults.standard
+        ud.removeObject(forKey: Self.cacheKey)
+        ud.removeObject(forKey: Self.mediaCacheKey)
+        ud.removeObject(forKey: Self.cacheDateKey)
+        requests   = []
+        mediaCache = [:]
+    }
+
     private func poll(force: Bool = false) async {
-        let cfg = config
+        let cfg = cachedConfig
         guard cfg.enabled, !cfg.baseURL.isEmpty, !cfg.apiKey.isEmpty else {
             isConnected = false; return
         }
@@ -268,6 +318,7 @@ final class OverseerrClient: ObservableObject {
 
         do {
             let fetched = try await fetchRequests(cfg)
+            detectRequestChanges(fetched)
             requests    = fetched
             isConnected = true
             error       = nil
@@ -284,6 +335,52 @@ final class OverseerrClient: ObservableObject {
 
     // MARK: - Request list
 
+    private func detectRequestChanges(_ new: [OverseerrRequest]) {
+        defer {
+            knownRequestIDs   = Set(new.map(\.id))
+            knownAvailableIDs = Set(new.filter { ($0.mediaStatus ?? 0) == 5 }.map(\.id))
+            requestsInitialized = true
+        }
+        guard requestsInitialized else { return }
+
+        for req in new where !knownRequestIDs.contains(req.id) {
+            scheduleNewRequestNotification(req)
+        }
+        for req in new where !knownAvailableIDs.contains(req.id) && (req.mediaStatus ?? 0) == 5 {
+            scheduleAvailableNotification(req)
+        }
+    }
+
+    /// Resolves the media title (cache → network) then fires the notification.
+    private func scheduleNewRequestNotification(_ req: OverseerrRequest) {
+        if let tmdbId = req.tmdbId, let cached = mediaCache[tmdbId]?.title {
+            NotificationManager.shared.scheduleNewRequest(title: cached, requestID: req.id)
+        } else if let tmdbId = req.tmdbId {
+            let reqId = req.id; let mediaType = req.mediaType
+            Task {
+                let (title, _) = await fetchMediaDetail(tmdbId: tmdbId, mediaType: mediaType)
+                NotificationManager.shared.scheduleNewRequest(
+                    title: title ?? "New Request", requestID: reqId)
+            }
+        } else {
+            NotificationManager.shared.scheduleNewRequest(title: "New Request", requestID: req.id)
+        }
+    }
+
+    private func scheduleAvailableNotification(_ req: OverseerrRequest) {
+        if let tmdbId = req.tmdbId, let cached = mediaCache[tmdbId]?.title {
+            NotificationManager.shared.scheduleRequestAvailable(title: cached)
+        } else if let tmdbId = req.tmdbId {
+            let mediaType = req.mediaType
+            Task {
+                let (title, _) = await fetchMediaDetail(tmdbId: tmdbId, mediaType: mediaType)
+                NotificationManager.shared.scheduleRequestAvailable(title: title ?? "Now Available")
+            }
+        } else {
+            NotificationManager.shared.scheduleRequestAvailable(title: "Now Available")
+        }
+    }
+
     private func fetchRequests(_ cfg: ServiceConfig) async throws -> [OverseerrRequest] {
         guard var comps = URLComponents(string: "\(cfg.baseURL)/api/v1/request") else {
             throw NetworkError.badURL
@@ -299,7 +396,40 @@ final class OverseerrClient: ObservableObject {
         req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
         let (data, _) = try await session.data(for: req)
         let response  = try JSONDecoder().decode(OverseerrRequestsResponse.self, from: data)
-        return response.results.map { mapRequest($0) }
+        let mapped    = response.results.map { mapRequest($0) }
+
+        // Deduplicate by tmdbId — keep the entry with the highest-priority status.
+        // Multiple entries for the same media arise when different users request it,
+        // or when both a regular and 4K request exist (two Radarr instances).
+        // Priority: in-library > partial > available(4) > approved(2) > pending(1) > declined(3)
+        var seen: [Int: OverseerrRequest] = [:]
+        for request in mapped {
+            guard let tmdbId = request.tmdbId else {
+                continue  // no tmdbId — can't deduplicate, skip
+            }
+            guard let existing = seen[tmdbId] else {
+                seen[tmdbId] = request
+                continue
+            }
+            if statusPriority(request) > statusPriority(existing) {
+                seen[tmdbId] = request
+            }
+        }
+        return mapped.filter { req in
+            guard let tmdbId = req.tmdbId else { return true }
+            return seen[tmdbId]?.id == req.id
+        }
+    }
+
+    private func statusPriority(_ r: OverseerrRequest) -> Int {
+        if r.isInLibrary          { return 5 }
+        if r.isPartiallyAvailable { return 4 }
+        switch r.status {
+        case .available: return 3
+        case .approved:  return 2
+        case .pending:   return 1
+        default:         return 0
+        }
     }
 
     private func mapRequest(_ r: OverseerrWireRequest) -> OverseerrRequest {
@@ -325,7 +455,7 @@ final class OverseerrClient: ObservableObject {
 
     func fetchMediaDetail(tmdbId: Int, mediaType: String) async -> (title: String?, posterPath: String?) {
         if let cached = mediaCache[tmdbId] { return (cached.title, cached.posterPath) }
-        let cfg = config
+        let cfg = cachedConfig
         guard !cfg.baseURL.isEmpty, !cfg.apiKey.isEmpty else { return (nil, nil) }
         let endpoint = mediaType == "tv" ? "tv" : "movie"
         guard let url = URL(string: "\(cfg.baseURL)/api/v1/\(endpoint)/\(tmdbId)") else { return (nil, nil) }
@@ -352,7 +482,7 @@ final class OverseerrClient: ObservableObject {
     /// Fetch the Overseerr-internal request ID for an already-requested title.
     /// Hits the same movie/tv detail endpoint and reads mediaInfo.requests[0].id.
     func fetchRequestId(tmdbId: Int, mediaType: String) async -> Int? {
-        let cfg = config
+        let cfg = cachedConfig
         guard !cfg.baseURL.isEmpty, !cfg.apiKey.isEmpty else { return nil }
         let endpoint = mediaType == "tv" ? "tv" : "movie"
         guard let url = URL(string: "\(cfg.baseURL)/api/v1/\(endpoint)/\(tmdbId)") else { return nil }
@@ -367,7 +497,7 @@ final class OverseerrClient: ObservableObject {
     // MARK: - Rich media info
 
     func fetchMediaInfo(tmdbId: Int, mediaType: String) async -> OverseerrMediaInfo? {
-        let cfg = config
+        let cfg = cachedConfig
         let base = cfg.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard !base.isEmpty, !cfg.apiKey.isEmpty else { return nil }
         let endpoint = mediaType == "tv" ? "tv" : "movie"
@@ -435,7 +565,7 @@ final class OverseerrClient: ObservableObject {
     }
 
     private func fetchNumberOfSeasons(tmdbId: Int) async -> Int {
-        let cfg = config
+        let cfg = cachedConfig
         let base = cfg.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard !base.isEmpty, !cfg.apiKey.isEmpty,
               let url = URL(string: "\(base)/api/v1/tv/\(tmdbId)") else { return 0 }
@@ -450,7 +580,7 @@ final class OverseerrClient: ObservableObject {
     // MARK: - Search
 
     func search(query: String) async -> [OverseerrSearchResult] {
-        let cfg = config
+        let cfg = cachedConfig
         guard !cfg.baseURL.isEmpty, !cfg.apiKey.isEmpty,
               var comps = URLComponents(string: "\(cfg.baseURL)/api/v1/search") else { return [] }
         comps.queryItems = [
@@ -487,9 +617,9 @@ final class OverseerrClient: ObservableObject {
     /// For TV shows, pass numberOfSeasons from the search result so the correct
     /// seasons array [1, 2, 3, ...] is built. If unknown, a detail fetch is used
     /// as fallback — Overseerr requires at least one season number for TV requests.
-    func submitRequest(tmdbId: Int, mediaType: String, numberOfSeasons: Int? = nil,
+    func submitRequest(tmdbId: Int, mediaType: String, seasons: [Int]? = nil,
                        serverId: Int? = nil, profileId: Int? = nil, rootFolder: String? = nil) async -> Bool {
-        let cfg = config
+        let cfg = cachedConfig
         let base = cfg.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard !base.isEmpty, !cfg.apiKey.isEmpty,
               let url = URL(string: "\(base)/api/v1/request") else {
@@ -497,16 +627,16 @@ final class OverseerrClient: ObservableObject {
             return false
         }
 
-        // Build seasons array for TV — Overseerr rejects empty or missing seasons
-        var seasons: [Int]? = nil
+        // Build seasons array for TV — Overseerr rejects empty or missing seasons.
+        // Caller may pass explicit seasons (e.g. user-selected); nil falls back to all seasons.
+        var resolvedSeasons: [Int]? = nil
         if mediaType == "tv" {
-            if let n = numberOfSeasons, n > 0 {
-                seasons = Array(1...n)
+            if let s = seasons, !s.isEmpty {
+                resolvedSeasons = s
             } else {
-                // Fallback: fetch TV detail to get season count
                 let n = await fetchNumberOfSeasons(tmdbId: tmdbId)
                 guard n > 0 else { return false }
-                seasons = Array(1...n)
+                resolvedSeasons = Array(1...n)
             }
         }
 
@@ -514,7 +644,7 @@ final class OverseerrClient: ObservableObject {
         req.httpMethod = "POST"
         req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body = OverseerrRequestBody(mediaType: mediaType, mediaId: tmdbId, seasons: seasons,
+        let body = OverseerrRequestBody(mediaType: mediaType, mediaId: tmdbId, seasons: resolvedSeasons,
                                         serverId: serverId, profileId: profileId, rootFolder: rootFolder)
         guard let bodyData = try? JSONEncoder().encode(body) else { return false }
         req.httpBody = bodyData
@@ -539,7 +669,7 @@ final class OverseerrClient: ObservableObject {
     // MARK: - Service options (quality profiles + root folders)
 
     func fetchServiceOptions(mediaType: String) async -> OverseerrServiceOptions? {
-        let cfg  = config
+        let cfg  = cachedConfig
         let base = cfg.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard !base.isEmpty, !cfg.apiKey.isEmpty else { return nil }
         let service = mediaType == "tv" ? "sonarr" : "radarr"
@@ -562,14 +692,14 @@ final class OverseerrClient: ObservableObject {
         return OverseerrServiceOptions(
             serverId:    server.id,
             profiles:    detail.profiles.map    { OverseerrQualityProfile(id: $0.id, name: $0.name) },
-            rootFolders: detail.rootFolders.map { OverseerrRootFolder(id: $0.id, path: $0.path) }
+            rootFolders: detail.rootFolders.map { OverseerrRootFolder(id: $0.id, path: $0.path, freeSpace: $0.freeSpace) }
         )
     }
 
     // MARK: - Delete request
 
     func deleteRequest(id: Int) async -> Bool {
-        let cfg  = config
+        let cfg  = cachedConfig
         let base = cfg.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard !base.isEmpty, !cfg.apiKey.isEmpty,
               let url = URL(string: "\(base)/api/v1/request/\(id)") else { return false }
@@ -579,10 +709,96 @@ final class OverseerrClient: ObservableObject {
         guard let (_, response) = try? await session.data(for: req),
               let http = response as? HTTPURLResponse else { return false }
         if (200...299).contains(http.statusCode) {
-            startPolling()
+            startPolling(force: true)
             return true
         }
         return false
+    }
+
+    // MARK: - Discover
+
+    func fetchCurrentUserId() async -> Int? {
+        let cfg  = cachedConfig
+        let base = cfg.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !base.isEmpty, !cfg.apiKey.isEmpty,
+              let url = URL(string: "\(base)/api/v1/auth/me") else { return nil }
+        var req = URLRequest(url: url, timeoutInterval: 10)
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        guard let (data, _) = try? await session.data(for: req),
+              let me = try? JSONDecoder().decode(OverseerrMeResponse.self, from: data) else { return nil }
+        return me.id
+    }
+
+    func fetchWatchData(userId: Int) async -> [(tmdbId: Int, mediaType: String)] {
+        let cfg  = cachedConfig
+        let base = cfg.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !base.isEmpty, !cfg.apiKey.isEmpty,
+              let url = URL(string: "\(base)/api/v1/user/\(userId)/watch_data") else { return [] }
+        var req = URLRequest(url: url, timeoutInterval: 15)
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        guard let (data, _) = try? await session.data(for: req),
+              let response = try? JSONDecoder().decode(OverseerrWatchDataResponse.self, from: data) else { return [] }
+        return (response.recentlyWatched ?? []).compactMap { item in
+            guard let tmdbId = item.tmdbId, let mediaType = item.mediaType,
+                  mediaType == "movie" || mediaType == "tv" else { return nil }
+            return (tmdbId, mediaType)
+        }
+    }
+
+    func fetchRecommendations(tmdbId: Int, mediaType: String) async -> [OverseerrSearchResult] {
+        let cfg  = cachedConfig
+        let base = cfg.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let endpoint = mediaType == "tv" ? "tv" : "movie"
+        guard !base.isEmpty, !cfg.apiKey.isEmpty,
+              let url = URL(string: "\(base)/api/v1/\(endpoint)/\(tmdbId)/recommendations") else { return [] }
+        var req = URLRequest(url: url, timeoutInterval: 15)
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        guard let (data, _) = try? await session.data(for: req),
+              let response = try? JSONDecoder().decode(OverseerrRecsResponse.self, from: data) else { return [] }
+        return Array(response.results
+            .prefix(12)
+            .map { r in
+                OverseerrSearchResult(
+                    id:              r.id,
+                    mediaType:       mediaType,
+                    title:           r.title ?? r.name ?? "Unknown",
+                    year:            (r.releaseDate ?? r.firstAirDate).map { String($0.prefix(4)) },
+                    posterPath:      r.posterPath,
+                    overview:        r.overview,
+                    mediaStatus:     r.mediaInfo?.status,
+                    numberOfSeasons: r.numberOfSeasons,
+                    requestId:       r.mediaInfo?.requests?.first?.id
+                )
+            })
+    }
+
+    // MARK: - Trending
+
+    func fetchTrending(mediaType: String, page: Int = 1) async -> [OverseerrSearchResult] {
+        let cfg  = cachedConfig
+        let base = cfg.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let endpoint = mediaType == "tv" ? "tv" : "movies"
+        guard !base.isEmpty, !cfg.apiKey.isEmpty,
+              let url = URL(string: "\(base)/api/v1/discover/\(endpoint)?page=\(page)") else { return [] }
+        var req = URLRequest(url: url, timeoutInterval: 15)
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        guard let (data, _) = try? await session.data(for: req),
+              let response = try? JSONDecoder().decode(OverseerrRecsResponse.self, from: data) else { return [] }
+        // Return initial results immediately using whatever posterPath the trending endpoint provides.
+        // Items with nil posterPath will show a placeholder — acceptable since most have valid paths.
+        return Array(response.results.prefix(20).map { r in
+            OverseerrSearchResult(
+                id:              r.id,
+                mediaType:       mediaType,
+                title:           r.title ?? r.name ?? "Unknown",
+                year:            (r.releaseDate ?? r.firstAirDate).map { String($0.prefix(4)) },
+                posterPath:      r.posterPath,
+                overview:        r.overview,
+                mediaStatus:     r.mediaInfo?.status,
+                numberOfSeasons: r.numberOfSeasons,
+                requestId:       r.mediaInfo?.requests?.first?.id
+            )
+        })
     }
 
     // MARK: - Test connection

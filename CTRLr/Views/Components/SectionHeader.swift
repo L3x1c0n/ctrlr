@@ -6,9 +6,10 @@ import SwiftUI
 // Trailing content (e.g. speed readouts) is supplied via a ViewBuilder closure.
 
 struct SectionHeader<Trailing: View>: View {
-    let iconGradient:  [Color]
-    let title:         String
-    let sources:       [ServiceSource]
+    let iconGradient: [Color]
+    let title:        String
+    var titleFont:    Font = .custom("Monaco", size: 20)
+    let sources:      [ServiceSource]
     @ViewBuilder var trailing: Trailing
 
     var body: some View {
@@ -24,7 +25,7 @@ struct SectionHeader<Trailing: View>: View {
 
             // Title with gradient fill
             Text(title)
-                .font(.custom("Monaco", size: 20))
+                .font(titleFont)
                 .foregroundStyle(
                     LinearGradient(
                         colors: iconGradient,
@@ -42,9 +43,10 @@ struct SectionHeader<Trailing: View>: View {
 
 // Convenience init for headers with no trailing content
 extension SectionHeader where Trailing == EmptyView {
-    init(iconGradient: [Color], title: String, sources: [ServiceSource]) {
+    init(iconGradient: [Color], title: String, titleFont: Font = .custom("Monaco", size: 20), sources: [ServiceSource]) {
         self.iconGradient = iconGradient
         self.title        = title
+        self.titleFont    = titleFont
         self.sources      = sources
         self.trailing     = EmptyView()
     }

@@ -4,14 +4,16 @@ import SwiftUI
 
 struct NowPlayingSection: View {
     @EnvironmentObject var dashVM: DashboardViewModel
+    @AppStorage("sectionLightTint_nowPlaying") private var tintHex = "#1A0A2E"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
 
             SectionHeader(
                 iconGradient: [Color(hex: "#FF7F50"), Color(hex: "#FF4757")],
-                title:        "Now Playing",
-                sources:      dashVM.tautulli.isConnected ? [.tautulli] : []
+                title:        dashVM.plex.serverName.map { "Media Server: \($0.uppercased())" } ?? "Media Server",
+                titleFont:    .custom("Monaco", size: 20),
+                sources:      dashVM.tautulli.isConfigured ? [.tautulli] : []
             )
 
             // ── Ring chart zone: boundary lines + speed graph backdrop ────
@@ -38,11 +40,8 @@ struct NowPlayingSection: View {
                 }
             }
             hudBoundaryLine
-
-            // Daily play bar chart
-            DailyPlaysCard(data: dashVM.tautulli.dailyPlays)
-                .padding(.horizontal, 20)
         }
+        .glassCard(cornerRadius: 20, lightTint: Color(hex: tintHex), lightOnly: true)
     }
 
     // Horizontal rule that fades at both edges
@@ -386,8 +385,8 @@ private struct DailyPlaysCard: View {
                     .foregroundStyle(.white.opacity(0.45))
                 Spacer()
                 HStack(spacing: 8) {
-                    legendDot(color: Color(hex: "#FFC230"), label: "Movies")
-                    legendDot(color: Color(hex: "#35C5F4"), label: "TV")
+                    legendDot(color: Color(hex: "#E040FB"), label: "Movies")
+                    legendDot(color: Color(hex: "#39FF14"), label: "TV")
                 }
             }
 
@@ -404,33 +403,67 @@ private struct DailyPlaysCard: View {
                     let barWidth     = (geo.size.width - totalSpacing) / CGFloat(barCount)
 
                     Canvas { ctx, size in
+                        let minH: CGFloat = 3
+
+                        // Pre-compute heights for all days
+                        let heights: [(tvH: CGFloat, movieH: CGFloat)] = data.map { day in
+                            let rawTV    = CGFloat(day.tv)     / CGFloat(maxTotal) * size.height
+                            let rawMovie = CGFloat(day.movies) / CGFloat(maxTotal) * size.height
+                            let tvH    = day.tv     > 0 ? max(minH, rawTV)    : 0
+                            let movieH = day.movies > 0 ? max(minH, rawMovie) : 0
+                            return (tvH, movieH)
+                        }
+
+                        // Pass 1: draw all bars
                         for (i, day) in data.enumerated() {
                             let x      = CGFloat(i) * (barWidth + barSpacing)
-                            let totalH = CGFloat(day.total)  / CGFloat(maxTotal) * size.height
-                            let movieH = CGFloat(day.movies) / CGFloat(maxTotal) * size.height
-                            let tvH    = totalH - movieH
+                            let tvH    = heights[i].tvH
+                            let movieH = heights[i].movieH
 
-                            if movieH > 0 {
-                                ctx.fill(
-                                    Path(roundedRect: CGRect(x: x, y: size.height - movieH,
-                                                             width: barWidth, height: movieH),
-                                         cornerRadius: tvH < 1 ? 3 : 0),
-                                    with: .color(Color(hex: "#FFC230").opacity(0.75)))
-                            }
-                            if tvH > 0 {
-                                ctx.fill(
-                                    Path(roundedRect: CGRect(x: x, y: size.height - totalH,
-                                                             width: barWidth, height: tvH),
-                                         cornerRadius: 3),
-                                    with: .color(Color(hex: "#35C5F4").opacity(0.75)))
-                            }
                             if day.total == 0 {
                                 ctx.fill(
                                     Path(roundedRect: CGRect(x: x, y: 0,
                                                              width: barWidth, height: size.height),
                                          cornerRadius: 3),
                                     with: .color(.white.opacity(0.04)))
+                            } else {
+                                if tvH > 0 {
+                                    ctx.fill(
+                                        Path(roundedRect: CGRect(x: x, y: size.height - tvH,
+                                                                 width: barWidth, height: tvH),
+                                             cornerRadius: movieH < 1 ? 3 : 0),
+                                        with: .color(Color(hex: "#39FF14").opacity(0.75)))
+                                }
+                                if movieH > 0 {
+                                    ctx.fill(
+                                        Path(roundedRect: CGRect(x: x, y: size.height - tvH - movieH,
+                                                                 width: barWidth, height: movieH),
+                                             cornerRadius: 3),
+                                        with: .color(Color(hex: "#E040FB").opacity(0.75)))
+                                }
                             }
+                        }
+
+                        // Pass 2: draw all pills on top of everything
+                        for (i, day) in data.enumerated() {
+                            guard day.total > 0 else { continue }
+                            let x      = CGFloat(i) * (barWidth + barSpacing)
+                            let pillW: CGFloat = day.total >= 10 ? 18 : 13
+                            let pillH: CGFloat = 12
+                            let pillX  = x + 3
+                            let pillY  = size.height - 3 - pillH
+                            ctx.fill(
+                                Path(roundedRect: CGRect(x: pillX, y: pillY,
+                                                         width: pillW, height: pillH),
+                                     cornerRadius: 3),
+                                with: .color(Color.black.opacity(0.55)))
+                            let label = Text("\(day.total)")
+                                .font(.system(size: 8, weight: .semibold))
+                                .foregroundStyle(Color.white.opacity(0.9))
+                            ctx.draw(label,
+                                     at: CGPoint(x: pillX + pillW / 2,
+                                                 y: pillY + pillH / 2),
+                                     anchor: .center)
                         }
                     }
                     .frame(height: chartHeight)
@@ -489,18 +522,18 @@ private struct ActivityRingChart: View {
                     let cy     = size.height / 2
                     let outerR = min(cx, cy) - 2
 
-                    // Outer ghost ring — very faint full circle
+                    // Outer ghost ring
                     ctx.stroke(
                         Path { p in p.addEllipse(in: CGRect(x: cx - outerR, y: cy - outerR,
                                                             width: outerR * 2, height: outerR * 2)) },
-                        with: .color(.white.opacity(0.07)), lineWidth: 0.5)
+                        with: .color(.white.opacity(0.12)), lineWidth: 0.5)
 
                     // Second inner ghost ring — 6pt inside
                     let innerR = outerR - 6
                     ctx.stroke(
                         Path { p in p.addEllipse(in: CGRect(x: cx - innerR, y: cy - innerR,
                                                             width: innerR * 2, height: innerR * 2)) },
-                        with: .color(.white.opacity(0.04)), lineWidth: 0.5)
+                        with: .color(.white.opacity(0.07)), lineWidth: 0.5)
 
                     // Graduation marks — every 6° around the outer rim
                     for deg in stride(from: 0.0, to: 360.0, by: 6.0) {
@@ -508,16 +541,24 @@ private struct ActivityRingChart: View {
                         let isCardinal = Int(deg) % 90 == 0
                         let isMajor   = Int(deg) % 30 == 0
                         let tickLen:  CGFloat = isCardinal ? 10 : (isMajor ? 6 : 3)
-                        let opacity:  Double  = isCardinal ? 0.55 : (isMajor ? 0.22 : 0.09)
+                        let opacity:  Double  = isCardinal ? 0.90 : (isMajor ? 0.50 : 0.22)
                         let width:    CGFloat = isCardinal ? 1.5  : (isMajor ? 1.0  : 0.75)
                         let x1 = cx + outerR * cos(rad)
                         let y1 = cy + outerR * sin(rad)
                         let x2 = cx + (outerR - tickLen) * cos(rad)
                         let y2 = cy + (outerR - tickLen) * sin(rad)
-                        ctx.stroke(
-                            Path { p in p.move(to: .init(x: x1, y: y1))
-                                        p.addLine(to: .init(x: x2, y: y2)) },
-                            with: .color(.white.opacity(opacity)), lineWidth: width)
+                        let tickPath = Path { p in
+                            p.move(to: .init(x: x1, y: y1))
+                            p.addLine(to: .init(x: x2, y: y2))
+                        }
+                        // Soft glow halo — drawn before the sharp tick so it sits behind
+                        if isCardinal {
+                            ctx.stroke(tickPath, with: .color(.white.opacity(0.35)), lineWidth: 5.0)
+                        } else if isMajor {
+                            ctx.stroke(tickPath, with: .color(.white.opacity(0.18)), lineWidth: 3.5)
+                        }
+                        // Sharp tick on top
+                        ctx.stroke(tickPath, with: .color(.white.opacity(opacity)), lineWidth: width)
                     }
 
                     // Cardinal bracket decorations — L-shaped corners at N/E/S/W
@@ -596,15 +637,22 @@ private struct HUDGlowRing: View {
 
     var body: some View {
         ZStack {
-            // Track — fine dots, very faint so the glow reads as the light source
+            // Track — dotted reference circle for the unfilled arc
             Circle()
                 .stroke(
-                    color.opacity(0.07),
+                    color.opacity(0.13),
                     style: StrokeStyle(lineWidth: strokeWidth, dash: [1, 5])
                 )
 
             if fraction > 0.005 {
-                // Solid arc — full palette colour, fades at tail
+                // Bloom — wide diffuse layer behind the arc (blurred duplicate, keeps main arc sharp)
+                Circle()
+                    .trim(from: 0, to: fraction)
+                    .stroke(color.opacity(0.28), style: StrokeStyle(lineWidth: strokeWidth + 4, lineCap: .butt))
+                    .rotationEffect(.degrees(-90))
+                    .blur(radius: 4)
+
+                // Crisp arc — angular gradient tail→head, shadow provides tight edge glow
                 Circle()
                     .trim(from: 0, to: fraction)
                     .stroke(
@@ -621,23 +669,127 @@ private struct HUDGlowRing: View {
                         style: StrokeStyle(lineWidth: strokeWidth, lineCap: .butt)
                     )
                     .rotationEffect(.degrees(-90))
+                    .shadow(color: color.opacity(0.7), radius: 3, x: 0, y: 0)
             }
         }
     }
 }
 
-// MARK: - Now Playing Overlay
-// Floats over the download queue section — only visible when something is playing.
+// MARK: - Now Playing Corner
 
-struct NowPlayingOverlay: View {
+enum NowPlayingCorner: String {
+    case topLeading, topTrailing, bottomLeading, bottomTrailing
+}
+
+// MARK: - Now Playing Shelf
+// Draggable glass shelf that floats over the dashboard.
+// Fling in any direction to snap to the nearest corner; position persists across launches.
+
+struct NowPlayingShelf: View {
     let streams: [ActiveStream]
 
+    @AppStorage("nowPlayingCorner") private var corner: NowPlayingCorner = .topTrailing
+    @State private var dragOffset: CGSize = .zero
+    @State private var isDragging  = false
+
+    // Card geometry — keep in sync with NowPlayingOverlayCard
+    private let cardW:    CGFloat = 100
+    private let cardH:    CGFloat = 150
+    private let cardGap:  CGFloat = 8
+    private let padding:  CGFloat = 10
+    private let edgePad:  CGFloat = 16
+    private let topClear: CGFloat = 60   // below status bar
+    private let botClear: CGFloat = 40   // above home indicator
+
+    // Computed shelf size — avoids a preference-key round-trip.
+    private var shelfSize: CGSize {
+        let n  = CGFloat(streams.count)
+        let w  = n * cardW + max(n - 1, 0) * cardGap + padding * 2
+        let h  = cardH + padding * 2
+        return CGSize(width: w, height: h)
+    }
+
     var body: some View {
-        HStack(spacing: 8) {
+        GeometryReader { geo in
+            shelf
+                .scaleEffect(isDragging ? 0.95 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isDragging)
+                .position(currentPosition(in: geo.size))
+                .gesture(dragGesture(in: geo.size))
+                .animation(.spring(response: 0.5, dampingFraction: 0.78), value: corner)
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.88)))
+        .animation(.easeInOut(duration: 0.35), value: streams.count)
+    }
+
+    // MARK: - Shelf appearance
+
+    private var shelf: some View {
+        HStack(spacing: cardGap) {
             ForEach(streams) { stream in
                 NowPlayingOverlayCard(stream: stream)
             }
         }
+        .padding(padding)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18)
+                .strokeBorder(.white.opacity(0.14), lineWidth: 0.5)
+        }
+        .shadow(color: .black.opacity(0.45), radius: 24, x: 0, y: 10)
+    }
+
+    // MARK: - Positioning
+
+    private func currentPosition(in size: CGSize) -> CGPoint {
+        let anchor = anchorPoint(for: corner, in: size)
+        return CGPoint(x: anchor.x + dragOffset.width,
+                       y: anchor.y + dragOffset.height)
+    }
+
+    private func anchorPoint(for c: NowPlayingCorner, in size: CGSize) -> CGPoint {
+        let hw = shelfSize.width  / 2
+        let hh = shelfSize.height / 2
+        switch c {
+        case .topLeading:
+            return CGPoint(x: edgePad + hw,              y: topClear + edgePad + hh)
+        case .topTrailing:
+            return CGPoint(x: size.width  - edgePad - hw, y: topClear + edgePad + hh)
+        case .bottomLeading:
+            return CGPoint(x: edgePad + hw,              y: size.height - botClear - edgePad - hh)
+        case .bottomTrailing:
+            return CGPoint(x: size.width  - edgePad - hw, y: size.height - botClear - edgePad - hh)
+        }
+    }
+
+    private func nearestCorner(to point: CGPoint, in size: CGSize) -> NowPlayingCorner {
+        switch (point.x > size.width / 2, point.y > size.height / 2) {
+        case (false, false): return .topLeading
+        case (true,  false): return .topTrailing
+        case (false, true):  return .bottomLeading
+        case (true,  true):  return .bottomTrailing
+        }
+    }
+
+    // MARK: - Drag gesture
+
+    private func dragGesture(in size: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 4)
+            .onChanged { v in
+                isDragging  = true
+                dragOffset  = v.translation
+            }
+            .onEnded { v in
+                isDragging = false
+                // Project current anchor + predicted translation to find target corner.
+                let anchor    = anchorPoint(for: corner, in: size)
+                let predicted = CGPoint(x: anchor.x + v.predictedEndTranslation.width,
+                                        y: anchor.y + v.predictedEndTranslation.height)
+                corner = nearestCorner(to: predicted, in: size)
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.78)) {
+                    dragOffset = .zero
+                }
+            }
     }
 }
 
@@ -653,8 +805,8 @@ private struct NowPlayingOverlayCard: View {
     private var cometColors: [Color] {
         switch stream.state {
         case "playing":
-            return [Color(hex: "#FFFFFF"), Color(hex: "#00FFB3"),
-                    Color(hex: "#00E5A0"), Color(hex: "#006644"), Color(hex: "#002B1C")]
+            return [Color(hex: "#FAD0FF"), Color(hex: "#E040FB"),
+                    Color(hex: "#A800CC"), Color(hex: "#520066"), Color(hex: "#1C0022")]
         case "paused":
             return [Color(hex: "#FFF8E0"), Color(hex: "#FFCC44"),
                     Color(hex: "#FFAA00"), Color(hex: "#885500"), Color(hex: "#332200")]
@@ -701,10 +853,10 @@ private struct NowPlayingOverlayCard: View {
         .frame(width: cardWidth, height: cardHeight)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay {
-            CometBorder(colors: cometColors, perimeter: perimeter, cornerRadius: 10)
+            CometBorder(colors: cometColors, perimeter: perimeter, cornerRadius: 10, reversed: true)
         }
         .shadow(color: cometColors[1].opacity(0.4), radius: 12, x: 0, y: 0)
-        .task { await loadPoster() }
+        .task(id: stream.posterURL) { await loadPoster() }
     }
 
     private func loadPoster() async {
@@ -723,9 +875,7 @@ private struct NowPlayingCard: View {
     private let maxTiltDegreesX: Double  = 58
     private let maxTiltDegreesY: Double  = 50
     private let posterShift:     CGFloat = 18
-    private let gyroScale:       CGFloat = 0.22
 
-    @ObservedObject private var motion = MotionManager.shared
     @State private var posterImage: UIImage?
     @State private var tilt:          CGSize = .zero
     @State private var isInteracting: Bool   = false
@@ -871,13 +1021,6 @@ private struct NowPlayingCard: View {
             .frame(width: cardWidth, alignment: .leading)
         }
         .task(id: stream.id) { await loadPoster() }
-        .onChange(of: motion.tilt) { _, newTilt in
-            guard !isInteracting else { return }
-            withAnimation(.interactiveSpring(response: 0.5, dampingFraction: 0.85)) {
-                tilt = CGSize(width: newTilt.width * gyroScale,
-                              height: newTilt.height * gyroScale)
-            }
-        }
     }
 
     private var stateBadge: some View {

@@ -43,6 +43,14 @@
 		A1000034 /* TautulliClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000034 /* TautulliClient.swift */; };
 		A1000035 /* NowPlayingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000035 /* NowPlayingSection.swift */; };
 		A1000036 /* CertificatePinner.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000036 /* CertificatePinner.swift */; };
+		A1000037 /* CTRLrIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000037 /* CTRLrIconView.swift */; };
+		A1000038 /* DiscoverSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000038 /* DiscoverSectionView.swift */; };
+		A1000039 /* SectionRefreshButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000039 /* SectionRefreshButton.swift */; };
+		A1000040 /* DashboardSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000040 /* DashboardSection.swift */; };
+		A1000041 /* SectionArrangerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000041 /* SectionArrangerView.swift */; };
+		A1000042 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000042 /* AppColors.swift */; };
+		A1000043 /* TraktClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000043 /* TraktClient.swift */; };
+		A1000044 /* TMDBClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000044 /* TMDBClient.swift */; };
 		B1000001 /* CTRLrWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000001 /* CTRLrWidgets.swift */; };
 		B1000002 /* QueueProgressWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000002 /* QueueProgressWidget.swift */; };
 		B1000003 /* WidgetSharedModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000003 /* WidgetSharedModels.swift */; };
@@ -57,8 +65,7 @@
 		CA9279142F603900004D0895 /* NtfyClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9279152F603900004D0895 /* NtfyClient.swift */; };
 		E1000001 /* CTRLrWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = P2000001 /* CTRLrWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		E4000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F4000001 /* Assets.xcassets */; };
-		E4000002 /* VT323-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F4000002 /* VT323-Regular.ttf */; };
-		A1000037 /* CTRLrIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000037 /* CTRLrIconView.swift */; };
+		E4000002 /* Resources/Fonts/VT323-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F4000002 /* Resources/Fonts/VT323-Regular.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -128,14 +135,21 @@
 		F1000034 /* TautulliClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TautulliClient.swift; sourceTree = "<group>"; };
 		F1000035 /* NowPlayingSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingSection.swift; sourceTree = "<group>"; };
 		F1000036 /* CertificatePinner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CertificatePinner.swift; sourceTree = "<group>"; };
+		F1000037 /* CTRLrIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTRLrIconView.swift; sourceTree = "<group>"; };
+		F1000038 /* DiscoverSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoverSectionView.swift; sourceTree = "<group>"; };
+		F1000039 /* SectionRefreshButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionRefreshButton.swift; sourceTree = "<group>"; };
+		F1000040 /* DashboardSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardSection.swift; sourceTree = "<group>"; };
+		F1000041 /* SectionArrangerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionArrangerView.swift; sourceTree = "<group>"; };
+		F1000042 /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
+		F1000043 /* TraktClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TraktClient.swift; sourceTree = "<group>"; };
+		F1000044 /* TMDBClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBClient.swift; sourceTree = "<group>"; };
 		F2000001 /* CTRLrWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTRLrWidgets.swift; sourceTree = "<group>"; };
 		F2000002 /* QueueProgressWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueProgressWidget.swift; sourceTree = "<group>"; };
 		F2000003 /* WidgetSharedModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSharedModels.swift; sourceTree = "<group>"; };
 		F2000004 /* DownloadLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadLiveActivity.swift; sourceTree = "<group>"; };
 		F3000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F4000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		F4000002 /* VT323-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Resources/Fonts/VT323-Regular.ttf"; sourceTree = "<group>"; };
-		F1000037 /* CTRLrIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CTRLrIconView.swift; sourceTree = "<group>"; };
+		F4000002 /* Resources/Fonts/VT323-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Resources/Fonts/VT323-Regular.ttf"; sourceTree = "<group>"; };
 		P1000001 /* CTRLr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CTRLr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		P2000001 /* CTRLrWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CTRLrWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -180,7 +194,7 @@
 				GR000018 /* Notifications */,
 				EN000001 /* CTRLr.entitlements */,
 				F4000001 /* Assets.xcassets */,
-				F4000002 /* VT323-Regular.ttf */,
+				F4000002 /* Resources/Fonts/VT323-Regular.ttf */,
 			);
 			path = CTRLr;
 			sourceTree = "<group>";
@@ -226,6 +240,8 @@
 				F1000034 /* TautulliClient.swift */,
 				F1000003 /* NetworkClient.swift */,
 				F1000004 /* QBittorrentClient.swift */,
+				F1000043 /* TraktClient.swift */,
+				F1000044 /* TMDBClient.swift */,
 			);
 			path = Networking;
 			sourceTree = "<group>";
@@ -234,6 +250,7 @@
 			isa = PBXGroup;
 			children = (
 				F1000005 /* MediaModels.swift */,
+				F1000040 /* DashboardSection.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -275,6 +292,7 @@
 				F1000011 /* DownloadQueueSection.swift */,
 				F1000033 /* RequestsSection.swift */,
 				F1000035 /* NowPlayingSection.swift */,
+				F1000038 /* DiscoverSectionView.swift */,
 			);
 			path = Dashboard;
 			sourceTree = "<group>";
@@ -291,6 +309,7 @@
 			isa = PBXGroup;
 			children = (
 				F1000013 /* SettingsView.swift */,
+				F1000041 /* SectionArrangerView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -305,6 +324,8 @@
 				F1000030 /* TiltRecognizer.swift */,
 				F1000031 /* SectionHeader.swift */,
 				F1000037 /* CTRLrIconView.swift */,
+				F1000039 /* SectionRefreshButton.swift */,
+				F1000042 /* AppColors.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -439,7 +460,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 2630;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					T1000001 = {
 						CreatedOnToolsVersion = 16.0;
@@ -473,7 +494,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E4000001 /* Assets.xcassets in Resources */,
-				E4000002 /* VT323-Regular.ttf in Resources */,
+				E4000002 /* Resources/Fonts/VT323-Regular.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -533,6 +554,13 @@
 				A1000035 /* NowPlayingSection.swift in Sources */,
 				A1000036 /* CertificatePinner.swift in Sources */,
 				A1000037 /* CTRLrIconView.swift in Sources */,
+				A1000038 /* DiscoverSectionView.swift in Sources */,
+				A1000039 /* SectionRefreshButton.swift in Sources */,
+				A1000042 /* AppColors.swift in Sources */,
+				A1000040 /* DashboardSection.swift in Sources */,
+				A1000041 /* SectionArrangerView.swift in Sources */,
+				A1000043 /* TraktClient.swift in Sources */,
+				A1000044 /* TMDBClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -611,7 +639,7 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				TARGETED_DEVICE_FAMILY = 2;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -658,7 +686,7 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				TARGETED_DEVICE_FAMILY = 2;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -668,12 +696,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CTRLr/CTRLr.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "CTRLr/Info-Supplemental.plist";
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = com.attakrit.CTRLr.refresh;
 				INFOPLIST_KEY_CFBundleDisplayName = CTRLr;
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "CTRLr notifies you when downloads complete, media imports finish, or new requests arrive.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -685,13 +712,13 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.attakrit.CTRLr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 2;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -701,12 +728,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CTRLr/CTRLr.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "CTRLr/Info-Supplemental.plist";
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = com.attakrit.CTRLr.refresh;
 				INFOPLIST_KEY_CFBundleDisplayName = CTRLr;
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "CTRLr notifies you when downloads complete, media imports finish, or new requests arrive.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -718,13 +744,13 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.attakrit.CTRLr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 2;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -733,7 +759,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = CTRLrWidgets/CTRLrWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CTRLrWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -742,14 +768,14 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.attakrit.CTRLr.CTRLrWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 2;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -758,7 +784,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = CTRLrWidgets/CTRLrWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CTRLrWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -767,14 +793,14 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.attakrit.CTRLr.CTRLrWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 2;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};

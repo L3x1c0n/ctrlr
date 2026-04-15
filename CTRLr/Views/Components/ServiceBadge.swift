@@ -60,6 +60,7 @@ extension ServiceSource {
         case .sonarr:      return "tv.fill"
         case .overseerr:   return "person.crop.circle.badge.plus"
         case .tautulli:    return "chart.bar.fill"
+        case .trakt:       return "star.fill"
         }
     }
 }
@@ -74,5 +75,5 @@ extension ServiceSource {
         ServiceBadge(source: .sonarr)
     }
     .padding()
-    .background(Color(hex: "#0A0A0F"))
+    .background(Color.appBackground)
 }

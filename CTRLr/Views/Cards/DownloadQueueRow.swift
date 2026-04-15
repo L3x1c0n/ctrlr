@@ -8,10 +8,13 @@ struct DownloadQueueRow: View {
     let onResume: () -> Void
     let onDelete: (_ deleteFiles: Bool) -> Void
 
-    @State private var showDetail = false
+    @State private var showDetail      = false
+    @State private var showQuickDelete = false
 
-    @State private var posterImage: UIImage? = nil
-    @State private var tileOrder:   [Int]   = []
+    @State private var posterImage:   UIImage? = nil
+    @State private var tileOrder:     [Int]    = []
+    @State private var tilt:          CGSize   = .zero
+    @State private var isInteracting: Bool     = false
 
     private let cardWidth:  CGFloat = 150
     private let cardHeight: CGFloat = 225
@@ -32,7 +35,7 @@ struct DownloadQueueRow: View {
         case "downloading", "forcedDL", "metaDL":               return Color(hex: "#00E5A0")
         case "stalledDL", "stalledUP", "error", "missingFiles": return Color(hex: "#FF6B6B")
         case "uploading", "forcedUP", "pausedUP":               return Color(hex: "#7B8CDE")
-        default:                                                 return Color.white.opacity(0.15)
+        default:                                                 return Color.primary.opacity(0.15)
         }
     }
 
@@ -41,7 +44,7 @@ struct DownloadQueueRow: View {
         case "downloading", "forcedDL", "metaDL":               return Color(hex: "#40FFBE")
         case "stalledDL", "stalledUP", "error", "missingFiles": return Color(hex: "#FF9999")
         case "uploading", "forcedUP", "pausedUP":               return Color(hex: "#A0AEFF")
-        default:                                                 return Color.white.opacity(0.35)
+        default:                                                 return Color.primary.opacity(0.35)
         }
     }
 
@@ -67,7 +70,7 @@ struct DownloadQueueRow: View {
         case "downloading", "forcedDL", "metaDL":               return Color(hex: "#00996A")
         case "stalledDL", "stalledUP", "error", "missingFiles": return Color(hex: "#C03030")
         case "uploading", "forcedUP", "pausedUP":               return Color(hex: "#4A5DB0")
-        default:                                                 return Color.white.opacity(0.08)
+        default:                                                 return Color.primary.opacity(0.08)
         }
     }
 
@@ -80,6 +83,14 @@ struct DownloadQueueRow: View {
         }
         .draggable(item.title)
         .task(id: item.posterURL) { await loadPoster() }
+        .sheet(isPresented: $showDetail) {
+            TorrentDetailSheet(
+                item:     item,
+                onPause:  onPause,
+                onResume: onResume,
+                onDelete: onDelete
+            )
+        }
     }
 
     // MARK: - Card
@@ -112,10 +123,87 @@ struct DownloadQueueRow: View {
                     .padding(6)
             }
         }
-        .shadow(color: .black.opacity(0.30), radius: 8, x: 0, y: 4)
+        .rotation3DEffect(.degrees(Double(tilt.height) * -50), axis: (x: 1, y: 0, z: 0), perspective: 0.5)
+        .rotation3DEffect(.degrees(Double(tilt.width)  *  58), axis: (x: 0, y: 1, z: 0), perspective: 0.5)
+        .shadow(
+            color: .black.opacity(isInteracting ? 0.55 : 0.30),
+            radius: isInteracting ? 22 : 8,
+            x: tilt.width * 20, y: tilt.height * 20 + 4
+        )
+        .overlay {
+            if !showMosaic {
+                TiltRecognizer(
+                    onChanged: { _, liveLoc in
+                        let target = amplifiedTilt(normX: liveLoc.x - 0.5, normY: liveLoc.y - 0.5)
+                        if !isInteracting {
+                            isInteracting = true
+                            tilt = .zero
+                            Task { @MainActor in
+                                withAnimation(.easeOut(duration: 0.22)) { tilt = target }
+                            }
+                        } else {
+                            tilt = target
+                        }
+                    },
+                    onEnded: {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.92)) {
+                            isInteracting = false
+                            tilt = .zero
+                        }
+                    },
+                    onTap: { showDetail = true }
+                )
+            }
+        }
+        .onContinuousHover { phase in
+            guard !showMosaic else {
+                if isInteracting {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.92)) {
+                        isInteracting = false
+                        tilt = .zero
+                    }
+                }
+                return
+            }
+            switch phase {
+            case .active(let loc):
+                // Clamp to card bounds — out-of-bounds positions mean the cursor
+                // has drifted outside this card's frame; treat as hover end.
+                guard loc.x >= 0, loc.x <= cardWidth,
+                      loc.y >= 0, loc.y <= cardHeight else {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.92)) {
+                        isInteracting = false
+                        tilt = .zero
+                    }
+                    return
+                }
+                let target = amplifiedTilt(normX: loc.x / cardWidth  - 0.5,
+                                           normY: loc.y / cardHeight - 0.5)
+                if !isInteracting {
+                    isInteracting = true
+                    tilt = .zero
+                    Task { @MainActor in
+                        withAnimation(.easeOut(duration: 0.22)) { tilt = target }
+                    }
+                } else {
+                    tilt = target
+                }
+            case .ended:
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.92)) {
+                    isInteracting = false
+                    tilt = .zero
+                }
+            }
+        }
+        .contentShape(Rectangle())
         .onTapGesture { showDetail = true }
-        .sheet(isPresented: $showDetail) {
-            TorrentDetailSheet(item: item, onPause: onPause, onResume: onResume, onDelete: onDelete)
+        .overlay(alignment: .bottomTrailing) {
+            quickActions
+        }
+        .confirmationDialog("Delete torrent?", isPresented: $showQuickDelete, titleVisibility: .visible) {
+            Button("Remove torrent only",        role: .destructive) { onDelete(false) }
+            Button("Remove and delete files",    role: .destructive) { onDelete(true)  }
+            Button("Cancel",                     role: .cancel)      {}
         }
     }
 
@@ -143,12 +231,12 @@ struct DownloadQueueRow: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(item.title)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
             Text(item.subtitle ?? " ")
                 .font(.system(size: 10))
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(.primary.opacity(0.5))
                 .lineLimit(1)
         }
         .frame(width: cardWidth, alignment: .leading)
@@ -169,12 +257,12 @@ struct DownloadQueueRow: View {
                     .transition(.opacity)
             }
         } else {
-            Color.white.opacity(0.06)
+            Color.primary.opacity(0.06)
                 .frame(width: cardWidth, height: cardHeight)
                 .overlay {
                     Image(systemName: "film")
                         .font(.system(size: 24, weight: .thin))
-                        .foregroundStyle(.white.opacity(0.2))
+                        .foregroundStyle(.primary.opacity(0.2))
                 }
         }
     }
@@ -201,8 +289,10 @@ struct DownloadQueueRow: View {
                 }
             }
         }
-        .background(Color(hex: "#0A0A0F"))
+        .background(Color.appBackground)
         .frame(width: cardWidth, height: cardHeight)
+        .clipped()                    // prevent 3D tile overflow from extending hit area into adjacent cards
+        .allowsHitTesting(false)      // card's own onTapGesture handles all taps; tiles don't intercept
     }
 
     // MARK: - Poster fetch
@@ -221,14 +311,20 @@ struct DownloadQueueRow: View {
             state ^= state >> 12; state ^= state << 25; state ^= state >> 27
             return state &* 0x2545F4914F6CDD1D
         }
-        var arr = Array(0..<total)
-        for i in stride(from: total - 1, through: 1, by: -1) {
-            arr.swapAt(i, Int(rand() % UInt64(i + 1)))
+        // Tiles reveal bottom-row first, top-row last.
+        // Within each row the order is randomised so the settle feels organic.
+        var result: [Int] = []
+        for row in stride(from: rows - 1, through: 0, by: -1) {
+            var rowTiles = (0..<cols).map { col in row * cols + col }
+            for i in stride(from: rowTiles.count - 1, through: 1, by: -1) {
+                rowTiles.swapAt(i, Int(rand() % UInt64(i + 1)))
+            }
+            result.append(contentsOf: rowTiles)
         }
-        return arr
+        return result
     }
 
-    // MARK: - Pause overlay
+    // MARK: - Pause overlay (centre — shown when paused)
 
     @ViewBuilder
     private var pauseOverlay: some View {
@@ -244,6 +340,40 @@ struct DownloadQueueRow: View {
                 }
         }
     }
+
+    // MARK: - Quick actions (bottom-right corner)
+
+    @ViewBuilder
+    private var quickActions: some View {
+        let isPaused = item.torrent.isPaused
+        let isActive = ["downloading", "forcedDL", "metaDL",
+                        "uploading",   "forcedUP",
+                        "stalledDL",   "stalledUP"].contains(item.torrent.state)
+        HStack(spacing: 6) {
+            if isPaused || isActive {
+                quickButton(icon: isPaused ? "play.fill" : "pause.fill",
+                            tint: stateColor) {
+                    isPaused ? onResume() : onPause()
+                }
+            }
+            quickButton(icon: "trash.fill", tint: Color(hex: "#FF4757")) {
+                showQuickDelete = true
+            }
+        }
+        .padding(6)
+    }
+
+    private func quickButton(icon: String, tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 26, height: 26)
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(Circle().stroke(tint.opacity(0.5), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
 }
 
 // MARK: - Comet border (isolated state so animation survives parent re-renders)
@@ -252,6 +382,7 @@ struct CometBorder: View {
     let colors:       [Color]
     let perimeter:    CGFloat
     var cornerRadius: CGFloat = 12
+    var reversed:     Bool    = false
 
     @State private var phase: CGFloat = 0
 
@@ -264,35 +395,44 @@ struct CometBorder: View {
         )
     }
 
+    // Forward:  all layers share the same dashPhase; the dash start is the
+    //           bright head and the longer blurred layers trail behind it.
+    // Reversed: each layer's dashPhase is offset by its own dash length so
+    //           the dash END becomes the head — tails then extend backward
+    //           relative to the new travel direction rather than forward.
+    private func dp(_ fraction: CGFloat) -> CGFloat {
+        reversed ? (perimeter - phase + fraction * perimeter) : phase
+    }
+
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(gradient.opacity(0.25),
                         style: StrokeStyle(lineWidth: 10, lineCap: .round,
                                            dash: [perimeter * 0.14, perimeter * 0.86],
-                                           dashPhase: phase))
+                                           dashPhase: dp(0.14)))
                 .blur(radius: 5)
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(gradient.opacity(0.6),
                         style: StrokeStyle(lineWidth: 6, lineCap: .round,
                                            dash: [perimeter * 0.05, perimeter * 0.95],
-                                           dashPhase: phase))
+                                           dashPhase: dp(0.05)))
                 .blur(radius: 3)
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(gradient.opacity(0.2),
                         style: StrokeStyle(lineWidth: 2, lineCap: .round,
                                            dash: [perimeter * 0.16, perimeter * 0.84],
-                                           dashPhase: phase))
+                                           dashPhase: dp(0.16)))
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(gradient,
                         style: StrokeStyle(lineWidth: 2, lineCap: .round,
                                            dash: [perimeter * 0.09, perimeter * 0.91],
-                                           dashPhase: phase))
+                                           dashPhase: dp(0.09)))
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(gradient,
                         style: StrokeStyle(lineWidth: 3, lineCap: .round,
                                            dash: [perimeter * 0.03, perimeter * 0.97],
-                                           dashPhase: phase))
+                                           dashPhase: dp(0.03)))
         }
         .onAppear {
             withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
@@ -408,7 +548,7 @@ struct TorrentDetailSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(hex: "#0A0A0F").ignoresSafeArea()
+                Color.appBackground.ignoresSafeArea()
 
                 ScrollView {
                     VStack(spacing: 0) {
@@ -420,11 +560,11 @@ struct TorrentDetailSheet: View {
                                 if let img = posterImage {
                                     Image(uiImage: img).resizable().scaledToFill()
                                 } else {
-                                    Color.white.opacity(0.06)
+                                    Color.primary.opacity(0.06)
                                         .overlay {
                                             Image(systemName: "film")
                                                 .font(.system(size: 28, weight: .thin))
-                                                .foregroundStyle(.white.opacity(0.2))
+                                                .foregroundStyle(.primary.opacity(0.2))
                                         }
                                 }
                             }
@@ -435,7 +575,7 @@ struct TorrentDetailSheet: View {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text(item.title)
                                     .font(.system(size: 15, weight: .semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(.primary)
                                     .lineLimit(3)
 
                                 Text(torrent.statusLabel)

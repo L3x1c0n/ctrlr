@@ -8,7 +8,7 @@ enum MediaType: String, Codable, Hashable {
 }
 
 enum ServiceSource: String, Codable, Hashable, CaseIterable {
-    case radarr, sonarr, overseerr, plex, tautulli, qbittorrent
+    case radarr, sonarr, overseerr, plex, tautulli, qbittorrent, trakt
 
     var color: Color {
         switch self {
@@ -18,6 +18,7 @@ enum ServiceSource: String, Codable, Hashable, CaseIterable {
         case .plex:        return Color(hex: "#E5A00D")
         case .tautulli:    return Color(hex: "#FF7F50")
         case .qbittorrent: return Color(hex: "#00E5A0")
+        case .trakt:       return Color(hex: "#ED1C24")
         }
     }
 
@@ -47,17 +48,45 @@ struct DownloadItem: Identifiable, Hashable {
 
 // MARK: - Upcoming release
 
+// MARK: - Streaming provider (TMDB Watch Providers)
+
+struct StreamingProvider: Identifiable, Hashable {
+    let id:        Int       // TMDB provider_id
+    let name:      String    // e.g. "Netflix"
+    let logoPath:  String    // e.g. "/9A1JSVmSxsyaBK4SUFsYVqbAYfW.jpg"
+
+    var logoURL: String { "https://image.tmdb.org/t/p/original\(logoPath)" }
+
+    /// Brand color for the accent strip and badge tint.
+    var brandColor: Color {
+        switch id {
+        case 8:    return Color(hex: "#E50914")  // Netflix
+        case 9, 119: return Color(hex: "#00A8E0") // Prime Video
+        case 350:  return Color(hex: "#999999")  // Apple TV+
+        case 337:  return Color(hex: "#113CCF")  // Disney+
+        case 1899, 384: return Color(hex: "#5822B4") // Max / HBO Max
+        case 15:   return Color(hex: "#1CE783")  // Hulu
+        case 386:  return Color(hex: "#0070D1")  // Peacock
+        case 531:  return Color(hex: "#0064FF")  // Paramount+
+        default:   return Color(hex: "#6366F1")  // generic
+        }
+    }
+}
+
 struct UpcomingItem: Identifiable, Hashable {
-    let id:          String
-    let title:       String
-    let subtitle:    String?   // episode info for TV
-    let mediaType:   MediaType
-    let airDate:     Date
-    let releaseType: String    // "In Cinemas" / "Digital" / "Airing" / "Physical"
-    let hasFile:     Bool
-    let source:      ServiceSource
-    var posterURL:   String?
-    var posterData:  Data?
+    let id:               String
+    let title:            String
+    let subtitle:         String?   // episode info for TV
+    let overview:         String?   // episode/movie description from Sonarr/Radarr
+    let mediaType:        MediaType
+    let airDate:          Date
+    let releaseType:      String    // "In Cinemas" / "Digital" / "Airing" / "Physical"
+    let hasFile:          Bool
+    let source:           ServiceSource
+    var posterURL:        String?
+    var posterData:       Data?
+    var watchProviders:   [StreamingProvider] = []  // populated async by TMDBClient
+    var tmdbId:           Int?                      // carried for provider lookups
 
     var daysFromToday: Int {
         let cal = Calendar.current
@@ -153,6 +182,32 @@ struct LibraryStats {
     let bandwidth:       Int     // kbps
 }
 
+// MARK: - Plex item details (file info + play stats)
+
+struct PlexItemDetails {
+    let fileSize:     Int64?   // bytes
+    let playCount:    Int
+    let lastViewedAt: Date?
+    let sectionTitle: String?
+
+    var fileSizeFormatted: String? {
+        guard let size = fileSize, size > 0 else { return nil }
+        let d = Double(size)
+        if d >= 1_099_511_627_776 { return String(format: "%.1f TB", d / 1_099_511_627_776) }
+        if d >= 1_073_741_824     { return String(format: "%.2f GB", d / 1_073_741_824) }
+        return String(format: "%.0f MB", d / 1_048_576)
+    }
+}
+
+// MARK: - Tautulli watch history event
+
+struct TautulliWatchEvent: Identifiable {
+    let id:              String
+    let user:            String
+    let watchedAt:       Date
+    let percentComplete: Int
+}
+
 // MARK: - Recently added item (from Radarr/Sonarr library)
 
 struct RecentItem: Identifiable {
@@ -164,7 +219,8 @@ struct RecentItem: Identifiable {
 // MARK: - Plex recently added item
 
 struct PlexRecentItem: Identifiable, Codable {
-    let id:             String    // Plex ratingKey
+    let id:             String    // dedup key: grandparentRatingKey for TV, ratingKey for movies
+    let deleteRatingKey: String?  // actual item ratingKey to use for delete/refresh actions
     let title:          String    // show title for episodes, movie title for movies
     let subtitle:       String?   // episode title (TV only)
     let mediaType:      MediaType
@@ -174,6 +230,7 @@ struct PlexRecentItem: Identifiable, Codable {
     let addedAt:        Date
     let isWatched:      Bool
     let summary:        String?
+    let seasonNumber:   Int?      // nil for movies; 0 = Specials (filtered out)
     let videoResolution: String?  // "4k", "1080", "720", "sd"
     let videoCodec:     String?
     let audioCodec:     String?
@@ -196,6 +253,27 @@ struct PlexRecentItem: Identifiable, Codable {
         guard let b = bitrate, b > 0 else { return nil }
         return b >= 1000 ? String(format: "%.1f Mbps", Double(b) / 1000) : "\(b) kbps"
     }
+}
+
+// MARK: - Plex match candidate (Fix Match sheet)
+
+struct PlexMatchCandidate: Identifiable {
+    let guid:  String   // e.g. "plex://movie/5d7768ba..." or agent GUID
+    let name:  String
+    let year:  Int?
+    let score: Int      // 0–100 confidence
+
+    var id: String { guid }
+}
+
+// MARK: - Plex poster item (Select Poster sheet)
+
+struct PlexPosterItem: Identifiable {
+    let key:      String   // raw key returned by Plex — passed verbatim to setPoster
+    let selected: Bool
+    let thumbURL: String   // full displayable URL (token appended for local paths)
+
+    var id: String { key }
 }
 
 // MARK: - Enriched download (qBit cross-referenced with Radarr/Sonarr)
@@ -324,8 +402,9 @@ struct OverseerrQualityProfile: Identifiable, Hashable {
 }
 
 struct OverseerrRootFolder: Identifiable, Hashable {
-    let id:   Int
-    let path: String
+    let id:        Int
+    let path:      String
+    let freeSpace: Int64?
 }
 
 // MARK: - Overseerr rich media info
@@ -374,15 +453,18 @@ struct OverseerrMediaInfo {
 // MARK: - Media release (Radarr/Sonarr interactive search)
 
 struct MediaRelease: Identifiable {
-    let guid:       String
-    let title:      String
-    let indexer:    String
-    let size:       Int64
-    let quality:    String
-    let indexerId:  Int
-    let seeders:    Int?
-    let approved:   Bool
-    let rejections: [String]
+    let guid:            String
+    let title:           String
+    let indexer:         String
+    let size:            Int64
+    let quality:         String
+    let indexerId:       Int
+    let seeders:         Int?
+    let leechers:        Int?
+    let approved:        Bool
+    let rejections:      [String]
+    let releaseProtocol: String   // "torrent" | "usenet"
+    let ageHours:        Int?
 
     var id: String { guid }
 
@@ -390,6 +472,16 @@ struct MediaRelease: Identifiable {
         let gb = Double(size) / 1_073_741_824
         return gb >= 1 ? String(format: "%.1f GB", gb) : String(format: "%.0f MB", Double(size) / 1_048_576)
     }
+}
+
+// MARK: - Discover section (Overseerr recommendations seeded by watch history)
+
+struct DiscoverSection: Identifiable {
+    let id:             String              // e.g. "movie-123"
+    let seedTitle:      String              // title of the watched item used as seed
+    let seedPosterPath: String?             // poster path for the seed thumbnail
+    let mediaType:      String              // "movie" | "tv"
+    var items:          [OverseerrSearchResult]
 }
 
 // MARK: - Color hex init

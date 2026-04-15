@@ -4,6 +4,7 @@ import SwiftUI
 
 struct DownloadQueueSection: View {
     @EnvironmentObject var dashVM: DashboardViewModel
+    @AppStorage("sectionLightTint_downloads") private var tintHex = "#00E5A0"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -17,6 +18,13 @@ struct DownloadQueueSection: View {
                 HStack(spacing: 10) {
                     inlineSpeed("arrow.down", formatBytes(dashVM.globalDL), Color(hex: "#00E5A0"))
                     inlineSpeed("arrow.up",   formatBytes(dashVM.globalUL), Color(hex: "#7B8CDE"))
+                    SectionRefreshButton(isRefreshing: false) {
+                        dashVM.qbt.startPolling()
+                        Task {
+                            await dashVM.radarr.refreshQueue()
+                            await dashVM.sonarr.refreshQueue()
+                        }
+                    }
                 }
             }
 
@@ -46,6 +54,7 @@ struct DownloadQueueSection: View {
             )
             .allowsHitTesting(false)
         }
+        .glassCard(cornerRadius: 20, lightTint: Color(hex: tintHex), lightOnly: true)
     }
 
     private func inlineSpeed(_ icon: String, _ label: String, _ color: Color) -> some View {
@@ -64,12 +73,12 @@ struct DownloadQueueSection: View {
             VStack(spacing: 8) {
                 Image(systemName: dashVM.qbt.isConnected ? "tray" : "wifi.slash")
                     .font(.system(size: 28, weight: .thin))
-                    .foregroundStyle(.white.opacity(0.2))
+                    .foregroundStyle(.primary.opacity(0.2))
                 Text(dashVM.qbt.isConnected
                      ? "No active downloads"
                      : (dashVM.qbt.error ?? "Connecting…"))
                     .font(.system(size: 13))
-                    .foregroundStyle(.white.opacity(0.3))
+                    .foregroundStyle(.primary.opacity(0.3))
             }
             .padding(.vertical, 32)
             Spacer()
