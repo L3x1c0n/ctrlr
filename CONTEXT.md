@@ -1,7 +1,7 @@
 # CTRLr — Project Context
 
 This file is the shared brain between Claude instances. Keep it updated as the project evolves.
-Last updated: 2026-04-15 (app section populated)
+Last updated: 2026-04-15 (full audit complete — both Claude instances aligned)
 
 ---
 
@@ -119,9 +119,9 @@ Native iPadOS/iOS companion app — a unified media control dashboard for the sa
 1. **DownloadQueueSection** — qBittorrent torrent queue with speed graph
 2. **HeroSection** — Plex recently added (Movies + TV, watched badge)
 3. **NowPlayingSection** — Tautulli active streams with progress + transcode info
-4. **UpcomingSection** — calendar / arr upcoming (scaffolded)
-5. **RequestsSection** — Overseerr requests
-6. **DiscoverSectionView** — TMDB/Trakt discovery (scaffolded)
+4. **UpcomingSection** — Radarr/Sonarr upcoming with day columns, detail sheet, provider logos, force/interactive search
+5. **RequestsSection** — Overseerr requests, submit, approve, delete, quality profile, root folder
+6. **DiscoverSectionView** — TMDB/Trakt discovery, paginated
 
 Sections are togglable and reorderable via `@AppStorage` + `SectionArrangerView.swift`.
 
@@ -135,10 +135,14 @@ The app talks directly to MORIARTY's services — same endpoints as the dashboar
 - ntfy topics stored in Radarr/Sonarr `username` credential field
 
 ### Current state (as of 2026-04-15)
-- Phases 1 (qBittorrent), 2 (Radarr/Sonarr/Plex/ntfy), 3 (Tautulli) complete
-- Build is clean (verified via xcodebuild)
-- WidgetKit, App Intents, Background Tasks, Notifications all wired up
-- Phase 4 (Overseerr), Trakt/TMDB discovery, and calendar section in progress
+All core sections implemented and functional. Build is clean.
+- ✅ qBittorrent — queue, pause/resume, delete, detail sheet, poster enrichment, speed graph
+- ✅ Radarr/Sonarr — upcoming calendar, force search, interactive search/grab, quality profile, monitor toggle
+- ✅ Plex — recently added, delete, fix match, poster/art selection, metadata refresh
+- ✅ Tautulli — active streams, progress, transcode info
+- ✅ Overseerr — request list, submit, approve, delete, quality profile, root folder
+- ✅ Trakt/TMDB — upcoming calendar, discover/trending (paginated)
+- ✅ WidgetKit, App Intents, Background Tasks, Notifications, Live Activities, Focus Filter, ntfy WebSocket
 
 ### Known gotchas
 - `GENERATE_INFOPLIST_FILE = YES` — do NOT create a manual `Info.plist`, breaks `fullScreenCover` on iOS 26
@@ -258,10 +262,27 @@ The app talks directly to MORIARTY's services — same endpoints as the dashboar
 
 ---
 
-## Backlog (web)
+## Next steps / backlog
 
-- **Seer list pagination** — request list gets very long, needs truncation or pagination
-- **TraktDetailDrawer error handling** — `searchReleases` throws correctly but the drawer still shows silent "no results" on error; needs `relError` state added (same pattern as ArrDetailDrawer)
+### Both platforms — not built anywhere yet
+- Radarr/Sonarr: add new movie/show to library (search + add flow)
+- Plex: mark watched / unwatched
+- Plex: library search
+- Plex: deep link to play in Plex app
+- Tautulli: terminate stream (`terminate_session` API exists)
+- Tautulli: play history + user stats
+- Trakt: watch history, check-in, ratings
+
+### App — catching up to dashboard
+- Radarr/Sonarr: remove from queue + blacklist UI (client method exists, no UI wired)
+- Sonarr: episode picker in detail sheet
+- Trakt: detail sheet with release search (same pattern as dashboard's TraktDetailDrawer)
+- qBittorrent: file list in torrent detail sheet
+
+### Dashboard — catching up to app
+- Seer discover/trending section
+- Seer list pagination (request list gets very long)
+- Trakt detail drawer: fix silent error — `searchReleases` throws but drawer shows "no results"; needs `relError` state (same pattern as ArrDetailDrawer)
 
 ---
 
