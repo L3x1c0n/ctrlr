@@ -11,7 +11,7 @@ const HREFS: (string | null)[] = [null, null, '#qbittorrent', '#arr', '#trakt', 
 
 function Chevron({ color }: { color: string }) {
   return (
-    <svg width="13" height={BAR_H} viewBox={`0 0 13 ${BAR_H}`} style={{ display: 'block', flexShrink: 0, marginLeft: -1 }}>
+    <svg height={BAR_H} viewBox={`0 0 13 ${BAR_H}`} className="w-2 md:w-[13px]" style={{ display: 'block', flexShrink: 0, marginLeft: -1 }}>
       <polygon points={`0,0 13,${BAR_H / 2} 0,${BAR_H}`} fill={color} />
     </svg>
   )
@@ -54,7 +54,7 @@ export default function TopBar() {
         return (
           <div key={label} className="flex items-stretch">
             {label === '๛' ? (
-              <a href="/settings" style={{ background: seg.bg }} className="flex items-center px-2 hover:brightness-110 transition-[filter]">
+              <a href="/settings" style={{ background: seg.bg }} className="flex items-center px-1 md:px-2 hover:brightness-110 transition-[filter]">
                 <span className="text-xs font-bold tracking-wider" style={{ fontFamily: 'sans-serif' }}>
                   <span className="text-white">CTRL</span><span style={{ color: '#4ade80' }}>r</span>
                 </span>
@@ -63,12 +63,12 @@ export default function TopBar() {
               <a
                 href={href}
                 style={{ background: seg.bg, color: seg.fg }}
-                className="flex items-center px-2 text-xs font-medium tracking-wider hover:brightness-110 transition-[filter]"
+                className="flex items-center px-1 md:px-2 text-xs font-medium tracking-wider hover:brightness-110 transition-[filter]"
               >
                 {label}
               </a>
             ) : (
-              <div style={{ background: seg.bg, color: seg.fg }} className="flex items-center px-2 text-xs font-medium">
+              <div style={{ background: seg.bg, color: seg.fg }} className="flex items-center px-1 md:px-2 text-xs font-medium">
                 {label === 'gh05t@moriarty' ? (
                   <>
                     <span className="md:hidden">gh05t</span>
@@ -84,7 +84,7 @@ export default function TopBar() {
         )
       })}
 
-      <div className="ml-auto flex items-center px-4">
+      <div className="ml-auto hidden md:flex items-center px-4">
         {time && <span className="font-mono text-sm tabular-nums text-white">{time}</span>}
       </div>
     </div>
