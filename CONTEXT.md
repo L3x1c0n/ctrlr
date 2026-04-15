@@ -1,7 +1,7 @@
 # CTRLr — Project Context
 
 This file is the shared brain between Claude instances. Keep it updated as the project evolves.
-Last updated: 2026-04-15 (full audit complete — both Claude instances aligned)
+Last updated: 2026-04-16 (unified drawer system design added — open questions pending)
 
 ---
 
@@ -276,6 +276,100 @@ All core sections implemented and functional. Build is clean.
 - Seer discover/trending section
 - Seer list pagination (request list gets very long)
 - Trakt detail drawer: fix silent error — `searchReleases` throws but drawer shows "no results"; needs `relError` state (same pattern as ArrDetailDrawer)
+
+---
+
+## Unified Drawer System — Design in Progress
+
+*Discussion started: 2026-04-16. Not yet implemented on either platform.*
+
+### Goal
+
+Two related goals driving this:
+1. **Feature parity** — both platforms should be able to perform all or most functions of each service without leaving CTRLr.
+2. **Unified drawer logic** — a drawer opened from *any* section should know the item's full pipeline state and surface the right actions for it, not just the actions of the section it was opened from.
+
+### The Lifecycle Model
+
+Every piece of media moves through these stages. The stage determines which actions are primary and which are contextual:
+
+```
+Discover → Requested → Searching → Downloading → Available → Watched
+ (Trakt)   (Overseerr)   (Arr)      (qBittorrent)  (Plex)    (Tautulli)
+```
+
+### The Linking Key
+
+TMDB ID is the universal key across all services — Radarr, Sonarr, Plex, Overseerr, and Trakt all use it. qBittorrent doesn't natively, but name-based poster enrichment (already implemented) provides the bridge. This is what allows a drawer opened from qBittorrent to know "this is Radarr item #382, Plex ratingKey 4821, Overseerr request #17."
+
+### Proposed Drawer Structure
+
+Every drawer, regardless of entry point, follows the same layout logic:
+
+```
+┌─────────────────────────────────────────────────┐
+│  [Poster]  Title (Year)                          │
+│            ● Downloading  [stage pill]           │
+│            Quality: 1080p Bluray · 4.2 GB        │
+├─────────────────────────────────────────────────┤
+│  PRIMARY ACTIONS  (for current stage)            │
+│  [Pause]  [Delete + Files]  [Force Recheck]      │
+├─────────────────────────────────────────────────┤
+│  PIPELINE                                        │
+│  Radarr ──── Grabbed · Futureman.2160p           │
+│              [Force Search]  [Quality Profile]   │
+│  Plex   ──── Not yet imported                    │
+├─────────────────────────────────────────────────┤
+│  METADATA                                        │
+│  Overview, rating, genres, runtime               │
+└─────────────────────────────────────────────────┘
+```
+
+Primary actions change by stage. The pipeline block is always present and shows adjacent services — you can act on them from there without leaving the drawer.
+
+### Actions by Stage
+
+| Stage | Primary Actions | Pipeline Context Shows |
+|---|---|---|
+| **Discover** | Request (Overseerr), Add to Watchlist (Trakt) | — |
+| **Requested** | Approve, Decline, Change Quality, Delete Request | Arr: monitor status |
+| **Searching** | Force Search, Interactive Search, Change Quality, Toggle Monitor | Overseerr: request status |
+| **Downloading** | Pause, Resume, Delete (keep/remove), File list | Radarr/Sonarr: quality/queue, Plex: not yet |
+| **Available** | Delete, Fix Match, Refresh Metadata, Poster/Art, Mark Watched | Tautulli: currently streaming? |
+| **Watching** | Terminate Stream, Mark Watched | Plex: direct actions |
+| **Watched** | Mark Unwatched, Re-request | — |
+
+### MediaItem Aggregate (proposed)
+
+A `MediaItem` struct/type that holds cross-service IDs for one piece of media. Populated lazily as the drawer opens — fetch what you don't already have from the entry-point service, then resolve the rest:
+
+```
+MediaItem {
+  tmdbId: Int
+  title: String
+  type: .movie | .show
+
+  // Populated by whichever service opened the drawer:
+  radarrId?: Int
+  sonarrId?: Int
+  plexRatingKey?: String
+  overseerrRequestId?: Int
+  qbitHash?: String
+  traktSlug?: String
+}
+```
+
+Drawer renders progressively as cross-service lookups resolve. Entry point provides the first ID; everything else is fetched on open.
+
+### Open Questions (to discuss next session)
+
+1. **Cross-service linking aggressiveness** — show full pipeline block on every drawer including "not yet" states, or only show adjacent services that actually have data?
+
+2. **Entry point UX** — every row taps into the unified drawer, or keep lightweight inline actions (pause/resume) and only go unified on a dedicated detail tap?
+
+3. **Platform alignment** — web and app drawers structurally identical (same sections, same labels), or just functionally equivalent with platform-appropriate UI patterns?
+
+4. **Implementation scope** — start by retrofitting existing drawers into this structure, or design new drawers first for the missing features (mark watched, terminate stream, add to library) which have no current drawer at all?
 
 ---
 
