@@ -11,6 +11,7 @@ import UIKit
 struct TiltRecognizer: UIViewRepresentable {
     var onChanged: (_ initialLocation: CGPoint, _ liveLocation: CGPoint) -> Void
     var onEnded:   () -> Void
+    var onTap:     (() -> Void)? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -23,19 +24,34 @@ struct TiltRecognizer: UIViewRepresentable {
         pan.delegate               = context.coordinator
         pan.maximumNumberOfTouches = 1
         view.addGestureRecognizer(pan)
+
+        let tap = UITapGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleTap(_:))
+        )
+        tap.delegate = context.coordinator
+        view.addGestureRecognizer(tap)
+
         return view
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
         context.coordinator.onChanged = onChanged
         context.coordinator.onEnded   = onEnded
+        context.coordinator.onTap     = onTap
     }
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var onChanged: ((_ initialLocation: CGPoint, _ liveLocation: CGPoint) -> Void)?
         var onEnded:   (() -> Void)?
+        var onTap:     (() -> Void)?
 
         private var initialLocation: CGPoint?
+
+        @objc func handleTap(_ tap: UITapGestureRecognizer) {
+            guard tap.state == .recognized else { return }
+            DispatchQueue.main.async { self.onTap?() }
+        }
 
         @objc func handle(_ pan: UIPanGestureRecognizer) {
             guard let view = pan.view else { return }

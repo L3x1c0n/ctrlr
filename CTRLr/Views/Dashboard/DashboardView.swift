@@ -16,6 +16,14 @@ struct DashboardView: View {
     @AppStorage(FocusKey.showStreams)   private var showStreams    = true
     @AppStorage(FocusKey.showRequests)  private var showRequests   = true
 
+    // Appearance
+    @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .dark
+
+    // Section order — persisted, updated by SectionArrangerView
+    @AppStorage(SectionOrderKey.appStorage) private var orderRaw = SectionOrderKey.defaultValue
+
+    private var sectionOrder: [DashboardSection] { orderRaw.asSectionOrder }
+
     // Handoff activity type — must be listed in Info.plist NSUserActivityTypes
     private let dashboardActivityType = "com.attakrit.CTRLr.dashboard"
 
@@ -26,64 +34,61 @@ struct DashboardView: View {
 
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVStack(spacing: hSizeClass == .regular ? 36 : 28) {
-
-                    // Download queue
-                    if showDownloads { DownloadQueueSection() }
-
-                    // Recently Added — Plex (Phase 3)
-                    if showStreams { HeroSection() }
-
-                    // Upcoming releases (Phase 2)
-                    if showUpcoming { UpcomingSection() }
-
-                    // Overseerr requests (Phase 4)
-                    if showRequests { RequestsSection() }
-
-                    // Now Playing — Tautulli active streams (Phase 3)
-                    NowPlayingSection()
+                    ForEach(sectionOrder) { section in
+                        sectionView(for: section)
+                    }
 
                     Spacer().frame(height: 40)
                 }
                 .padding(.top, 24)
             }
             .refreshable { dashVM.refreshAll() }
-        .onAppear  { MotionManager.shared.start() }
-        .onDisappear { MotionManager.shared.stop() }
 
             // Status bar backing — zero-height view whose background extends
             // upward into the safe area, painting #0A0A0F behind the status bar.
-            Color(hex: "#0A0A0F")
+            Color.appBackground
                 .frame(maxWidth: .infinity)
                 .frame(height: 0)
-                .background(Color(hex: "#0A0A0F"), ignoresSafeAreaEdges: .top)
+                .background(Color.appBackground, ignoresSafeAreaEdges: .top)
         }
-        .background(Color(hex: "#0A0A0F").ignoresSafeArea())
-        .overlay(alignment: .topTrailing) {
+        .background(Color.appBackground.ignoresSafeArea())
+        .overlay {
             if !dashVM.tautulli.streams.isEmpty {
-                NowPlayingOverlay(streams: dashVM.tautulli.streams)
-                    .padding(.top, 60)   // clear status bar
-                    .padding(.trailing, 20)
-                    .transition(.opacity.combined(with: .scale(scale: 0.92, anchor: .topTrailing)))
-                    .animation(.easeInOut(duration: 0.4), value: dashVM.tautulli.streams.isEmpty)
+                NowPlayingShelf(streams: dashVM.tautulli.streams)
             }
         }
         .overlay(alignment: .bottomTrailing) {
             Button { showSettings = true } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.primary.opacity(0.7))
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
             .contentShape(Circle())
             .glassEffect(.regular.interactive(), in: Circle())
-            // 56pt from trailing clears the Stage Manager resize handle at the corner
-            .padding(.trailing, 56)
+            // 56pt from trailing clears the Stage Manager resize handle on iPad; 16pt on iPhone
+            .padding(.trailing, hSizeClass == .regular ? 56 : 16)
             .padding(.bottom, 20)
         }
         .fullScreenCover(isPresented: $showSettings) {
             SettingsView()
                 .environmentObject(dashVM)
+        }
+        .preferredColorScheme(appearanceMode == .dark ? .dark : appearanceMode == .light ? .light : nil)
+    }
+
+    // MARK: - Section dispatch
+
+    @ViewBuilder
+    private func sectionView(for section: DashboardSection) -> some View {
+        switch section {
+        case .downloads:     if showDownloads { DownloadQueueSection() }
+        case .recentlyAdded: if showStreams   { HeroSection() }
+        case .upcoming:      if showUpcoming  { UpcomingSection() }
+        case .requests:      if showRequests  { RequestsSection() }
+        case .discover:      DiscoverSectionView()
+        case .nowPlaying:    NowPlayingSection()
         }
     }
 

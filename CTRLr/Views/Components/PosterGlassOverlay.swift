@@ -82,6 +82,28 @@ struct PosterGlassOverlay: View {
     }
 }
 
+// MARK: - Card thickness
+
+extension View {
+    /// Simulates the card resting on a frosted-glass block — the edge layers are bright
+    /// and translucent, like the side face of a glass material seen against a dark background.
+    /// Inner layer (closest to card face) is brightest; outer is slightly dimmer.
+    func cardThickness(cornerRadius: CGFloat = 10) -> some View {
+        self.background(
+            ZStack {
+                // Outer edge — deeper into the glass, slightly dimmer
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(Color.white.opacity(0.25))
+                    .offset(x: 2, y: 6)
+                // Inner edge — closest to card face, brightest
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(Color.white.opacity(0.40))
+                    .offset(x: 1, y: 3)
+            }
+        )
+    }
+}
+
 // MARK: - PosterBezel
 //
 // Angular-gradient stroke that simulates a physical glass-lens bezel —

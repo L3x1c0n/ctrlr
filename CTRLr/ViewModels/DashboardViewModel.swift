@@ -14,11 +14,15 @@ final class DashboardViewModel: ObservableObject {
     let plex      = PlexClient()
     let overseerr = OverseerrClient()
     let tautulli  = TautulliClient()
-    let ntfy      = NtfyClient()
+    let trakt     = TraktClient()
 
     // Published aggregates
     @Published var activeDownloads:   [QBTorrentItem]     = []
     @Published var enrichedDownloads: [EnrichedQBTorrent] = []
+    @Published var discoverSections:  [DiscoverSection]   = []
+    @Published var traktUpcoming:     [UpcomingItem]      = []
+    @Published var discoverLoadingMore: Set<String>       = []   // mediaType keys currently fetching
+    private var discoverPages: [String: Int] = [:]               // current page per mediaType
     @Published var globalDL: Int = 0
     @Published var globalUL: Int = 0
 
@@ -36,27 +40,15 @@ final class DashboardViewModel: ObservableObject {
     private var torrentPosterCache: [String: Data]        = [:]
     private var torrentPosterTask:  Task<Void, Never>?    = nil
 
+    // Known torrent hashes — when a new one appears AFTER startup, trigger a Radarr/Sonarr
+    // queue refresh so the initial metadata (poster, title) is fetched once.
+    // nil = not yet initialised (first publish skipped); Set = actively tracking.
+    private var knownTorrentHashes: Set<String>? = nil
+
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        // ntfy push: Radarr/Sonarr import events trigger a targeted re-fetch.
-        // We also start a Plex retry loop — Plex scanning lags behind the import,
-        // so we keep re-fetching Plex until a newer item appears or we give up.
-        ntfy.onEvent = { [weak self] (source: ServiceSource) in
-            guard let self else { return }
-            let knownNewest = self.plex.recentlyAdded.first?.addedAt ?? .distantPast
-            switch source {
-            case .radarr:
-                self.radarr.startPolling()
-                self.plex.waitForNewItem(newerThan: knownNewest)
-            case .sonarr:
-                self.sonarr.startPolling()
-                self.plex.waitForNewItem(newerThan: knownNewest)
-            default:
-                break
-            }
-        }
-        qbt.$transferStats
+qbt.$transferStats
             .receive(on: RunLoop.main)
             .sink { [weak self] stats in
                 guard let self else { return }
@@ -81,14 +73,33 @@ final class DashboardViewModel: ObservableObject {
         .sink { [weak self] in self?.rebuild() }
         .store(in: &cancellables)
 
-        // Write widget snapshot + update Live Activity on every torrent + stats update
+        // Write widget snapshot + update Live Activity on every torrent + stats update.
+        // Also detect new hashes — triggers a lightweight Radarr/Sonarr queue refresh so
+        // the initial metadata (poster, title) is available before the first rebuild().
         qbt.$torrents
             .combineLatest(qbt.$transferStats)
             .receive(on: RunLoop.main)
             .sink { [weak self] torrents, stats in
-                self?.activeDownloads = torrents
-                self?.writeWidgetSnapshot(torrents: torrents, stats: stats)
-                self?.updateLiveActivity(torrents: torrents, stats: stats)
+                guard let self else { return }
+                self.activeDownloads = torrents
+                self.writeWidgetSnapshot(torrents: torrents, stats: stats)
+                self.updateLiveActivity(torrents: torrents, stats: stats)
+
+                let incoming = Set(torrents.map { $0.hash })
+                if let known = self.knownTorrentHashes {
+                    let newHashes = incoming.subtracting(known)
+                    self.knownTorrentHashes = incoming
+                    if !newHashes.isEmpty {
+                        Task {
+                            await self.radarr.refreshQueue()
+                            await self.sonarr.refreshQueue()
+                        }
+                    }
+                } else {
+                    // First publish — initialise without triggering refresh;
+                    // the full poll() already ran fetchQueue at startup.
+                    self.knownTorrentHashes = incoming
+                }
             }
             .store(in: &cancellables)
 
@@ -97,6 +108,30 @@ final class DashboardViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] items in
                 self?.schedulePlexWidgetUpdate(items)
+            }
+            .store(in: &cancellables)
+
+        // Fetch Discover as soon as Overseerr becomes connected — avoids the startup
+        // race where fetchDiscover() fires before isConnected = true (poll not yet done).
+        overseerr.$isConnected
+            .removeDuplicates()
+            .filter { $0 }
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self, self.discoverSections.isEmpty else { return }
+                self.fetchDiscover()
+            }
+            .store(in: &cancellables)
+
+        // Fetch Trakt calendar as soon as connected (handles both stored-credential
+        // startup and first-time OAuth connect after startAll() has already run).
+        trakt.$isConnected
+            .removeDuplicates()
+            .filter { $0 }
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                Task { self.traktUpcoming = await self.trakt.fetchUpcoming() }
             }
             .store(in: &cancellables)
 
@@ -110,7 +145,7 @@ final class DashboardViewModel: ObservableObject {
         plex.startPolling()
         overseerr.startPolling()
         tautulli.startPolling()
-        connectNtfy()
+        fetchDiscover()
     }
 
     func refreshAll() {
@@ -120,19 +155,66 @@ final class DashboardViewModel: ObservableObject {
         plex.refresh()
         overseerr.startPolling(force: true)
         tautulli.startPolling()
+        fetchDiscover()
+        Task { traktUpcoming = await trakt.fetchUpcoming() }
     }
 
-    private func connectNtfy() {
-        let radarrCfg = CredentialStore.shared.load(.radarr)
-        let sonarrCfg = CredentialStore.shared.load(.sonarr)
-        // ntfy server URL reuses radarr's username field for the topic;
-        // we default to ntfy.sh if no custom server is stored.
-        ntfy.stop()
-        ntfy.start(
-            server:       "https://ntfy.sh",
-            radarrTopic:  radarrCfg.username,
-            sonarrTopic:  sonarrCfg.username
-        )
+    func fetchDiscover() {
+        discoverPages = [:]          // reset pagination on full refresh
+        Task { await loadDiscover() }
+    }
+
+    private func loadDiscover() async {
+        guard overseerr.isConnected else { return }
+        async let moviesTask = overseerr.fetchTrending(mediaType: "movie", page: 1)
+        async let tvTask     = overseerr.fetchTrending(mediaType: "tv",    page: 1)
+        let (movies, tv) = await (moviesTask, tvTask)
+
+        var sections: [DiscoverSection] = []
+        if !movies.isEmpty {
+            sections.append(DiscoverSection(
+                id: "trending-movies", seedTitle: "Trending Movies",
+                seedPosterPath: nil, mediaType: "movie", items: movies))
+            discoverPages["movie"] = 1
+        }
+        if !tv.isEmpty {
+            sections.append(DiscoverSection(
+                id: "trending-tv", seedTitle: "Trending TV Shows",
+                seedPosterPath: nil, mediaType: "tv", items: tv))
+            discoverPages["tv"] = 1
+        }
+        // Only replace if we got data — preserve existing content on timeout/failure
+        if !sections.isEmpty {
+            discoverSections = sections
+        }
+    }
+
+    /// Fetches the next page of trending content for one media type and appends it.
+    func loadMoreDiscover(mediaType: String) {
+        guard !discoverLoadingMore.contains(mediaType) else { return }
+        discoverLoadingMore.insert(mediaType)
+        Task {
+            let nextPage = (discoverPages[mediaType] ?? 1) + 1
+            let newItems = await overseerr.fetchTrending(mediaType: mediaType, page: nextPage)
+            if !newItems.isEmpty {
+                discoverPages[mediaType] = nextPage
+                if let idx = discoverSections.firstIndex(where: { $0.mediaType == mediaType }) {
+                    discoverSections[idx].items += newItems
+                }
+            }
+            discoverLoadingMore.remove(mediaType)
+        }
+    }
+
+    func clearAllCaches() {
+        plex.clearCache()
+        tautulli.clearCache()
+        overseerr.clearCache()
+        cachedRecentItems = []
+        plexPosterCache   = [:]
+        torrentPosterCache = [:]
+        Task { await ArtworkCache.shared.clearAll() }
+        refreshAll()
     }
 
     // MARK: - Rebuild enriched download list
@@ -141,7 +223,12 @@ final class DashboardViewModel: ObservableObject {
     /// then collapses runs of whitespace into a space-separated word array.
     private func posterKey(_ s: String) -> String {
         var result = s.lowercased()
-        for ch: Character in [".", "_", "-", ":", "'", "\u{2019}", "(", ")", "[", "]", "!", "?", "&", ",", "/", "\\"] {
+        // Apostrophes (straight + curly) are REMOVED so "I'm" → "im", "You're" → "youre"
+        // matching how torrent names omit them. Everything else becomes a space.
+        for ch: Character in ["'", "\u{2019}", "`"] {
+            result = result.replacingOccurrences(of: String(ch), with: "")
+        }
+        for ch: Character in [".", "_", "-", ":", "(", ")", "[", "]", "!", "?", "&", ",", "/", "\\"] {
             result = result.replacingOccurrences(of: String(ch), with: " ")
         }
         return result
@@ -164,35 +251,54 @@ final class DashboardViewModel: ObservableObject {
     }
 
     private func rebuild() {
-        let allPosters = radarr.postersByTitle.merging(sonarr.postersByTitle) { a, _ in a }
+        let allPosters    = radarr.postersByTitle.merging(sonarr.postersByTitle) { a, _ in a }
         let radarrHeaders = radarr.posterHeaders()
         let sonarrHeaders = sonarr.posterHeaders()
-        activeDownloads = qbt.torrents
+        activeDownloads   = qbt.torrents
 
         enrichedDownloads = qbt.torrents.map { torrent in
-            var match = (radarr.downloadQueue + sonarr.downloadQueue)
+
+            // 1. Name-based poster match (primary — was reliable for a long time).
+            //    Normalise both sides then require whole-word match so short titles
+            //    like "US" don't match inside words like "plus" or "focus".
+            let normalisedName = posterKey(torrent.name)
+            var namePosterURL:     String? = nil
+            var namePosterHeaders: [String: String] = [:]
+            if let (key, url) = allPosters.first(where: { titleMatches(normalisedName, posterKey($0.key)) }) {
+                let isSonarr = sonarr.postersByTitle[key] != nil
+                namePosterURL     = url
+                namePosterHeaders = isSonarr ? sonarrHeaders : radarrHeaders
+            }
+
+            // 2. Radarr/Sonarr queue hash match (redundancy — provides clean title,
+            //    episode subtitle, and source; also supplies a poster when name match missed).
+            let queueMatch = (radarr.downloadQueue + sonarr.downloadQueue)
                 .first { $0.hash == torrent.hash.lowercased() }
 
-            // Name-based fallback: normalise both sides then require whole-word match
-            // so "US" never matches inside "plus", "focus", etc.
-            if match?.posterURL == nil {
-                let normalisedName = posterKey(torrent.name)
-
-                if let (key, url) = allPosters.first(where: { titleMatches(normalisedName, posterKey($0.key)) }) {
-                    let isSonarr = sonarr.postersByTitle[key] != nil
-                    let source: ServiceSource = isSonarr ? .sonarr : .radarr
-                    let headers = isSonarr ? sonarrHeaders : radarrHeaders
-                    match = EnrichedDownload(
-                        hash:         torrent.hash,
-                        title:        match?.title ?? torrent.name,
-                        subtitle:     match?.subtitle,
-                        posterURL:    url,
-                        posterHeaders: headers,
-                        source:       match?.source ?? source
-                    )
-                }
+            // Merge: name-based poster takes priority; queue metadata enriches title/subtitle.
+            let merged: EnrichedDownload
+            if let q = queueMatch {
+                merged = EnrichedDownload(
+                    hash:          torrent.hash,
+                    title:         q.title,
+                    subtitle:      q.subtitle,
+                    posterURL:     namePosterURL     ?? q.posterURL,
+                    posterHeaders: namePosterURL != nil ? namePosterHeaders : q.posterHeaders,
+                    source:        q.source
+                )
+            } else if let url = namePosterURL {
+                merged = EnrichedDownload(
+                    hash:          torrent.hash,
+                    title:         torrent.name,
+                    posterURL:     url,
+                    posterHeaders: namePosterHeaders,
+                    source:        .radarr   // best guess — poster came from Radarr or Sonarr
+                )
+            } else {
+                return EnrichedQBTorrent(torrent: torrent, enriched: nil)
             }
-            return EnrichedQBTorrent(torrent: torrent, enriched: match)
+
+            return EnrichedQBTorrent(torrent: torrent, enriched: merged)
         }
     }
 

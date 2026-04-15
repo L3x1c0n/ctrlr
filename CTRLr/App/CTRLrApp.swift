@@ -15,16 +15,22 @@ import UIKit
 //     - com.attakrit.CTRLr.dashboard
 
 @main
-struct CTRLrApp: App {
+struct CTRLrAppthein : App {
     @StateObject private var dashVM = DashboardViewModel()
     init() {
+        // Pre-warm CredentialStore so all Keychain reads happen here,
+        // synchronously on the main thread, before any Swift Concurrency
+        // task is spawned. Subsequent load() calls return from memory cache.
+        _ = CredentialStore.shared
+
+        // Pre-warm the app-group UserDefaults so its first CFPrefs IPC call
+        // happens here on the main thread, not inside a Swift Concurrency Task.
+        // Prevents "unsafeForcedSync called from Swift Concurrent context" and
+        // the matching cfprefsd detach warning from BackgroundTaskManager.
+        _ = UserDefaults.shared
+
         // Register background refresh tasks before any scene is created
         BackgroundTaskManager.shared.registerTasks()
-
-        // Pre-warm asset catalog so service logos are cached before first render
-        for source in ServiceSource.allCases {
-            _ = UIImage(named: source.logoAssetName)
-        }
 
         // Set notification delegate so foreground notifications display correctly
         UNUserNotificationCenter.current().delegate = NotificationManager.shared
@@ -32,21 +38,25 @@ struct CTRLrApp: App {
         // Give the navigation bar an opaque background matching the app colour.
         // This is set at the UIKit level so the status bar area is always covered
         // regardless of SwiftUI's toolbar visibility state.
-        let navBG = UIColor(red: 10/255, green: 10/255, blue: 15/255, alpha: 1)
+        let navBG = UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(red: 10/255, green: 10/255, blue: 15/255, alpha: 1)
+                : .systemBackground
+        }
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = navBG
         appearance.shadowColor = .clear
-        UINavigationBar.appearance().standardAppearance   = appearance
-        UINavigationBar.appearance().compactAppearance    = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        UINavigationBar.appearance().standardAppearance          = appearance
+        UINavigationBar.appearance().compactAppearance           = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance        = appearance
+        UINavigationBar.appearance().compactScrollEdgeAppearance = appearance
     }
 
     var body: some Scene {
         WindowGroup {
             DashboardView()
                 .environmentObject(dashVM)
-                .preferredColorScheme(.dark)
                 .onAppear {
                     BackgroundTaskManager.shared.scheduleAppRefresh()
                 }

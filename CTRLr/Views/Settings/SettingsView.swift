@@ -37,12 +37,22 @@ struct SettingsView: View {
                             onTest:     { await test(service) }
                         )
                     }
+
+                    TraktSettingsSection()
+                        .environmentObject(dashVM)
+
+                    TMDBSettingsSection(config: binding(for: .tmdb))
+
+                    SectionArrangerSection()
+
+                    ClearCacheSection { dashVM.clearAllCaches() }
+
                     Spacer(minLength: 40)
                 }
                 .padding(24)
             }
             .scrollDismissesKeyboard(.interactively)
-            .background(Color(hex: "#0A0A0F").ignoresSafeArea())
+            .background(Color.appBackground.ignoresSafeArea())
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -148,7 +158,7 @@ private struct NotificationsSection: View {
         switch status {
         case .authorized, .provisional, .ephemeral: return Color(hex: "#00E5A0")
         case .denied:                                return Color(hex: "#FF4757")
-        default:                                     return .white.opacity(0.4)
+        default:                                     return .primary.opacity(0.4)
         }
     }
 
@@ -164,13 +174,13 @@ private struct NotificationsSection: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Notifications")
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
 
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Push Notifications")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                     Text(statusLabel)
                         .font(.system(size: 12))
                         .foregroundStyle(statusColor)
@@ -190,7 +200,7 @@ private struct NotificationsSection: View {
                         }
                         Text(requesting ? "Requesting…" : buttonLabel)
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.85))
+                            .foregroundStyle(.primary.opacity(0.85))
                     }
                     .padding(.horizontal, 14).padding(.vertical, 8)
                 }
@@ -201,6 +211,143 @@ private struct NotificationsSection: View {
         }
         .padding(18)
         .glassCard(cornerRadius: 20)
+    }
+}
+
+// MARK: - ClearCacheSection
+
+private struct ClearCacheSection: View {
+    let onClear: () -> Void
+    @State private var showConfirm  = false
+    @State private var cleared      = false
+    @State private var cacheSizeStr = "calculating…"
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Data")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.primary)
+
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Clear All Caches")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.primary)
+                    Text(cacheSizeStr)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.primary.opacity(0.4))
+                }
+                Spacer()
+                Button {
+                    guard !cleared else { return }
+                    showConfirm = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: cleared ? "checkmark.circle.fill" : "trash")
+                            .foregroundStyle(cleared ? Color(hex: "#00E5A0") : Color(hex: "#FF4757"))
+                        Text(cleared ? "Cleared" : "Clear")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.primary.opacity(0.85))
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                }
+                .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 10))
+                .confirmationDialog("Clear all caches?",
+                                    isPresented: $showConfirm,
+                                    titleVisibility: .visible) {
+                    Button("Clear All Caches", role: .destructive) {
+                        onClear()
+                        cleared = true
+                        cacheSizeStr = "0 bytes"
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("Plex recently added, Tautulli stats, Overseerr requests, and all artwork will be purged and re-fetched.")
+                }
+            }
+        }
+        .padding(18)
+        .glassCard(cornerRadius: 20)
+        .task { cacheSizeStr = await computeCacheSizeLabel() }
+    }
+
+    private func computeCacheSizeLabel() async -> String {
+        // UserDefaults entries (synchronous, small)
+        let udKeys = [
+            "PlexRecentlyAddedCache",
+            "cache_tautulli_libraryCounts", "cache_tautulli_driveStats", "cache_tautulli_dailyPlays",
+            "cache_overseerr_requests", "cache_overseerr_media_details",
+        ]
+        let udBytes = udKeys.reduce(0) { $0 + Int64(UserDefaults.standard.data(forKey: $1)?.count ?? 0) }
+
+        // Artwork disk cache (nonisolated — no actor hop needed)
+        let diskBytes = ArtworkCache.shared.diskCacheBytes()
+
+        let total = udBytes + diskBytes
+        let sizeStr: String
+        let d = Double(total)
+        if d >= 1_073_741_824 { sizeStr = String(format: "%.1f GB", d / 1_073_741_824) }
+        else if d >= 1_048_576 { sizeStr = String(format: "%.1f MB", d / 1_048_576) }
+        else if d >= 1_024     { sizeStr = String(format: "%.0f KB", d / 1_024) }
+        else                   { sizeStr = "\(total) bytes" }
+        return "\(sizeStr) cached — Plex, Tautulli, Overseerr, artwork"
+    }
+}
+
+// MARK: - SectionArrangerSection
+
+private struct SectionArrangerSection: View {
+    @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .dark
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label {
+                Text("Appearance & Layout")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary.opacity(0.5))
+            } icon: {
+                Image(systemName: "paintbrush.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.primary.opacity(0.5))
+            }
+
+            // Colour scheme picker
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Theme")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.primary.opacity(0.55))
+
+                Picker("Theme", selection: $appearanceMode) {
+                    Text("Dark").tag(AppearanceMode.dark)
+                    Text("Light").tag(AppearanceMode.light)
+                    Text("Auto").tag(AppearanceMode.auto)
+                }
+                .pickerStyle(.segmented)
+            }
+            .padding(14)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+
+            NavigationLink(destination: SectionArrangerView()) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Arrange & Colour Sections")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(.primary)
+                        Text("Reorder sections and set light mode colours")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.primary.opacity(0.4))
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.primary.opacity(0.3))
+                }
+                .padding(14)
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 
@@ -224,7 +371,7 @@ struct ServiceSettingsSection: View {
                     .frame(width: 10, height: 10)
                 Text(service.displayName)
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                 Spacer()
                 Toggle("", isOn: $config.enabled)
                     .labelsHidden()
@@ -247,8 +394,6 @@ struct ServiceSettingsSection: View {
                     } else if service == .radarr || service == .sonarr {
                         settingsField("API Key", placeholder: "••••••••••••••••",
                                       text: $config.apiKey, secure: true)
-                        settingsField("ntfy Topic", placeholder: "my-radarr-topic",
-                                      text: $config.username)
                     } else {
                         settingsField("API Key", placeholder: "••••••••••••••••",
                                       text: $config.apiKey, secure: true)
@@ -271,7 +416,7 @@ struct ServiceSettingsSection: View {
                                     Text(isTesting ? "Testing…" : "Test Connection")
                                         .font(.system(size: 13, weight: .medium))
                                 }
-                                .foregroundStyle(.white.opacity(0.8))
+                                .foregroundStyle(.primary.opacity(0.8))
                                 .padding(.horizontal, 14).padding(.vertical, 8)
                             }
                             .buttonStyle(.plain)
@@ -298,7 +443,7 @@ struct ServiceSettingsSection: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.white.opacity(0.4))
+                .foregroundStyle(.primary.opacity(0.4))
             Group {
                 if secure {
                     SecureField(placeholder, text: text)
@@ -309,9 +454,9 @@ struct ServiceSettingsSection: View {
                 }
             }
             .font(.system(size: 14))
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .padding(.horizontal, 12).padding(.vertical, 10)
-            .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
         }
     }
 
@@ -329,5 +474,196 @@ struct ServiceSettingsSection: View {
                 .foregroundStyle(Color(hex: "#FF4757"))
                 .lineLimit(1)
         }
+    }
+}
+
+// MARK: - TraktSettingsSection
+
+private struct TraktSettingsSection: View {
+    @EnvironmentObject var dashVM: DashboardViewModel
+    @State private var isConnecting  = false
+    @State private var connectError: String?
+    @State private var isSyncing     = false
+    @State private var syncResult:   String?
+
+    private let traktPurple = Color(hex: "#ED1C24")   // Trakt brand red
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+
+            // Header
+            HStack {
+                Circle()
+                    .fill(traktPurple)
+                    .frame(width: 10, height: 10)
+                Text("Trakt")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.primary)
+                Spacer()
+                if dashVM.trakt.isConnected {
+                    Label("Connected", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color(hex: "#00E5A0"))
+                }
+            }
+
+            Text("Track shows & movies across Netflix, Apple TV+, Prime, and more. Trakt syncs your watchlist and provides episode calendars.")
+                .font(.system(size: 12))
+                .foregroundStyle(.primary.opacity(0.45))
+                .fixedSize(horizontal: false, vertical: true)
+
+            if dashVM.trakt.isConnected {
+                HStack(spacing: 10) {
+                    // Sync Sonarr → Trakt
+                    Button {
+                        Task { await syncSonarrToTrakt() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            if isSyncing {
+                                ProgressView().controlSize(.small).tint(.white)
+                            } else {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                            }
+                            Text(isSyncing ? "Syncing…" : "Sync Sonarr → Trakt")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundStyle(.primary.opacity(0.85))
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                    }
+                    .buttonStyle(.plain)
+                    .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 10))
+                    .disabled(isSyncing || !dashVM.sonarr.isConnected)
+
+                    // Disconnect button
+                    Button {
+                        dashVM.trakt.disconnect()
+                    } label: {
+                        Image(systemName: "xmark.circle")
+                            .foregroundStyle(Color(hex: "#FF4757"))
+                            .padding(8)
+                    }
+                    .buttonStyle(.plain)
+                    .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 10))
+                }
+
+                if let result = syncResult {
+                    Text(result)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.primary.opacity(0.5))
+                }
+            } else {
+                // Connect button
+                HStack(spacing: 12) {
+                    Button {
+                        Task { await connectTrakt() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            if isConnecting {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .tint(.white)
+                            } else {
+                                Image(systemName: "link")
+                            }
+                            Text(isConnecting ? "Connecting…" : "Connect with Trakt")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundStyle(.primary.opacity(0.85))
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                    }
+                    .buttonStyle(.plain)
+                    .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 10))
+                    .disabled(isConnecting)
+
+                    if let err = connectError {
+                        Text(err)
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color(hex: "#FF4757"))
+                            .lineLimit(2)
+                    }
+                }
+            }
+        }
+        .padding(18)
+        .glassCard(cornerRadius: 20)
+    }
+
+    private func syncSonarrToTrakt() async {
+        isSyncing  = true
+        syncResult = nil
+        let tvdbIds = await dashVM.sonarr.fetchAllTvdbIds()
+        guard !tvdbIds.isEmpty else {
+            syncResult = "No series found in Sonarr."
+            isSyncing  = false
+            return
+        }
+        do {
+            let added = try await dashVM.trakt.syncShowsToWatchlist(tvdbIds: tvdbIds)
+            syncResult = "Added \(added) of \(tvdbIds.count) shows to Trakt watchlist."
+        } catch {
+            syncResult = "Sync failed: \(error.localizedDescription)"
+        }
+        isSyncing = false
+    }
+
+    private func connectTrakt() async {
+        isConnecting  = true
+        connectError  = nil
+        do {
+            try await dashVM.trakt.connect()
+        } catch {
+            // ASWebAuthenticationSession cancellation is not an error worth surfacing
+            let msg = error.localizedDescription
+            if !msg.lowercased().contains("cancel") {
+                connectError = msg
+            }
+        }
+        isConnecting = false
+    }
+}
+
+// MARK: - TMDBSettingsSection
+
+private struct TMDBSettingsSection: View {
+    @Binding var config: ServiceConfig
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Circle()
+                    .fill(Color(hex: "#01D277"))
+                    .frame(width: 10, height: 10)
+                Text("TMDB")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.primary)
+                Spacer()
+                Toggle("", isOn: $config.enabled)
+                    .labelsHidden()
+                    .tint(Color(hex: "#01D277"))
+            }
+
+            Text("The Movie Database API key for streaming availability (where to watch). Free at themoviedb.org.")
+                .font(.system(size: 12))
+                .foregroundStyle(.primary.opacity(0.45))
+                .fixedSize(horizontal: false, vertical: true)
+
+            if config.enabled {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("API Key (v3)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.primary.opacity(0.4))
+                    SecureField("32-character hex key", text: $config.apiKey)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 12).padding(.vertical, 10)
+                        .background(Color.primary.opacity(0.06),
+                                    in: RoundedRectangle(cornerRadius: 10))
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding(18)
+        .glassCard(cornerRadius: 20)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: config.enabled)
     }
 }

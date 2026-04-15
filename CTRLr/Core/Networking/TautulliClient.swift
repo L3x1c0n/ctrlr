@@ -197,6 +197,26 @@ private struct FlexString: Decodable {
     }
 }
 
+// History
+private struct TautulliHistoryOuter: Decodable {
+    let data: [TautulliHistoryRow]?
+}
+private struct TautulliHistoryRow: Decodable {
+    let date:            Int?
+    let friendlyName:    String?
+    let user:            String?
+    let percentComplete: FlexInt?
+    let referenceId:     FlexInt?
+
+    enum CodingKeys: String, CodingKey {
+        case date
+        case friendlyName    = "friendly_name"
+        case user
+        case percentComplete = "percent_complete"
+        case referenceId     = "reference_id"
+    }
+}
+
 // MARK: - TautulliClient
 
 @MainActor
@@ -206,12 +226,21 @@ final class TautulliClient: ObservableObject {
     @Published var driveStats:    [TautulliDriveStat]    = []
     @Published var dailyPlays:    [TautulliDayPlays]     = []
     @Published var isConnected:   Bool = false
+    @Published var isConfigured:  Bool = false
     @Published var error:         String?
 
-    private var config:       ServiceConfig { CredentialStore.shared.load(.tautulli) }
+    private var cachedConfig  = ServiceConfig()
     private var pollTask:     Task<Void, Never>?
     private let session =     URLSession(configuration: .default)
     private var statsCounter: Int = 0
+
+    // Only mark disconnected after 3 consecutive failures — prevents blips from flipping UI
+    private var consecutiveFailures: Int = 0
+    private let failureThreshold:    Int = 3
+
+    // Notification tracking
+    private var knownSessionIDs   = Set<String>()
+    private var streamsInitialized = false
 
     init() { loadCache() }
 
@@ -247,8 +276,18 @@ final class TautulliClient: ObservableObject {
     }
 
     func startPolling() {
+        cachedConfig = CredentialStore.shared.load(.tautulli)
         pollTask?.cancel()
-        statsCounter = 0
+        statsCounter        = 0
+        consecutiveFailures = 0
+        // Show connected optimistically so the badge doesn't flash "disconnected"
+        // while the first request is in-flight. Actual failures will clear it after threshold.
+        if cachedConfig.enabled && !cachedConfig.baseURL.isEmpty && !cachedConfig.apiKey.isEmpty {
+            isConnected   = true
+            isConfigured  = true
+        } else {
+            isConfigured = false
+        }
         pollTask = Task { [weak self] in
             await self?.fetchAll()
             while !Task.isCancelled {
@@ -260,6 +299,16 @@ final class TautulliClient: ObservableObject {
     }
 
     func stopPolling() { pollTask?.cancel() }
+
+    func clearCache() {
+        let ud = UserDefaults.standard
+        ud.removeObject(forKey: CacheKey.libraryCounts)
+        ud.removeObject(forKey: CacheKey.driveStats)
+        ud.removeObject(forKey: CacheKey.dailyPlays)
+        libraryCounts = []
+        driveStats    = []
+        dailyPlays    = []
+    }
 
     // MARK: - Fetch all
 
@@ -276,36 +325,61 @@ final class TautulliClient: ObservableObject {
     // MARK: - Fetch activity
 
     private func fetchActivity() async {
-        let cfg = config
+        let cfg = cachedConfig
         guard cfg.enabled, !cfg.baseURL.isEmpty, !cfg.apiKey.isEmpty else {
-            isConnected = false; return
+            // Credentials not configured — hard disconnect immediately (not a transient failure)
+            isConnected = false; consecutiveFailures = 0; return
         }
         guard let url = apiURL(cfg, cmd: "get_activity") else {
-            isConnected = false; error = "Invalid URL"; return
+            // Malformed URL — treat as a transient failure so the threshold applies
+            recordFailure("Invalid URL"); return
         }
         do {
             let (data, response) = try await session.data(from: url)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                isConnected = false; error = "Server error"; return
+                recordFailure("Server error"); return
             }
             let decoded = try JSONDecoder().decode(
                 TautulliResponse<TautulliActivityData>.self, from: data)
             guard decoded.response.result == "success" else {
-                isConnected = false; error = decoded.response.result; return
+                recordFailure(decoded.response.result); return
             }
-            streams     = (decoded.response.data?.sessions ?? []).map { mapSession($0, cfg: cfg) }
-            isConnected = true
-            self.error  = nil
+            let newStreams = (decoded.response.data?.sessions ?? []).map { mapSession($0, cfg: cfg) }
+            detectNewStreams(newStreams)
+            streams             = newStreams
+            isConnected         = true
+            consecutiveFailures = 0
+            self.error          = nil
         } catch {
+            recordFailure(error.localizedDescription)
+        }
+    }
+
+    private func recordFailure(_ message: String) {
+        consecutiveFailures += 1
+        if consecutiveFailures >= failureThreshold {
             isConnected = false
-            self.error  = error.localizedDescription
+            self.error  = message
+        }
+        // Below threshold: keep isConnected as-is, don't surface transient errors
+    }
+
+    private func detectNewStreams(_ new: [ActiveStream]) {
+        defer {
+            knownSessionIDs    = Set(new.map(\.id))
+            streamsInitialized = true
+        }
+        guard streamsInitialized else { return }
+        for stream in new where !knownSessionIDs.contains(stream.id) {
+            NotificationManager.shared.scheduleStreamStarted(
+                userName: stream.userName, title: stream.title)
         }
     }
 
     // MARK: - Fetch libraries
 
     private func fetchLibraries() async {
-        let cfg = config
+        let cfg = cachedConfig
         guard cfg.enabled, !cfg.baseURL.isEmpty, !cfg.apiKey.isEmpty,
               let url = apiURL(cfg, cmd: "get_libraries") else { return }
         guard let (data, _) = try? await session.data(from: url) else { return }
@@ -347,7 +421,7 @@ final class TautulliClient: ObservableObject {
     // MARK: - Fetch daily plays
 
     private func fetchDailyPlays() async {
-        let cfg = config
+        let cfg = cachedConfig
         guard cfg.enabled, !cfg.baseURL.isEmpty, !cfg.apiKey.isEmpty,
               var comps = URLComponents(string: "\(cfg.baseURL)/api/v2") else { return }
         comps.queryItems = [
@@ -431,9 +505,20 @@ final class TautulliClient: ObservableObject {
             default:       break
             }
         }
+        let isoParser = DateFormatter()
+        isoParser.dateFormat = "yyyy-MM-dd"
+        isoParser.locale = Locale(identifier: "en_US_POSIX")
+        let dayFormatter = DateFormatter()
+        dayFormatter.dateFormat = "EEE"
+
         return zip(d.categories, zip(movieData, tvData)).map { cat, counts in
-            // Categories arrive as "Mon 04 Mar" — take first 3 chars as day abbreviation
-            let label = cat.count >= 3 ? String(cat.prefix(3)) : cat
+            // Categories may arrive as "2026-03-10" (ISO) or "Mon 04 Mar" (legacy)
+            let label: String
+            if let date = isoParser.date(from: cat) {
+                label = dayFormatter.string(from: date)
+            } else {
+                label = cat.count >= 3 ? String(cat.prefix(3)) : cat
+            }
             return TautulliDayPlays(label: label, movies: counts.0, tv: counts.1)
         }
     }
@@ -441,6 +526,43 @@ final class TautulliClient: ObservableObject {
     private func padded(_ arr: [Int], to count: Int) -> [Int] {
         guard arr.count < count else { return arr }
         return arr + [Int](repeating: 0, count: count - arr.count)
+    }
+
+    // MARK: - Item watch history
+
+    func fetchItemHistory(ratingKey: String, count: Int = 5) async -> [TautulliWatchEvent] {
+        let cfg = cachedConfig
+        guard cfg.enabled, !cfg.baseURL.isEmpty, !cfg.apiKey.isEmpty,
+              var comps = URLComponents(string: "\(cfg.baseURL)/api/v2") else { return [] }
+        comps.queryItems = [
+            URLQueryItem(name: "apikey",      value: cfg.apiKey),
+            URLQueryItem(name: "cmd",         value: "get_history"),
+            URLQueryItem(name: "rating_key",  value: ratingKey),
+            URLQueryItem(name: "length",      value: "\(count)"),
+            URLQueryItem(name: "order_column",value: "date"),
+            URLQueryItem(name: "order_dir",   value: "desc"),
+        ]
+        guard let url = comps.url,
+              let (data, _) = try? await session.data(from: url) else { return [] }
+
+        struct HistoryRoot: Decodable { let response: HistoryOuter }
+        struct HistoryOuter: Decodable { let result: String; let data: TautulliHistoryOuter? }
+        guard let decoded = try? JSONDecoder().decode(HistoryRoot.self, from: data),
+              decoded.response.result == "success",
+              let rows = decoded.response.data?.data else { return [] }
+
+        return rows.compactMap { row in
+            guard let ts = row.date else { return nil }
+            let name = row.friendlyName ?? row.user ?? "Unknown"
+            let pct  = row.percentComplete?.value ?? 0
+            let refId = row.referenceId?.value ?? 0
+            return TautulliWatchEvent(
+                id:              "\(refId)-\(ts)",
+                user:            name,
+                watchedAt:       Date(timeIntervalSince1970: TimeInterval(ts)),
+                percentComplete: pct
+            )
+        }
     }
 
     // MARK: - Test connection
@@ -472,7 +594,8 @@ final class TautulliClient: ObservableObject {
     // MARK: - Helpers
 
     private func apiURL(_ cfg: ServiceConfig, cmd: String) -> URL? {
-        guard var comps = URLComponents(string: "\(cfg.baseURL)/api/v2") else { return nil }
+        let base = cfg.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard var comps = URLComponents(string: "\(base)/api/v2") else { return nil }
         comps.queryItems = [
             URLQueryItem(name: "apikey", value: cfg.apiKey),
             URLQueryItem(name: "cmd",    value: cmd),
@@ -481,7 +604,8 @@ final class TautulliClient: ObservableObject {
     }
 
     private func posterProxyURL(cfg: ServiceConfig, path: String) -> String? {
-        guard var comps = URLComponents(string: "\(cfg.baseURL)/api/v2") else { return nil }
+        let base = cfg.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard var comps = URLComponents(string: "\(base)/api/v2") else { return nil }
         comps.queryItems = [
             URLQueryItem(name: "apikey",   value: cfg.apiKey),
             URLQueryItem(name: "cmd",      value: "pms_image_proxy"),

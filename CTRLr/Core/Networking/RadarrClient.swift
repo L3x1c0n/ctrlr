@@ -5,6 +5,7 @@ import Foundation
 private struct RadarrCalendarItem: Decodable {
     let id:              Int
     let title:           String
+    let overview:        String?
     let inCinemas:       String?
     let digitalRelease:  String?
     let physicalRelease: String?
@@ -12,6 +13,7 @@ private struct RadarrCalendarItem: Decodable {
     let monitored:       Bool
     let year:            Int
     let hasFile:         Bool
+    let tmdbId:          Int?
 }
 
 private struct RadarrImage: Decodable {
@@ -57,15 +59,24 @@ private struct RadarrMovieItem: Decodable {
 }
 
 private struct RadarrWireRelease: Decodable {
-    let guid:        String
-    let title:       String
-    let indexer:     String
-    let size:        Int64
-    let quality:     RadarrWireQuality
-    let indexerId:   Int
-    let seeders:     Int?
-    let approved:    Bool
-    let rejections:  [String]?
+    let guid:             String
+    let title:            String
+    let indexer:          String
+    let size:             Int64
+    let quality:          RadarrWireQuality
+    let indexerId:        Int
+    let seeders:          Int?
+    let leechers:         Int?
+    let approved:         Bool
+    let rejections:       [String]?
+    let downloadProtocol: String?
+    let ageHours:         Double?
+
+    enum CodingKeys: String, CodingKey {
+        case guid, title, indexer, size, quality, indexerId
+        case seeders, leechers, approved, rejections, ageHours
+        case downloadProtocol = "protocol"
+    }
 }
 
 private struct RadarrWireQuality: Decodable {
@@ -103,21 +114,33 @@ final class RadarrClient: ObservableObject {
     @Published var isConnected = false
     @Published var error: String?
 
-    private var config: ServiceConfig { CredentialStore.shared.load(.radarr) }
+    private var cachedConfig = ServiceConfig()
     private var pollTask: Task<Void, Never>?
     private var session = URLSession(configuration: .default)
 
     // One-shot fetch — called on launch, after settings save, and on ntfy import events.
     // No polling loop: Radarr data changes only when something is grabbed/imported.
     func startPolling() {
+        cachedConfig = CredentialStore.shared.load(.radarr)
         pollTask?.cancel()
         pollTask = Task { [weak self] in await self?.poll() }
     }
 
     func stopPolling() { pollTask?.cancel() }
 
+    /// Lightweight queue-only refresh — called when a new torrent hash appears in qBittorrent.
+    /// Fetches only the download queue so hash→metadata mapping stays current without
+    /// re-fetching the heavy calendar / library / disk-space data.
+    func refreshQueue() async {
+        let cfg = cachedConfig
+        guard cfg.enabled, !cfg.baseURL.isEmpty else { return }
+        if let queue = try? await fetchQueue(cfg) {
+            downloadQueue = queue
+        }
+    }
+
     private func poll() async {
-        let cfg = config
+        let cfg = cachedConfig
         guard cfg.enabled, !cfg.baseURL.isEmpty else {
             isConnected = false; return
         }
@@ -163,15 +186,19 @@ final class RadarrClient: ObservableObject {
     }
 
     private func fetchCalendar(_ cfg: ServiceConfig) async throws -> [UpcomingItem] {
-        let today = Calendar.current.startOfDay(for: Date())
-        guard let endDate = Calendar.current.date(byAdding: .day, value: 14, to: today) else {
+        let cal   = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        guard let startDate = cal.date(byAdding: .day, value: -7, to: today),
+              let endDate   = cal.date(byAdding: .day, value: 15, to: today) else {
             return []
         }
 
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withFullDate]
-        let startStr = isoFormatter.string(from: today)
-        let endStr   = isoFormatter.string(from: endDate)
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        df.locale = Locale(identifier: "en_US_POSIX")
+        // No explicit timezone → device local, so the date window matches displayed columns
+        let startStr = df.string(from: startDate)
+        let endStr   = df.string(from: endDate)
 
         guard var components = URLComponents(string: "\(cfg.baseURL)/api/v3/calendar") else {
             throw NetworkError.badURL
@@ -245,13 +272,15 @@ final class RadarrClient: ObservableObject {
             id:          "radarr-\(item.id)",
             title:       item.title,
             subtitle:    nil,
+            overview:    item.overview,
             mediaType:   .movie,
             airDate:     earliest,
             releaseType: releaseType,
             hasFile:     item.hasFile,
             source:      .radarr,
             posterURL:   postersByTitle[item.title.lowercased()],
-            posterData:  nil
+            posterData:  nil,
+            tmdbId:      item.tmdbId
         )
     }
 
@@ -261,7 +290,10 @@ final class RadarrClient: ObservableObject {
         guard var components = URLComponents(string: "\(cfg.baseURL)/api/v3/queue") else {
             throw NetworkError.badURL
         }
-        components.queryItems = [URLQueryItem(name: "pageSize", value: "100")]
+        components.queryItems = [
+            URLQueryItem(name: "pageSize",     value: "100"),
+            URLQueryItem(name: "includeMovie", value: "true"),
+        ]
         guard let url = components.url else { throw NetworkError.badURL }
 
         var req = URLRequest(url: url)
@@ -271,29 +303,43 @@ final class RadarrClient: ObservableObject {
         let (data, _) = try await session.data(for: req)
         let response  = try JSONDecoder().decode(RadarrQueueResponse.self, from: data)
 
-        // Expand poster map with queue items (covers media outside the 14-day calendar window)
+        // Expand poster map — prefer public TMDb remoteUrl (no auth, always reachable),
+        // fall back to local mediacover URL (needs X-Api-Key but works on LAN).
+        let headers = ["X-Api-Key": cfg.apiKey]
         for item in response.records {
-            if let movie = item.movie, let mid = item.movieId {
+            guard let movie = item.movie else { continue }
+            let remoteURL = movie.images.first(where: { $0.coverType == "poster" })?.remoteUrl
+                         ?? movie.images.first?.remoteUrl
+            if let url = remoteURL, !url.isEmpty {
+                postersByTitle[movie.title.lowercased()] = url
+            } else if let mid = item.movieId {
                 postersByTitle[movie.title.lowercased()] =
                     "\(cfg.baseURL)/api/v3/mediacover/\(mid)/poster.jpg"
             }
         }
 
-        let headers = ["X-Api-Key": cfg.apiKey]
         return response.records.map { item in
+            // Prefer public TMDb remoteUrl → falls back to local mediacover (needs header)
+            let remoteURL = item.movie?.images.first(where: { $0.coverType == "poster" })?.remoteUrl
+                         ?? item.movie?.images.first?.remoteUrl
             let poster: String?
-            if let mid = item.movieId {
-                poster = "\(cfg.baseURL)/api/v3/mediacover/\(mid)/poster.jpg"
+            let posterHeaders: [String: String]
+            if let url = remoteURL, !url.isEmpty {
+                poster        = url
+                posterHeaders = [:]
+            } else if let mid = item.movieId {
+                poster        = "\(cfg.baseURL)/api/v3/mediacover/\(mid)/poster.jpg"
+                posterHeaders = headers
             } else {
-                poster = item.movie?.images.first(where: { $0.coverType == "poster" })?.remoteUrl
-                      ?? item.movie?.images.first?.remoteUrl
+                poster        = nil
+                posterHeaders = [:]
             }
             return EnrichedDownload(
                 hash:          item.downloadId?.lowercased() ?? "",
                 title:         item.movie?.title ?? item.title,
                 subtitle:      nil,
                 posterURL:     poster,
-                posterHeaders: poster?.hasPrefix(cfg.baseURL) == true ? headers : [:],
+                posterHeaders: posterHeaders,
                 source:        .radarr
             )
         }
@@ -335,8 +381,7 @@ final class RadarrClient: ObservableObject {
             let rawURL = movie.images.first(where: { $0.coverType == "poster" })?.remoteUrl
                       ?? movie.images.first?.remoteUrl
             if let url = rawURL, !url.isEmpty {
-                map[movie.title.lowercased()] =
-                    "\(cfg.baseURL)/api/v3/mediacover/\(movie.id)/poster.jpg"
+                map[movie.title.lowercased()] = url   // public TMDb URL — no auth needed
             }
         }
         return map
@@ -344,13 +389,13 @@ final class RadarrClient: ObservableObject {
 
     /// HTTP headers required when fetching Radarr mediacover poster images.
     func posterHeaders() -> [String: String] {
-        ["X-Api-Key": config.apiKey]
+        ["X-Api-Key": cachedConfig.apiKey]
     }
 
     // MARK: - Movie lookup + search (for request options)
 
     func findMovieId(tmdbId: Int) async -> Int? {
-        let cfg = config
+        let cfg = cachedConfig
         guard !cfg.baseURL.isEmpty,
               let url = URL(string: "\(cfg.baseURL)/api/v3/movie?tmdbId=\(tmdbId)") else { return nil }
         var req = URLRequest(url: url, timeoutInterval: 10)
@@ -362,7 +407,7 @@ final class RadarrClient: ObservableObject {
     }
 
     func triggerSearch(movieId: Int) async {
-        let cfg = config
+        let cfg = cachedConfig
         guard !cfg.baseURL.isEmpty,
               let url = URL(string: "\(cfg.baseURL)/api/v3/command") else { return }
         var req = URLRequest(url: url, timeoutInterval: 10)
@@ -376,7 +421,7 @@ final class RadarrClient: ObservableObject {
     }
 
     func fetchReleases(movieId: Int) async -> [MediaRelease] {
-        let cfg = config
+        let cfg = cachedConfig
         guard !cfg.baseURL.isEmpty,
               let url = URL(string: "\(cfg.baseURL)/api/v3/release?movieId=\(movieId)") else { return [] }
         var req = URLRequest(url: url, timeoutInterval: 15)
@@ -389,12 +434,15 @@ final class RadarrClient: ObservableObject {
             MediaRelease(guid: $0.guid, title: $0.title, indexer: $0.indexer,
                          size: $0.size, quality: $0.quality.quality.name,
                          indexerId: $0.indexerId, seeders: $0.seeders,
-                         approved: $0.approved, rejections: $0.rejections ?? [])
+                         leechers: $0.leechers,
+                         approved: $0.approved, rejections: $0.rejections ?? [],
+                         releaseProtocol: $0.downloadProtocol ?? "",
+                         ageHours: $0.ageHours.map { Int($0) })
         }
     }
 
     func downloadRelease(guid: String, indexerId: Int) async -> Bool {
-        let cfg = config
+        let cfg = cachedConfig
         guard !cfg.baseURL.isEmpty,
               let url = URL(string: "\(cfg.baseURL)/api/v3/release") else { return false }
         var req = URLRequest(url: url, timeoutInterval: 15)
@@ -411,7 +459,7 @@ final class RadarrClient: ObservableObject {
     // MARK: - Movie state fetch + update (for request detail editing)
 
     func fetchMovieState(tmdbId: Int) async -> (id: Int, qualityProfileId: Int, rootFolderPath: String, monitored: Bool)? {
-        let cfg = config
+        let cfg = cachedConfig
         guard !cfg.baseURL.isEmpty,
               let url = URL(string: "\(cfg.baseURL)/api/v3/movie?tmdbId=\(tmdbId)") else { return nil }
         var req = URLRequest(url: url, timeoutInterval: 10)
@@ -425,7 +473,7 @@ final class RadarrClient: ObservableObject {
     }
 
     func updateMovie(id: Int, qualityProfileId: Int, rootFolderPath: String, monitored: Bool) async -> Bool {
-        let cfg = config
+        let cfg = cachedConfig
         guard !cfg.baseURL.isEmpty,
               let getURL = URL(string: "\(cfg.baseURL)/api/v3/movie/\(id)") else { return false }
 
@@ -458,10 +506,47 @@ final class RadarrClient: ObservableObject {
         return (200...299).contains(http.statusCode)
     }
 
+    // MARK: - Monitor toggle
+
+    func fetchMovieMonitored(movieId: Int) async -> Bool? {
+        let cfg = cachedConfig
+        guard !cfg.baseURL.isEmpty,
+              let url = URL(string: "\(cfg.baseURL)/api/v3/movie/\(movieId)") else { return nil }
+        var req = URLRequest(url: url, timeoutInterval: 10)
+        req.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        req.setValue(cfg.baseURL + "/", forHTTPHeaderField: "Referer")
+        struct Stub: Decodable { let monitored: Bool }
+        guard let (data, _) = try? await session.data(for: req),
+              let stub = try? JSONDecoder().decode(Stub.self, from: data)
+        else { return nil }
+        return stub.monitored
+    }
+
+    func setMovieMonitored(movieId: Int, monitored: Bool) async {
+        let cfg = cachedConfig
+        guard !cfg.baseURL.isEmpty,
+              let url = URL(string: "\(cfg.baseURL)/api/v3/movie/\(movieId)") else { return }
+        var getReq = URLRequest(url: url, timeoutInterval: 10)
+        getReq.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        getReq.setValue(cfg.baseURL + "/", forHTTPHeaderField: "Referer")
+        guard let (rawData, _) = try? await session.data(for: getReq),
+              var json = try? JSONSerialization.jsonObject(with: rawData) as? [String: Any]
+        else { return }
+        json["monitored"] = monitored
+        guard let putData = try? JSONSerialization.data(withJSONObject: json) else { return }
+        var putReq = URLRequest(url: url, timeoutInterval: 15)
+        putReq.httpMethod = "PUT"
+        putReq.setValue(cfg.apiKey, forHTTPHeaderField: "X-Api-Key")
+        putReq.setValue(cfg.baseURL + "/", forHTTPHeaderField: "Referer")
+        putReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        putReq.httpBody = putData
+        _ = try? await session.data(for: putReq)
+    }
+
     // MARK: - Test connection (uses keychain config)
 
     func testConnection() async -> ConnectionResult {
-        return await testConnection(with: config)
+        return await testConnection(with: cachedConfig)
     }
 
     // MARK: - Test connection (uses provided config)
