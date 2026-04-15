@@ -1,9 +1,34 @@
 'use client'
 
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useState, useEffect, useRef } from 'react'
 import { TraktMovie, TraktEpisode } from '@/types'
 import Spinner from '@/components/Spinner'
 import TraktDetailDrawer, { TraktSelectedItem } from '@/components/TraktDetailDrawer'
+
+function MarqueeText({ children, className }: { children: React.ReactNode; className?: string }) {
+  const outerRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLSpanElement>(null)
+  const [overflows, setOverflows] = useState(false)
+
+  useEffect(() => {
+    function check() {
+      if (!outerRef.current || !innerRef.current) return
+      setOverflows(innerRef.current.scrollWidth > outerRef.current.clientWidth)
+    }
+    check()
+    const ro = new ResizeObserver(check)
+    if (outerRef.current) ro.observe(outerRef.current)
+    return () => ro.disconnect()
+  }, [children])
+
+  return (
+    <div ref={outerRef} className={`overflow-hidden whitespace-nowrap ${overflows ? 'scroll-hover' : ''} ${className ?? ''}`}>
+      <span ref={innerRef} className="scroll-inner inline-block whitespace-nowrap font-mono text-xs leading-none">
+        {children}
+      </span>
+    </div>
+  )
+}
 
 const MONTH_NAMES = [
   'january','february','march','april','may','june',
@@ -239,17 +264,13 @@ function WeekRow({ week, expandedDay, onToggleDay, onSelect }: WeekRowProps) {
           ? 'text-yellow-500'
           : 'text-white'
       return (
-        <div
-          className="scroll-hover py-0.5 px-0.5 cursor-pointer"
-          onClick={() => onSelect(item.selected)}
-          title={item.line}
-        >
-          <span className="scroll-inner inline-block whitespace-nowrap font-mono text-xs leading-none">
+        <div className="py-0.5 px-0.5 cursor-pointer" onClick={() => onSelect(item.selected)} title={item.line}>
+          <MarqueeText>
             <span className={item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}>
               {item.type === 'movie' ? '‡ ' : '† '}
             </span>
             <span className={textClass}>{item.line}</span>
-          </span>
+          </MarqueeText>
         </div>
       )
     })
