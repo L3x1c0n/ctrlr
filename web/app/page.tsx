@@ -106,7 +106,7 @@ export default function Home() {
   return (
     <>
       <TopBar />
-      <main className="pt-8 px-3 md:px-6 pb-12 max-w-7xl mx-auto space-y-10">
+      <main className="pt-4 md:pt-8 px-3 md:px-6 pb-12 max-w-7xl mx-auto space-y-10">
         <QBittorrentSection onTransferUpdate={handleTransferUpdate} />
         {sectionOrder.map(key => (
           <div key={key}>

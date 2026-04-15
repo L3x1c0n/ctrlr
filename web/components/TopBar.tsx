@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { THEMES, DEFAULT_THEME } from '@/lib/themes'
 
 const BAR_H = 22
+const MOB_BAR_H = 16
 const PAGE_BG = '#0A0A0F'
 const CHEV_W = 11
+const MOB_CHEV_W = 7
 
 const LABELS = ['๛', 'gh05t@moriarty', 'qB', 'arr', 'trakt', 'seer', 'plex', 'tautulli']
 const HREFS: (string | null)[] = [null, null, '#qbittorrent', '#arr', '#trakt', '#seer', '#plex', '#tautulli']
@@ -17,7 +19,7 @@ function Chevron({ color }: { color: string }) {
       height={BAR_H}
       viewBox={`0 0 ${CHEV_W} ${BAR_H}`}
       preserveAspectRatio="none"
-      className="w-[4px] md:w-[11px]"
+      className="w-[7px] md:w-[11px] h-full"
       style={{ display: 'block', flexShrink: 0, marginLeft: -1 }}
     >
       <polygon points={`0,0 ${CHEV_W},${BAR_H / 2} 0,${BAR_H}`} fill={color} />
@@ -50,8 +52,8 @@ export default function TopBar() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-50 flex items-stretch font-mono overflow-hidden"
-      style={{ background: PAGE_BG, height: BAR_H }}
+      className="fixed top-0 left-0 right-0 z-50 flex items-stretch font-mono overflow-hidden h-4 md:h-[22px]"
+      style={{ background: PAGE_BG }}
     >
       {LABELS.map((label, i) => {
         const seg = theme.segments[i]

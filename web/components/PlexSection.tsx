@@ -40,7 +40,7 @@ export default function PlexSection() {
     return (
       <tr className="border-b border-[#0f0f1a]">
         <td className="py-1 pr-3 text-right text-[#7070a8] tabular-nums select-none text-xs w-6">{index + 1}</td>
-        <td className="py-1 pr-4 text-white font-mono text-sm w-[140px] md:w-auto">
+        <td className="py-1 pr-4 text-white font-mono text-sm min-w-0">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelected(item)}
@@ -58,15 +58,15 @@ export default function PlexSection() {
             </span>
           </div>
         </td>
-        <td className="text-right pr-4 font-mono text-xs text-[#999]">
+        <td className="text-right pr-3 font-mono text-xs text-[#999] w-10">
           {item.year ?? ''}
         </td>
-        <td className="text-right pr-4 font-mono text-xs">
+        <td className="text-right pr-2 font-mono text-xs w-5">
           {item.viewCount && item.viewCount > 0
             ? <span className="text-[#999]">1</span>
             : <span className="text-yellow-400">Ø</span>}
         </td>
-        <td className="text-right">
+        <td className="text-right w-9">
           <button
             onClick={() => {
               if (confirm(`Delete ${item.title} from Plex library?`)) {
