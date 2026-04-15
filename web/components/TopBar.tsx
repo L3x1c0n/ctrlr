@@ -103,15 +103,10 @@ export default function TopBar() {
         )
       })}
 
-      {/* mobile clock — inside bar, pushed to right edge */}
-      <div className="md:hidden ml-auto flex items-center pr-2 flex-none">
-        {time && <span className="font-mono text-[10px] tabular-nums text-white">{time}</span>}
+      {/* clock — ml-auto pushes it to far right of bar on both breakpoints */}
+      <div className="ml-auto flex items-center px-3 flex-none">
+        {time && <span className="font-mono text-[10px] md:text-sm tabular-nums text-white">{time}</span>}
       </div>
-    </div>
-
-    {/* desktop clock — fixed, independent of bar */}
-    <div className="hidden md:flex fixed top-0 right-4 z-50 items-center h-[22px]">
-      {time && <span className="font-mono text-sm tabular-nums text-white">{time}</span>}
     </div>
     </>
   )
