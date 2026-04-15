@@ -217,7 +217,7 @@ function buildCalendar(
 
 function ItemTags({ item }: { item: CalItem }) {
   const [meta, setMeta] = useState<ItemMeta | null>(null)
-  const needsFetch = !item.downloaded && !item.inArr
+  const needsFetch = !item.downloaded
 
   useEffect(() => {
     if (!needsFetch) return
@@ -246,7 +246,7 @@ function ItemTags({ item }: { item: CalItem }) {
   ) : null
 
   // Plex / provider badge
-  const badge = (item.downloaded || item.inArr) ? (
+  const badge = item.downloaded ? (
     <span style={{ color: '#E5A00D' }} className="text-[10px] shrink-0">[plex]</span>
   ) : meta && meta.providers.length > 0 ? (
     <span className="flex items-center gap-0.5 shrink-0">
@@ -436,11 +436,10 @@ function AgendaView({ itemMap, cap, agendaOffset, onOffsetChange, onSelect }: {
 }) {
   const today = new Date()
 
-  // Build days with entries, anchored at agendaOffset from today
-  // agendaOffset 0 = 7 days back → 60 days forward
-  // agendaOffset +10 = 10 days forward start
-  const startDay = -7 + agendaOffset
-  const endDay   = 60 + agendaOffset
+  // Build days with entries anchored to today.
+  // agendaOffset 0 = today → forward; negative = past via prev button.
+  const startDay = agendaOffset
+  const endDay   = agendaOffset + 90
 
   const daysWithItems: Array<{ key: string; isToday: boolean; isPast: boolean; items: CalItem[] }> = []
   for (let d = startDay; d <= endDay; d++) {
