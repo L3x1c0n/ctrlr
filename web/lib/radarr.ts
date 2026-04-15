@@ -92,16 +92,21 @@ export async function getCalendarToday(): Promise<ArrCalendarItem[]> {
 }
 
 // Returns a set of tmdbIds for movies that have a file
-export async function getMovieFileStatus(tmdbIds: number[]): Promise<Set<number>> {
-  const result = new Set<number>()
-  if (tmdbIds.length === 0) return result
+export async function getMovieFileStatus(tmdbIds: number[]): Promise<{ downloaded: Set<number>; inArr: Set<number> }> {
+  const downloaded = new Set<number>()
+  const inArr      = new Set<number>()
+  if (tmdbIds.length === 0) return { downloaded, inArr }
   const res = await fetch(`${BASE}/api/v3/movie`, { headers, cache: 'no-store' })
-  if (!res.ok) return result
+  if (!res.ok) return { downloaded, inArr }
   const movies: Array<{ tmdbId: number; hasFile: boolean }> = await res.json()
+  const wanted = new Set(tmdbIds)
   for (const m of movies) {
-    if (m.hasFile && tmdbIds.includes(m.tmdbId)) result.add(m.tmdbId)
+    if (wanted.has(m.tmdbId)) {
+      inArr.add(m.tmdbId)
+      if (m.hasFile) downloaded.add(m.tmdbId)
+    }
   }
-  return result
+  return { downloaded, inArr }
 }
 
 export async function getMonitored(): Promise<MonitoredMovie[]> {

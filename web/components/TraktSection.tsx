@@ -41,6 +41,61 @@ const MONTH_NAMES = [
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 const DAY_HUE   = [220, 229, 238, 247, 256, 265, 280]
 
+const PROVIDER_MAP: Record<string, { abbr: string; color: string }> = {
+  'netflix':             { abbr: 'NF', color: '#E50914' },
+  'prime video':         { abbr: 'PV', color: '#00A8E0' },
+  'amazon prime video':  { abbr: 'PV', color: '#00A8E0' },
+  'disney plus':         { abbr: 'D+', color: '#113CCF' },
+  'disney+':             { abbr: 'D+', color: '#113CCF' },
+  'hulu':                { abbr: 'HU', color: '#1CE783' },
+  'max':                 { abbr: 'MX', color: '#002BE7' },
+  'hbo max':             { abbr: 'MX', color: '#002BE7' },
+  'apple tv+':           { abbr: 'AT', color: '#888888' },
+  'apple tv plus':       { abbr: 'AT', color: '#888888' },
+  'peacock':             { abbr: 'PC', color: '#0066FF' },
+  'paramount+':          { abbr: 'P+', color: '#0064FF' },
+  'paramount plus':      { abbr: 'P+', color: '#0064FF' },
+  'crunchyroll':         { abbr: 'CR', color: '#F47521' },
+  'funimation':          { abbr: 'FN', color: '#410099' },
+}
+
+function providerInfo(name: string): { abbr: string; color: string } {
+  return PROVIDER_MAP[name.toLowerCase()] ?? {
+    abbr:  name.slice(0, 2).toUpperCase(),
+    color: '#666688',
+  }
+}
+
+// ── client-side metadata cache ────────────────────────────────────────────────
+
+interface ItemMeta {
+  providers: { abbr: string; color: string }[]
+  runtime?: number
+  rating?: number
+  certification?: string
+}
+
+const metaCache = new Map<string, ItemMeta>()
+
+function fetchMeta(cacheKey: string, url: string, setter: (m: ItemMeta) => void) {
+  if (metaCache.has(cacheKey)) { setter(metaCache.get(cacheKey)!); return }
+  fetch(url)
+    .then(r => r.json())
+    .then(d => {
+      const m: ItemMeta = {
+        providers:     (d.watchProviders ?? []).map((p: any) => providerInfo(p.name)),
+        runtime:       d.detail?.runtime  || undefined,
+        rating:        d.detail?.rating   || undefined,
+        certification: d.detail?.certification || undefined,
+      }
+      metaCache.set(cacheKey, m)
+      setter(m)
+    })
+    .catch(() => {})
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
 function dowIndex(d: Date): number { return (d.getDay() + 6) % 7 }
 
 function dateKey(d: Date): string {
@@ -52,7 +107,7 @@ function addDays(d: Date, n: number): Date {
 }
 
 function fmtDateKey(key: string): string {
-  const d = new Date(key + 'T12:00:00')
+  const d  = new Date(key + 'T12:00:00')
   const dn = d.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase()
   return `/* ${dn} · ${d.getDate()} · ${MONTH_NAMES[d.getMonth()]} */`
 }
@@ -70,6 +125,7 @@ interface CalItem {
   selected:   TraktSelectedItem
   downloaded: boolean
   isPast:     boolean
+  inArr:      boolean
 }
 
 interface CalDay {
@@ -86,6 +142,8 @@ function buildItemMap(
   movies: TraktMovie[],
   downloadedMovies: Set<number>,
   downloadedEpisodes: Set<string>,
+  inArrMovies: Set<number>,
+  inArrShows: Set<number>,
 ): Map<string, CalItem[]> {
   const today = new Date().toISOString().split('T')[0]
   const map   = new Map<string, CalItem[]>()
@@ -107,6 +165,7 @@ function buildItemMap(
       selected:   { type: 'episode', data: ep, downloaded: downloadedEpisodes.has(dlKey) },
       downloaded: downloadedEpisodes.has(dlKey),
       isPast:     dKey < today,
+      inArr:      inArrShows.has(ep.show.ids.tvdb),
     })
   }
 
@@ -119,6 +178,7 @@ function buildItemMap(
       selected:   { type: 'movie', data: mv, downloaded: dl },
       downloaded: dl,
       isPast:     mv.released < today,
+      inArr:      inArrMovies.has(mv.movie.ids.tmdb),
     })
   }
 
@@ -130,11 +190,9 @@ function buildCalendar(
   month: number,
   itemMap: Map<string, CalItem[]>,
 ): CalDay[][] {
-  const today   = new Date()
-  const todayK  = dateKey(today)
-  const lastDay = new Date(year, month + 1, 0).getDate()
+  const today    = new Date()
+  const lastDay  = new Date(year, month + 1, 0).getDate()
   const startDow = dowIndex(new Date(year, month, 1))
-
   const weeks: CalDay[][] = []
   let week: CalDay[] = []
 
@@ -153,6 +211,59 @@ function buildCalendar(
   }
 
   return weeks
+}
+
+// ── ItemTags — plex / streaming providers + movie meta ────────────────────────
+
+function ItemTags({ item }: { item: CalItem }) {
+  const [meta, setMeta] = useState<ItemMeta | null>(null)
+  const needsFetch = !item.downloaded && !item.inArr
+
+  useEffect(() => {
+    if (!needsFetch) return
+    let url: string
+    let cacheKey: string
+    if (item.type === 'movie') {
+      const mv = (item.selected as Extract<TraktSelectedItem, { type: 'movie' }>).data
+      cacheKey = `movie-${mv.movie.ids.tmdb}`
+      url = `/api/trakt?slug=${mv.movie.ids.slug}&type=movie&tmdbId=${mv.movie.ids.tmdb}`
+    } else {
+      const ep = (item.selected as Extract<TraktSelectedItem, { type: 'episode' }>).data
+      cacheKey = `tv-${ep.show.ids.tmdb}`
+      url = `/api/trakt?slug=${ep.show.ids.slug}&type=episode&season=${ep.episode.season}&episode=${ep.episode.number}&tmdbId=${ep.show.ids.tmdb}`
+    }
+    fetchMeta(cacheKey, url, setMeta)
+  }, [needsFetch, item.type, item.selected])
+
+  // Movie meta: runtime + rating (shown regardless of inArr)
+  const movieExtra = item.type === 'movie' && meta ? (
+    <span className="text-[#555] text-[10px] shrink-0 font-mono">
+      {meta.runtime ? `${meta.runtime}m` : ''}
+      {meta.runtime && meta.rating ? ' ' : ''}
+      {meta.rating ? `★${meta.rating.toFixed(1)}` : ''}
+      {meta.certification ? ` ${meta.certification}` : ''}
+    </span>
+  ) : null
+
+  // Plex / provider badge
+  const badge = (item.downloaded || item.inArr) ? (
+    <span style={{ color: '#E5A00D' }} className="text-[10px] shrink-0">[plex]</span>
+  ) : meta && meta.providers.length > 0 ? (
+    <span className="flex items-center gap-0.5 shrink-0">
+      {meta.providers.slice(0, 2).map((p, i) => (
+        <span key={i} style={{ color: p.color }} className="text-[10px]">[{p.abbr}]</span>
+      ))}
+    </span>
+  ) : null
+
+  if (!movieExtra && !badge) return null
+
+  return (
+    <span className="flex items-center gap-1.5 shrink-0">
+      {movieExtra}
+      {badge}
+    </span>
+  )
 }
 
 // ── month view primitives ─────────────────────────────────────────────────────
@@ -185,9 +296,7 @@ function CalRow({ cells }: { cells: React.ReactNode[] }) {
   )
 }
 
-function ExpandedPanel({
-  dateKey: dk, items, onSelect, onClose,
-}: {
+function ExpandedPanel({ dateKey: dk, items, onSelect, onClose }: {
   dateKey: string; items: CalItem[]
   onSelect: (item: TraktSelectedItem) => void; onClose: () => void
 }) {
@@ -225,12 +334,12 @@ function WeekRow({ week, expandedDay, onToggleDay, onSelect }: {
     const isExpanded = day.dateKey === expandedDay
     const hasItems   = day.items.length > 0
     if (day.isToday) return (
-      <button onClick={() => day.dateKey && onToggleDay(day.dateKey)} className={`cal-today${isExpanded ? ' expanded' : ''}`} title="click to expand">
+      <button onClick={() => day.dateKey && onToggleDay(day.dateKey)} className={`cal-today${isExpanded ? ' expanded' : ''}`}>
         [{day.n}]{isExpanded ? '▴' : '▾'}
       </button>
     )
     if (hasItems) return (
-      <button onClick={() => day.dateKey && onToggleDay(day.dateKey)} className={`cal-day${isExpanded ? ' expanded' : ''}`} title="click to expand">
+      <button onClick={() => day.dateKey && onToggleDay(day.dateKey)} className={`cal-day${isExpanded ? ' expanded' : ''}`}>
         {day.n}{isExpanded ? '▴' : '▾'}
       </button>
     )
@@ -243,7 +352,7 @@ function WeekRow({ week, expandedDay, onToggleDay, onSelect }: {
       if (!item) return <span className="block py-0.5">&nbsp;</span>
       const textClass = item.downloaded ? 'line-through text-[#999]' : item.isPast ? 'text-yellow-500' : 'text-white'
       return (
-        <div className="py-0.5 px-0.5 cursor-pointer" onClick={() => onSelect(item.selected)} title={item.line}>
+        <div className="py-0.5 px-0.5 cursor-pointer" onClick={() => onSelect(item.selected)}>
           <MarqueeText>
             <span className={item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}>{item.type === 'movie' ? '‡ ' : '† '}</span>
             <span className={textClass}>{item.line}</span>
@@ -263,24 +372,21 @@ function WeekRow({ week, expandedDay, onToggleDay, onSelect }: {
 
 // ── Forecast view ─────────────────────────────────────────────────────────────
 
-function ForecastView({
-  itemMap, offset, onOffsetChange, onSelect,
-}: {
+function ForecastView({ itemMap, offset, onOffsetChange, onSelect }: {
   itemMap: Map<string, CalItem[]>
   offset: number
   onOffsetChange: (n: number) => void
   onSelect: (item: TraktSelectedItem) => void
 }) {
   const today = new Date()
-  const days = [-1, 0, 1].map(d => {
+  const days  = [-1, 0, 1].map(d => {
     const date = addDays(today, d + offset)
     const key  = dateKey(date)
-    return { key, date, isToday: d + offset === 0, items: itemMap.get(key) ?? [] }
+    return { key, isToday: d + offset === 0, items: itemMap.get(key) ?? [] }
   })
 
   return (
     <div className="space-y-1">
-      {/* nav */}
       <div className="flex items-center justify-between mb-2 font-mono text-[10px]">
         <button onClick={() => onOffsetChange(offset - 3)} className="btn-xs text-[#888] hover:text-white">← prev</button>
         {offset !== 0 && (
@@ -290,40 +396,25 @@ function ForecastView({
       </div>
 
       {days.map(({ key, isToday, items }) => (
-        <div
-          key={key}
-          className={`rounded border font-mono text-xs ${
-            isToday
-              ? 'border-[#3a3a6a] bg-[#12122a]'
-              : 'border-[#1a1a2e] bg-[#0d0d18]'
-          }`}
-        >
-          {/* day header */}
+        <div key={key} className={`rounded border font-mono text-xs ${isToday ? 'border-[#3a3a6a] bg-[#12122a]' : 'border-[#1a1a2e] bg-[#0d0d18]'}`}>
           <div className={`px-3 py-1.5 flex items-center justify-between border-b ${isToday ? 'border-[#3a3a6a]' : 'border-[#1a1a2e]'}`}>
             <span className={isToday ? 'text-[#4ade80] font-bold' : 'text-[#6a9a7a]'}>
               {isToday ? `[${fmtDateHeader(key)}]` : fmtDateHeader(key)}
             </span>
             {isToday && <span className="text-[#4ade80] text-[10px]">today</span>}
           </div>
-
-          {/* items */}
           <div className="px-3 py-2 space-y-1.5">
             {items.length === 0 ? (
               <span className="text-[#444]">—</span>
             ) : items.map((item, i) => {
               const textClass = item.downloaded ? 'line-through text-[#555]' : item.isPast ? 'text-yellow-500' : 'text-white'
-              const tag = item.downloaded
-                ? <span className="text-[#444] ml-1">[dl]</span>
-                : item.isPast
-                  ? <span className="text-yellow-700 ml-1">[!]</span>
-                  : null
               return (
                 <div key={i} className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect(item.selected)}>
                   <span className={`shrink-0 ${item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}`}>
                     {item.type === 'movie' ? '‡' : '†'}
                   </span>
                   <span className={`${textClass} flex-1 min-w-0 truncate`}>{item.line}</span>
-                  {tag}
+                  <ItemTags item={item} />
                 </div>
               )
             })}
@@ -336,20 +427,25 @@ function ForecastView({
 
 // ── Agenda view ───────────────────────────────────────────────────────────────
 
-function AgendaView({
-  itemMap, cap, onSelect,
-}: {
+function AgendaView({ itemMap, cap, agendaOffset, onOffsetChange, onSelect }: {
   itemMap: Map<string, CalItem[]>
   cap: number
+  agendaOffset: number
+  onOffsetChange: (n: number) => void
   onSelect: (item: TraktSelectedItem) => void
 }) {
   const today = new Date()
 
-  // Collect days from 7 days back to 60 days forward that have items
+  // Build days with entries, anchored at agendaOffset from today
+  // agendaOffset 0 = 7 days back → 60 days forward
+  // agendaOffset +10 = 10 days forward start
+  const startDay = -7 + agendaOffset
+  const endDay   = 60 + agendaOffset
+
   const daysWithItems: Array<{ key: string; isToday: boolean; isPast: boolean; items: CalItem[] }> = []
-  for (let d = -7; d <= 60; d++) {
-    const date = addDays(today, d)
-    const key  = dateKey(date)
+  for (let d = startDay; d <= endDay; d++) {
+    const date  = addDays(today, d)
+    const key   = dateKey(date)
     const items = itemMap.get(key)
     if (items && items.length > 0) {
       daysWithItems.push({ key, isToday: d === 0, isPast: d < 0, items })
@@ -358,53 +454,56 @@ function AgendaView({
 
   // Cap by total entries
   let remaining = cap
-  const capped = daysWithItems
-    .map(day => {
-      if (remaining <= 0) return null
-      const sliced = day.items.slice(0, remaining)
-      remaining -= sliced.length
-      return { ...day, items: sliced }
-    })
-    .filter(Boolean) as typeof daysWithItems
-
-  if (capped.length === 0) return <p className="text-[#444] text-xs font-mono">// no entries</p>
+  const capped  = daysWithItems.map(day => {
+    if (remaining <= 0) return null
+    const sliced = day.items.slice(0, remaining)
+    remaining -= sliced.length
+    return { ...day, items: sliced }
+  }).filter(Boolean) as typeof daysWithItems
 
   return (
-    <div className="space-y-3 font-mono text-xs">
-      {capped.map(({ key, isToday, isPast, items }) => (
-        <div key={key}>
-          {/* day header */}
-          <div className={`mb-1 pb-0.5 border-b border-[#1a1a2e] flex items-center gap-2`}>
-            <span className={isToday ? 'text-[#4ade80] font-bold' : isPast ? 'text-[#4a4a6a]' : 'text-[#6a9a7a]'}>
-              {fmtDateKey(key)}
-            </span>
-            {isToday && <span className="text-[#4ade80] text-[10px]">← today</span>}
-          </div>
+    <div>
+      {/* nav */}
+      <div className="flex items-center justify-between mb-3 font-mono text-[10px]">
+        <button onClick={() => onOffsetChange(agendaOffset - cap)} className="btn-xs text-[#888] hover:text-white">← prev</button>
+        {agendaOffset !== 0 && (
+          <button onClick={() => onOffsetChange(0)} className="btn-xs text-[#6a9a7a]">today</button>
+        )}
+        <button onClick={() => onOffsetChange(agendaOffset + cap)} className="btn-xs text-[#888] hover:text-white">next →</button>
+      </div>
 
-          {/* entries */}
-          <div className="space-y-1 pl-2">
-            {items.map((item, i) => {
-              const textClass = item.downloaded ? 'line-through text-[#555]' : item.isPast ? 'text-yellow-500' : 'text-white'
-              const tag = item.downloaded
-                ? <span className="text-[#444] text-[10px] shrink-0">[dl]</span>
-                : item.isPast
-                  ? <span className="text-yellow-700 text-[10px] shrink-0">[!]</span>
-                  : <span className="text-[#4a6a8a] text-[10px] shrink-0">[soon]</span>
-              return (
-                <div key={i} className="flex items-start gap-2 cursor-pointer group" onClick={() => onSelect(item.selected)}>
-                  <span className={`shrink-0 mt-px ${item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}`}>
-                    {item.type === 'movie' ? '‡' : '†'}
-                  </span>
-                  <span className={`${textClass} flex-1 min-w-0 leading-snug group-hover:text-[#ddd] transition-colors`}>
-                    {item.line}
-                  </span>
-                  {tag}
-                </div>
-              )
-            })}
-          </div>
+      {capped.length === 0 ? (
+        <p className="text-[#444] text-xs font-mono">// no entries in this range</p>
+      ) : (
+        <div className="space-y-3 font-mono text-xs">
+          {capped.map(({ key, isToday, isPast, items }) => (
+            <div key={key}>
+              <div className="mb-1 pb-0.5 border-b border-[#1a1a2e] flex items-center gap-2">
+                <span className={isToday ? 'text-[#4ade80] font-bold' : isPast ? 'text-[#4a4a6a]' : 'text-[#6a9a7a]'}>
+                  {fmtDateKey(key)}
+                </span>
+                {isToday && <span className="text-[#4ade80] text-[10px]">← today</span>}
+              </div>
+              <div className="space-y-1 pl-2">
+                {items.map((item, i) => {
+                  const textClass = item.downloaded ? 'line-through text-[#555]' : item.isPast ? 'text-yellow-500' : 'text-white'
+                  return (
+                    <div key={i} className="flex items-center gap-2 cursor-pointer group" onClick={() => onSelect(item.selected)}>
+                      <span className={`shrink-0 ${item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}`}>
+                        {item.type === 'movie' ? '‡' : '†'}
+                      </span>
+                      <span className={`${textClass} flex-1 min-w-0 truncate group-hover:text-[#ddd] transition-colors`}>
+                        {item.line}
+                      </span>
+                      <ItemTags item={item} />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   )
 }
@@ -436,19 +535,21 @@ export default function TraktSection() {
   const [episodes,           setEpisodes]           = useState<TraktEpisode[]>([])
   const [downloadedMovies,   setDownloadedMovies]   = useState<Set<number>>(new Set())
   const [downloadedEpisodes, setDownloadedEpisodes] = useState<Set<string>>(new Set())
+  const [inArrMovies,        setInArrMovies]        = useState<Set<number>>(new Set())
+  const [inArrShows,         setInArrShows]         = useState<Set<number>>(new Set())
   const [error,              setError]              = useState<string | null>(null)
   const [loading,            setLoading]            = useState(true)
   const [selected,           setSelected]           = useState<TraktSelectedItem | null>(null)
   const [expandedDay,        setExpandedDay]        = useState<string | null>(null)
   const [view,               setView]               = useState<CalView>('month')
   const [forecastOffset,     setForecastOffset]     = useState(0)
+  const [agendaOffset,       setAgendaOffset]       = useState(0)
   const [isMobile,           setIsMobile]           = useState(false)
 
   useEffect(() => {
     const mobile = window.innerWidth < 768
     setIsMobile(mobile)
     setView(mobile ? 'forecast' : 'month')
-
     function onResize() { setIsMobile(window.innerWidth < 768) }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
@@ -464,6 +565,8 @@ export default function TraktSection() {
         setEpisodes(data.episodes ?? [])
         setDownloadedMovies(new Set<number>(data.downloadedMovies ?? []))
         setDownloadedEpisodes(new Set<string>(data.downloadedEpisodes ?? []))
+        setInArrMovies(new Set<number>(data.inArrMovies ?? []))
+        setInArrShows(new Set<number>(data.inArrShows ?? []))
       } catch (e) {
         setError(String(e))
       } finally {
@@ -476,8 +579,8 @@ export default function TraktSection() {
   }, [])
 
   const itemMap = useMemo(
-    () => buildItemMap(episodes, movies, downloadedMovies, downloadedEpisodes),
-    [episodes, movies, downloadedMovies, downloadedEpisodes],
+    () => buildItemMap(episodes, movies, downloadedMovies, downloadedEpisodes, inArrMovies, inArrShows),
+    [episodes, movies, downloadedMovies, downloadedEpisodes, inArrMovies, inArrShows],
   )
 
   const now   = new Date()
@@ -492,6 +595,8 @@ export default function TraktSection() {
       {d}
     </span>
   ))
+
+  const cap = isMobile ? 5 : 10
 
   return (
     <>
@@ -537,20 +642,11 @@ export default function TraktSection() {
         )}
 
         {!loading && !error && view === 'forecast' && (
-          <ForecastView
-            itemMap={itemMap}
-            offset={forecastOffset}
-            onOffsetChange={setForecastOffset}
-            onSelect={setSelected}
-          />
+          <ForecastView itemMap={itemMap} offset={forecastOffset} onOffsetChange={setForecastOffset} onSelect={setSelected} />
         )}
 
         {!loading && !error && view === 'agenda' && (
-          <AgendaView
-            itemMap={itemMap}
-            cap={isMobile ? 5 : 10}
-            onSelect={setSelected}
-          />
+          <AgendaView itemMap={itemMap} cap={cap} agendaOffset={agendaOffset} onOffsetChange={setAgendaOffset} onSelect={setSelected} />
         )}
 
         <div className="font-mono text-xs text-[#6a9a7a] mt-2">{'}'}</div>

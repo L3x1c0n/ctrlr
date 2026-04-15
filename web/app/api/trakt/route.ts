@@ -57,11 +57,14 @@ export async function GET(req: NextRequest) {
       getEpisodeFileStatus(tvdbIds),
     ])
 
-    // Encode as plain arrays for JSON serialisation
-    const downloadedMovies   = [...movieFiles]
-    const downloadedEpisodes = [...episodeFiles]
-
-    return NextResponse.json({ movies, episodes, downloadedMovies, downloadedEpisodes })
+    return NextResponse.json({
+      movies,
+      episodes,
+      downloadedMovies:   [...movieFiles.downloaded],
+      downloadedEpisodes: [...episodeFiles.downloaded],
+      inArrMovies:        [...movieFiles.inArr],
+      inArrShows:         [...episodeFiles.inArr],
+    })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
   }
