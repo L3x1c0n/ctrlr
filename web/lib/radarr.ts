@@ -134,7 +134,13 @@ export interface Release {
   indexer: string
   title: string
   size: number
+  age: number
+  ageHours: number
+  protocol: 'torrent' | 'usenet'
   quality: { quality: { name: string } }
+  languages?: { name: string }[]
+  customFormatScore?: number
+  customFormats?: { name: string }[]
   seeders?: number
   leechers?: number
   rejected: boolean

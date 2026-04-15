@@ -3,23 +3,7 @@
 import { useState, useEffect } from 'react'
 import { TraktMovie, TraktEpisode } from '@/types'
 import Spinner from '@/components/Spinner'
-
-function fmtSize(bytes: number): string {
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(0)} MB`
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`
-}
-
-interface Release {
-  guid: string
-  indexerId: number
-  indexer: string
-  title: string
-  size: number
-  quality: { quality: { name: string } }
-  seeders?: number
-  rejected: boolean
-  rejections: string[]
-}
+import ReleaseSearchResults, { Release } from '@/components/ReleaseSearchResults'
 
 interface TraktMovieFull {
   title: string
@@ -270,49 +254,23 @@ export default function TraktDetailDrawer({ item, onClose }: Props) {
               )}
 
               {/* interactive results */}
-              {relLoading && <Spinner />}
-              {relError && (
-                <p className="text-red-500 text-xs font-mono mt-2">// error: {relError}</p>
-              )}
-              {releases !== null && (() => {
-                const svc = arrIds?.movieId ? 'radarr' : 'sonarr'
-                return (
-                  <div>
-                    <p className="text-[#7070a8] text-xs mb-2">{`/* releases (${releases.length}) */`}</p>
-                    {releases.length === 0 && <p className="text-[#888] text-xs">no results</p>}
-                    <div className="space-y-1 max-h-96 overflow-y-auto">
-                      {releases.map((r, i) => (
-                        <div key={i} className="border border-[#1a1a2e] p-2 text-xs font-mono">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <span className="text-white leading-snug flex-1 break-all">{r.title}</span>
-                            <button
-                              onClick={async () => {
-                                setActing(`grab-${i}`)
-                                await fetch(`/api/${svc}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'grab', guid: r.guid, indexerId: r.indexerId }) })
-                                setReleases(null)
-                                setActing(null)
-                              }}
-                              disabled={!!acting}
-                              className="btn-xs text-green-400 shrink-0"
-                            >
-                              {acting === `grab-${i}` ? '...' : '--grab'}
-                            </button>
-                          </div>
-                          <div className="flex gap-3 text-[#888] text-[10px]">
-                            <span>{r.quality.quality.name}</span>
-                            <span>{fmtSize(r.size)}</span>
-                            {r.seeders !== undefined && <span className="text-green-600">{r.seeders}S</span>}
-                            <span className="truncate">{r.indexer}</span>
-                          </div>
-                          {r.rejected && r.rejections.length > 0 && (
-                            <p className="text-red-600 text-[10px] mt-0.5">{r.rejections[0]}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })()}
+              <ReleaseSearchResults
+                releases={releases}
+                loading={relLoading}
+                error={relError}
+                acting={acting}
+                onGrab={async (guid, indexerId, key) => {
+                  const svc = arrIds?.movieId ? 'radarr' : 'sonarr'
+                  setActing(key)
+                  await fetch(`/api/${svc}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'grab', guid, indexerId }),
+                  })
+                  setReleases(null)
+                  setActing(null)
+                }}
+              />
             </>
           )}
         </div>

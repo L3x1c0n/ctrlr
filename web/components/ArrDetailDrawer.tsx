@@ -5,23 +5,11 @@ import { ArrQueueItem, ArrMediaDetail, QualityProfile } from '@/types'
 import ProgressBar from '@/components/ProgressBar'
 import Spinner from '@/components/Spinner'
 import { SonarrEpisode } from '@/lib/sonarr'
+import ReleaseSearchResults, { Release } from '@/components/ReleaseSearchResults'
 
 function fmtSize(bytes: number): string {
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(0)} MB`
   return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`
-}
-
-interface Release {
-  guid: string
-  indexerId: number
-  indexer: string
-  title: string
-  size: number
-  quality: { quality: { name: string } }
-  seeders?: number
-  leechers?: number
-  rejected: boolean
-  rejections: string[]
 }
 
 interface Props {
@@ -39,9 +27,6 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
   const [releases, setReleases] = useState<Release[] | null>(null)
   const [relLoading, setRelLoading] = useState(false)
   const [relError, setRelError] = useState<string | null>(null)
-  const [relFilter, setRelFilter] = useState('')
-  const [relSort, setRelSort] = useState<'seeders' | 'size' | 'quality'>('seeders')
-  const [relHideRejected, setRelHideRejected] = useState(false)
   const [episodes, setEpisodes] = useState<SonarrEpisode[] | null>(null)
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<number | null>(null)
 
@@ -51,7 +36,6 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
   useEffect(() => {
     setReleases(null)
     setRelError(null)
-    setRelFilter('')
     setEpisodes(null)
     setSelectedEpisodeId(null)
     if (!item || !mediaId) { setDetail(null); setProfiles([]); return }
@@ -345,90 +329,23 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
               </div>
 
               {/* interactive search results */}
-              {relLoading && <Spinner />}
-              {relError && (
-                <p className="text-red-500 text-xs font-mono mt-2">// error: {relError}</p>
-              )}
-              {releases !== null && (() => {
-                const visible = releases
-                  .filter(r => {
-                    if (relHideRejected && r.rejected) return false
-                    if (relFilter && !r.title.toLowerCase().includes(relFilter.toLowerCase())) return false
-                    return true
+              <ReleaseSearchResults
+                releases={releases}
+                loading={relLoading}
+                error={relError}
+                acting={acting}
+                onGrab={async (guid, indexerId, key) => {
+                  setActing(key)
+                  await fetch(`/api/${service}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'grab', guid, indexerId }),
                   })
-                  .sort((a, b) => {
-                    if (relSort === 'seeders') return (b.seeders ?? 0) - (a.seeders ?? 0)
-                    if (relSort === 'size') return b.size - a.size
-                    return a.quality.quality.name.localeCompare(b.quality.quality.name)
-                  })
-                return (
-                  <div>
-                    <p className="text-[#7070a8] text-xs mb-2">{`/* releases (${visible.length}/${releases.length}) */`}</p>
-                    {releases.length === 0
-                      ? <p className="text-[#888] text-xs">no results</p>
-                      : <div className="flex gap-2 mb-2">
-                          <input
-                            type="text"
-                            placeholder="filter..."
-                            value={relFilter}
-                            onChange={e => setRelFilter(e.target.value)}
-                            className="bg-[#0f0f1a] border border-[#1a1a2e] text-white text-xs font-mono px-2 py-1 flex-1 focus:outline-none focus:border-[#888] placeholder-[#999]"
-                          />
-                          <select
-                            value={relSort}
-                            onChange={e => setRelSort(e.target.value as typeof relSort)}
-                            className="bg-[#0f0f1a] border border-[#1a1a2e] text-white text-xs font-mono px-2 py-1 focus:outline-none focus:border-[#888]"
-                          >
-                            <option value="seeders">seeders</option>
-                            <option value="size">size</option>
-                            <option value="quality">quality</option>
-                          </select>
-                          <button
-                            onClick={() => setRelHideRejected(v => !v)}
-                            className={`btn-xs ${relHideRejected ? 'text-yellow-400' : 'text-[#888]'}`}
-                          >
-                            --no-rej
-                          </button>
-                        </div>
-                    }
-                    <div className="space-y-1 max-h-96 overflow-y-auto">
-                      {visible.map((r, i) => (
-                        <div key={r.guid} className="border border-[#1a1a2e] p-2 text-xs font-mono">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <span className="text-white leading-snug flex-1 break-all">{r.title}</span>
-                            <button
-                              onClick={async () => {
-                                setActing(`grab-${r.guid}`)
-                                await fetch(`/api/${service}`, {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ action: 'grab', guid: r.guid, indexerId: r.indexerId }),
-                                })
-                                setReleases(null)
-                                onRefresh()
-                                setActing(null)
-                              }}
-                              disabled={!!acting}
-                              className="btn-xs text-green-400 shrink-0"
-                            >
-                              {acting === `grab-${r.guid}` ? '...' : '--grab'}
-                            </button>
-                          </div>
-                          <div className="flex gap-3 text-[#888] text-[10px]">
-                            <span>{r.quality.quality.name}</span>
-                            <span>{fmtSize(r.size)}</span>
-                            {r.seeders !== undefined && <span className="text-green-600">{r.seeders}S</span>}
-                            <span className="truncate">{r.indexer}</span>
-                          </div>
-                          {r.rejected && r.rejections.length > 0 && (
-                            <p className="text-red-600 text-[10px] mt-0.5">{r.rejections[0]}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })()}
+                  setReleases(null)
+                  onRefresh()
+                  setActing(null)
+                }}
+              />
             </>
           )}
         </div>
