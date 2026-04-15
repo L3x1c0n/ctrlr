@@ -150,7 +150,7 @@ The app talks directly to MORIARTY's services — same endpoints as the dashboar
 
 ## Feature Parity Audit
 *Goal: all service management contained within drawers/sections — no navigating to the actual apps.*
-*Last audited: 2026-04-15 by MORIARTY Claude.*
+*Last audited: 2026-04-15. MORIARTY Claude wrote the initial draft; Mac Claude corrected app column after reading source.*
 
 ### qBittorrent
 | Feature | Dashboard | App |
@@ -160,6 +160,7 @@ The app talks directly to MORIARTY's services — same endpoints as the dashboar
 | Pause / Resume | ✅ | ✅ |
 | Delete (keep files) | ✅ | ✅ |
 | Delete + files | ✅ | ✅ |
+| Torrent detail sheet (stats/progress) | ✅ | ✅ |
 | File list + per-file progress | ✅ | ❌ |
 | Seeds / peers / connections | ✅ | ❌ |
 | Save path | ✅ | ❌ |
@@ -167,41 +168,42 @@ The app talks directly to MORIARTY's services — same endpoints as the dashboar
 | Force reannounce | ❌ | ❌ |
 | Set speed limits | ❌ | ❌ |
 | Set category | ❌ | ❌ |
-| Poster enrichment | ✅ | ✅ |
+| Poster enrichment (name + queue hash) | ✅ | ✅ (superior — whole-word matching) |
 | Live Activity | ❌ n/a | ✅ |
 
 ### Radarr / Sonarr
 | Feature | Dashboard | App |
 |---|---|---|
+| Upcoming calendar | ✅ | ✅ |
 | Active download queue | ✅ | ✅ enriched |
-| Toggle monitor | ✅ | ❌ |
-| Change quality profile | ✅ | ❌ |
-| Remove from queue | ✅ | ❌ |
+| Toggle monitor | ✅ | ✅ (UpcomingSection detail) |
+| Change quality profile | ✅ | ✅ (UpcomingSection detail) |
+| Auto search (force search) | ✅ | ✅ (UpcomingSection detail) |
+| Interactive search + grab | ✅ | ✅ (UpcomingSection detail) |
+| Remove from queue | ✅ | ❌ (client exists, no UI in queue) |
 | Blacklist + remove | ✅ | ❌ |
-| Auto search | ✅ | ❌ |
-| Interactive search + grab | ✅ | ❌ |
 | Episode picker (Sonarr) | ✅ | ❌ |
 | Add new movie / show | ❌ | ❌ |
 | Library search / browse | ❌ | ❌ |
-| Search for missing / cutoff | ❌ | ❌ |
+| Health check warnings | ❌ | ❌ |
 | ntfy real-time trigger | ❌ | ✅ |
 
 ### Plex
 | Feature | Dashboard | App |
 |---|---|---|
-| Recently added | ✅ 7d/10 items | ✅ |
-| Delete media | ✅ | ❌ |
-| Fix metadata match | ✅ | ❌ |
-| Poster / art selection | ✅ | ❌ |
-| Metadata refresh | ✅ | ❌ |
+| Recently added (Movies + TV) | ✅ | ✅ (HeroSection) |
+| Delete media | ✅ | ✅ (RecentlyAddedDetailSheet) |
+| Fix metadata match | ✅ | ✅ (FixMatchSheet) |
+| Poster / art selection | ✅ | ✅ (SelectPosterSheet) |
+| Metadata refresh | ✅ | ✅ (RecentlyAddedDetailSheet) |
 | Mark watched / unwatched | ❌ | ❌ |
 | Library search | ❌ | ❌ |
-| Play (deep link) | ❌ | ❌ |
+| Play (deep link to Plex app) | ❌ | ❌ |
 
 ### Tautulli
 | Feature | Dashboard | App |
 |---|---|---|
-| Active streams | ✅ | ✅ |
+| Active streams | ✅ | ✅ (NowPlayingSection) |
 | Progress / position | ✅ | ✅ |
 | Transcode decision | ✅ | ✅ |
 | User / player / platform | ✅ | ✅ |
@@ -212,22 +214,22 @@ The app talks directly to MORIARTY's services — same endpoints as the dashboar
 ### Seer / Overseerr
 | Feature | Dashboard | App |
 |---|---|---|
-| Request list | ✅ | 🔧 phase 4 |
-| Approve / decline request | ✅ | ❌ |
-| Delete request | ✅ | ❌ |
-| Quality profile + root folder | ✅ | ❌ |
+| Request list | ✅ | ✅ (RequestsSection — not phase 4, already done) |
+| Submit new request | ✅ | ✅ (RequestSearchSheet) |
+| Approve / decline request | ✅ | ✅ (MediaDetailSheet) |
+| Delete request | ✅ | ✅ (OverseerrClient + MediaDetailSheet) |
+| Quality profile + root folder | ✅ | ✅ (MediaDetailSheet) |
 | Re-request | ✅ | ❌ |
-| Submit new request | ❌ | ❌ |
-| Discover / trending | ❌ | ✅ paginated |
-| Pagination (long lists) | ❌ | ✅ |
+| Discover / trending | ❌ | ✅ (DiscoverSectionView) |
+| Pagination (long lists) | ❌ (backlog) | ✅ |
 
 ### Trakt
 | Feature | Dashboard | App |
 |---|---|---|
 | Upcoming calendar | ✅ | ✅ |
-| Day gradient | ✅ | ❌ |
-| Detail drawer | ✅ | ❌ |
+| Detail drawer / sheet | ✅ | ❌ |
 | Search releases from item | ✅ | ❌ |
+| Add to watchlist | ❌ | ❌ (client method exists, no UI) |
 | Watch history | ❌ | ❌ |
 | Check in | ❌ | ❌ |
 | Ratings | ❌ | ❌ |
@@ -236,21 +238,23 @@ The app talks directly to MORIARTY's services — same endpoints as the dashboar
 
 ### Priority order to close parity
 
-**Neither app can do these yet — highest impact:**
-1. Submit new Seer requests (search → request flow)
-2. Radarr/Sonarr: library browse + add new content
-3. Plex: mark watched / unwatched
-4. Tautulli: terminate stream
-5. Trakt: watch history / check-in
+**Neither platform can do these yet — highest impact:**
+1. Radarr/Sonarr: add new movie/show to library
+2. Plex: mark watched / unwatched
+3. Tautulli: terminate stream
+4. Trakt: watch history / check-in / ratings
+5. Radarr/Sonarr: health check warnings surface in UI
 
 **App catching up to dashboard:**
-1. Arr drawer — interactive search + grab, quality profile, remove/blacklist, episode picker
-2. Plex — delete, fix match, poster selection, metadata refresh
-3. Trakt — detail drawer with release search
+1. Radarr/Sonarr: remove from queue + blacklist UI (client exists)
+2. Radarr/Sonarr: episode picker (Sonarr)
+3. Trakt: detail sheet with release search
+4. qBittorrent: file list in detail sheet
 
 **Dashboard catching up to app:**
 1. Seer discover/trending section
 2. Seer list pagination (existing backlog)
+3. Trakt detail drawer error handling (existing backlog — silent error bug)
 
 ---
 
