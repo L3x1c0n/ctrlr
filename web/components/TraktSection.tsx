@@ -1,9 +1,11 @@
 'use client'
 
-import { Fragment, useState, useEffect, useRef } from 'react'
+import { Fragment, useState, useEffect, useRef, useMemo } from 'react'
 import { TraktMovie, TraktEpisode } from '@/types'
 import Spinner from '@/components/Spinner'
 import TraktDetailDrawer, { TraktSelectedItem } from '@/components/TraktDetailDrawer'
+
+// ── MarqueeText ───────────────────────────────────────────────────────────────
 
 function MarqueeText({ children, className }: { children: React.ReactNode; className?: string }) {
   const outerRef = useRef<HTMLDivElement>(null)
@@ -30,6 +32,8 @@ function MarqueeText({ children, className }: { children: React.ReactNode; class
   )
 }
 
+// ── constants ─────────────────────────────────────────────────────────────────
+
 const MONTH_NAMES = [
   'january','february','march','april','may','june',
   'july','august','september','october','november','december',
@@ -37,15 +41,28 @@ const MONTH_NAMES = [
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 const DAY_HUE   = [220, 229, 238, 247, 256, 265, 280]
 
-function dowIndex(d: Date): number {
-  return (d.getDay() + 6) % 7
+function dowIndex(d: Date): number { return (d.getDay() + 6) % 7 }
+
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 
-function formatDayKey(dateKey: string): string {
-  const d       = new Date(dateKey + 'T12:00:00')
-  const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase()
-  return `/* ${dayName} · ${d.getDate()} · ${MONTH_NAMES[d.getMonth()]} */`
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d); r.setDate(r.getDate() + n); return r
 }
+
+function fmtDateKey(key: string): string {
+  const d = new Date(key + 'T12:00:00')
+  const dn = d.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase()
+  return `/* ${dn} · ${d.getDate()} · ${MONTH_NAMES[d.getMonth()]} */`
+}
+
+function fmtDateHeader(key: string): string {
+  const d = new Date(key + 'T12:00:00')
+  return `${d.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase()} · ${d.getDate()} · ${MONTH_NAMES[d.getMonth()]}`
+}
+
+// ── data types ────────────────────────────────────────────────────────────────
 
 interface CalItem {
   line:       string
@@ -62,20 +79,17 @@ interface CalDay {
   items:    CalItem[]
 }
 
-function buildCalendar(
-  year: number,
-  month: number,
+// ── data builders ─────────────────────────────────────────────────────────────
+
+function buildItemMap(
   episodes: TraktEpisode[],
   movies: TraktMovie[],
   downloadedMovies: Set<number>,
   downloadedEpisodes: Set<string>,
-): CalDay[][] {
-  const today    = new Date()
-  const todayKey = today.toISOString().split('T')[0]
-  const lastDay  = new Date(year, month + 1, 0).getDate()
-  const startDow = dowIndex(new Date(year, month, 1))
+): Map<string, CalItem[]> {
+  const today = new Date().toISOString().split('T')[0]
+  const map   = new Map<string, CalItem[]>()
 
-  const map = new Map<string, CalItem[]>()
   function add(dateStr: string, item: CalItem) {
     const key = dateStr.slice(0, 10)
     if (!map.has(key)) map.set(key, [])
@@ -84,30 +98,42 @@ function buildCalendar(
 
   for (const ep of episodes) {
     if (!ep.first_aired) continue
-    const code = `S${String(ep.episode.season).padStart(2,'0')}E${String(ep.episode.number).padStart(2,'0')}`
-    const dateKey = ep.first_aired.slice(0, 10)
-    const isPast = dateKey < todayKey
+    const code  = `S${String(ep.episode.season).padStart(2,'0')}E${String(ep.episode.number).padStart(2,'0')}`
+    const dKey  = ep.first_aired.slice(0, 10)
     const dlKey = `${ep.show.ids.tvdb}:${ep.episode.season}:${ep.episode.number}`
     add(ep.first_aired, {
-      line: `${ep.show.title} ${code}`,
-      type: 'episode',
-      selected: { type: 'episode', data: ep, downloaded: downloadedEpisodes.has(dlKey) },
+      line:       `${ep.show.title} ${code}`,
+      type:       'episode',
+      selected:   { type: 'episode', data: ep, downloaded: downloadedEpisodes.has(dlKey) },
       downloaded: downloadedEpisodes.has(dlKey),
-      isPast,
+      isPast:     dKey < today,
     })
   }
+
   for (const mv of movies) {
     if (!mv.released) continue
-    const isPast = mv.released < todayKey
-    const dlMovie = downloadedMovies.has(mv.movie.ids.tmdb)
+    const dl = downloadedMovies.has(mv.movie.ids.tmdb)
     add(mv.released, {
-      line: mv.movie.title,
-      type: 'movie',
-      selected: { type: 'movie', data: mv, downloaded: dlMovie },
-      downloaded: dlMovie,
-      isPast,
+      line:       mv.movie.title,
+      type:       'movie',
+      selected:   { type: 'movie', data: mv, downloaded: dl },
+      downloaded: dl,
+      isPast:     mv.released < today,
     })
   }
+
+  return map
+}
+
+function buildCalendar(
+  year: number,
+  month: number,
+  itemMap: Map<string, CalItem[]>,
+): CalDay[][] {
+  const today   = new Date()
+  const todayK  = dateKey(today)
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  const startDow = dowIndex(new Date(year, month, 1))
 
   const weeks: CalDay[][] = []
   let week: CalDay[] = []
@@ -115,9 +141,9 @@ function buildCalendar(
   for (let i = 0; i < startDow; i++) week.push({ n: null, dateKey: null, isToday: false, items: [] })
 
   for (let d = 1; d <= lastDay; d++) {
-    const dateKey = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+    const k       = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
     const isToday = d === today.getDate() && month === today.getMonth() && year === today.getFullYear()
-    week.push({ n: d, dateKey, isToday, items: map.get(dateKey) ?? [] })
+    week.push({ n: d, dateKey: k, isToday, items: itemMap.get(k) ?? [] })
     if (week.length === 7) { weeks.push(week); week = [] }
   }
 
@@ -129,7 +155,7 @@ function buildCalendar(
   return weeks
 }
 
-// ── ASCII grid primitives ─────────────────────────────────────────────────────
+// ── month view primitives ─────────────────────────────────────────────────────
 
 function CalSep({ highlight = false }: { highlight?: boolean }) {
   return (
@@ -159,41 +185,26 @@ function CalRow({ cells }: { cells: React.ReactNode[] }) {
   )
 }
 
-// ── expanded day panel ────────────────────────────────────────────────────────
-
 function ExpandedPanel({
-  dateKey, items, onSelect, onClose,
+  dateKey: dk, items, onSelect, onClose,
 }: {
-  dateKey: string
-  items:   CalItem[]
-  onSelect: (item: TraktSelectedItem) => void
-  onClose:  () => void
+  dateKey: string; items: CalItem[]
+  onSelect: (item: TraktSelectedItem) => void; onClose: () => void
 }) {
   return (
     <div className="border-x border-b border-[#2a2a4a] bg-[#0d0d18] font-mono text-xs">
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#1a1a2e]">
-        <span className="text-[#6a9a7a]">{formatDayKey(dateKey)}</span>
+        <span className="text-[#6a9a7a]">{fmtDateKey(dk)}</span>
         <button onClick={onClose} className="btn-xs text-[#888] hover:text-[#ccc]">--close</button>
       </div>
       <div className="px-3 py-2 space-y-1.5">
         {items.length === 0 && <span className="text-[#999]">no events</span>}
         {items.map((item, i) => {
-          const textClass = item.downloaded
-            ? 'line-through text-[#999]'
-            : item.isPast
-              ? 'text-yellow-500'
-              : 'text-white'
+          const textClass = item.downloaded ? 'line-through text-[#999]' : item.isPast ? 'text-yellow-500' : 'text-white'
           return (
             <div key={i} className="flex items-center gap-2">
-              <button
-                onClick={() => { onSelect(item.selected) }}
-                className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0"
-              >
-                --info
-              </button>
-              <span className={item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}>
-                {item.type === 'movie' ? '‡' : '†'}
-              </span>
+              <button onClick={() => onSelect(item.selected)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+              <span className={item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}>{item.type === 'movie' ? '‡' : '†'}</span>
               <span className={textClass}>{item.line}</span>
             </div>
           )
@@ -203,72 +214,38 @@ function ExpandedPanel({
   )
 }
 
-// ── week row ──────────────────────────────────────────────────────────────────
-
-interface WeekRowProps {
-  week:        CalDay[]
-  expandedDay: string | null
-  onToggleDay: (key: string) => void
-  onSelect:    (item: TraktSelectedItem) => void
-}
-
-function WeekRow({ week, expandedDay, onToggleDay, onSelect }: WeekRowProps) {
+function WeekRow({ week, expandedDay, onToggleDay, onSelect }: {
+  week: CalDay[]; expandedDay: string | null
+  onToggleDay: (key: string) => void; onSelect: (item: TraktSelectedItem) => void
+}) {
   const maxItems = Math.max(...week.map(d => d.items.length), 0)
 
   const dayNums = week.map(day => {
-    if (day.n === null) {
-      return <span className="block text-right pr-1 py-0.5 text-[#1e1e32] select-none">{'─'}</span>
-    }
-
+    if (day.n === null) return <span className="block text-right pr-1 py-0.5 text-[#1e1e32] select-none">{'─'}</span>
     const isExpanded = day.dateKey === expandedDay
     const hasItems   = day.items.length > 0
-
-    if (day.isToday) {
-      return (
-        <button
-          onClick={() => day.dateKey && onToggleDay(day.dateKey)}
-          className={`cal-today${isExpanded ? ' expanded' : ''}`}
-          title="click to expand"
-        >
-          [{day.n}]{isExpanded ? '▴' : '▾'}
-        </button>
-      )
-    }
-
-    if (hasItems) {
-      return (
-        <button
-          onClick={() => day.dateKey && onToggleDay(day.dateKey)}
-          className={`cal-day${isExpanded ? ' expanded' : ''}`}
-          title="click to expand"
-        >
-          {day.n}{isExpanded ? '▴' : '▾'}
-        </button>
-      )
-    }
-
-    return (
-      <span className="block text-right pr-1 py-0.5 text-[#252540] select-none leading-none">
-        {day.n}
-      </span>
+    if (day.isToday) return (
+      <button onClick={() => day.dateKey && onToggleDay(day.dateKey)} className={`cal-today${isExpanded ? ' expanded' : ''}`} title="click to expand">
+        [{day.n}]{isExpanded ? '▴' : '▾'}
+      </button>
     )
+    if (hasItems) return (
+      <button onClick={() => day.dateKey && onToggleDay(day.dateKey)} className={`cal-day${isExpanded ? ' expanded' : ''}`} title="click to expand">
+        {day.n}{isExpanded ? '▴' : '▾'}
+      </button>
+    )
+    return <span className="block text-right pr-1 py-0.5 text-[#252540] select-none leading-none">{day.n}</span>
   })
 
   const itemLines = Array.from({ length: maxItems }).map((_, li) =>
     week.map(day => {
       const item = day.items[li]
       if (!item) return <span className="block py-0.5">&nbsp;</span>
-      const textClass = item.downloaded
-        ? 'line-through text-[#999]'
-        : item.isPast
-          ? 'text-yellow-500'
-          : 'text-white'
+      const textClass = item.downloaded ? 'line-through text-[#999]' : item.isPast ? 'text-yellow-500' : 'text-white'
       return (
         <div className="py-0.5 px-0.5 cursor-pointer" onClick={() => onSelect(item.selected)} title={item.line}>
           <MarqueeText>
-            <span className={item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}>
-              {item.type === 'movie' ? '‡ ' : '† '}
-            </span>
+            <span className={item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}>{item.type === 'movie' ? '‡ ' : '† '}</span>
             <span className={textClass}>{item.line}</span>
           </MarqueeText>
         </div>
@@ -279,10 +256,176 @@ function WeekRow({ week, expandedDay, onToggleDay, onSelect }: WeekRowProps) {
   return (
     <>
       <CalRow cells={dayNums} />
-      {itemLines.map((cells, li) => (
-        <CalRow key={li} cells={cells} />
-      ))}
+      {itemLines.map((cells, li) => <CalRow key={li} cells={cells} />)}
     </>
+  )
+}
+
+// ── Forecast view ─────────────────────────────────────────────────────────────
+
+function ForecastView({
+  itemMap, offset, onOffsetChange, onSelect,
+}: {
+  itemMap: Map<string, CalItem[]>
+  offset: number
+  onOffsetChange: (n: number) => void
+  onSelect: (item: TraktSelectedItem) => void
+}) {
+  const today = new Date()
+  const days = [-1, 0, 1].map(d => {
+    const date = addDays(today, d + offset)
+    const key  = dateKey(date)
+    return { key, date, isToday: d + offset === 0, items: itemMap.get(key) ?? [] }
+  })
+
+  return (
+    <div className="space-y-1">
+      {/* nav */}
+      <div className="flex items-center justify-between mb-2 font-mono text-[10px]">
+        <button onClick={() => onOffsetChange(offset - 3)} className="btn-xs text-[#888] hover:text-white">← prev</button>
+        {offset !== 0 && (
+          <button onClick={() => onOffsetChange(0)} className="btn-xs text-[#6a9a7a]">today</button>
+        )}
+        <button onClick={() => onOffsetChange(offset + 3)} className="btn-xs text-[#888] hover:text-white">next →</button>
+      </div>
+
+      {days.map(({ key, isToday, items }) => (
+        <div
+          key={key}
+          className={`rounded border font-mono text-xs ${
+            isToday
+              ? 'border-[#3a3a6a] bg-[#12122a]'
+              : 'border-[#1a1a2e] bg-[#0d0d18]'
+          }`}
+        >
+          {/* day header */}
+          <div className={`px-3 py-1.5 flex items-center justify-between border-b ${isToday ? 'border-[#3a3a6a]' : 'border-[#1a1a2e]'}`}>
+            <span className={isToday ? 'text-[#4ade80] font-bold' : 'text-[#6a9a7a]'}>
+              {isToday ? `[${fmtDateHeader(key)}]` : fmtDateHeader(key)}
+            </span>
+            {isToday && <span className="text-[#4ade80] text-[10px]">today</span>}
+          </div>
+
+          {/* items */}
+          <div className="px-3 py-2 space-y-1.5">
+            {items.length === 0 ? (
+              <span className="text-[#444]">—</span>
+            ) : items.map((item, i) => {
+              const textClass = item.downloaded ? 'line-through text-[#555]' : item.isPast ? 'text-yellow-500' : 'text-white'
+              const tag = item.downloaded
+                ? <span className="text-[#444] ml-1">[dl]</span>
+                : item.isPast
+                  ? <span className="text-yellow-700 ml-1">[!]</span>
+                  : null
+              return (
+                <div key={i} className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect(item.selected)}>
+                  <span className={`shrink-0 ${item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}`}>
+                    {item.type === 'movie' ? '‡' : '†'}
+                  </span>
+                  <span className={`${textClass} flex-1 min-w-0 truncate`}>{item.line}</span>
+                  {tag}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Agenda view ───────────────────────────────────────────────────────────────
+
+function AgendaView({
+  itemMap, cap, onSelect,
+}: {
+  itemMap: Map<string, CalItem[]>
+  cap: number
+  onSelect: (item: TraktSelectedItem) => void
+}) {
+  const today = new Date()
+
+  // Collect days from 7 days back to 60 days forward that have items
+  const daysWithItems: Array<{ key: string; isToday: boolean; isPast: boolean; items: CalItem[] }> = []
+  for (let d = -7; d <= 60; d++) {
+    const date = addDays(today, d)
+    const key  = dateKey(date)
+    const items = itemMap.get(key)
+    if (items && items.length > 0) {
+      daysWithItems.push({ key, isToday: d === 0, isPast: d < 0, items })
+    }
+  }
+
+  // Cap by total entries
+  let remaining = cap
+  const capped = daysWithItems
+    .map(day => {
+      if (remaining <= 0) return null
+      const sliced = day.items.slice(0, remaining)
+      remaining -= sliced.length
+      return { ...day, items: sliced }
+    })
+    .filter(Boolean) as typeof daysWithItems
+
+  if (capped.length === 0) return <p className="text-[#444] text-xs font-mono">// no entries</p>
+
+  return (
+    <div className="space-y-3 font-mono text-xs">
+      {capped.map(({ key, isToday, isPast, items }) => (
+        <div key={key}>
+          {/* day header */}
+          <div className={`mb-1 pb-0.5 border-b border-[#1a1a2e] flex items-center gap-2`}>
+            <span className={isToday ? 'text-[#4ade80] font-bold' : isPast ? 'text-[#4a4a6a]' : 'text-[#6a9a7a]'}>
+              {fmtDateKey(key)}
+            </span>
+            {isToday && <span className="text-[#4ade80] text-[10px]">← today</span>}
+          </div>
+
+          {/* entries */}
+          <div className="space-y-1 pl-2">
+            {items.map((item, i) => {
+              const textClass = item.downloaded ? 'line-through text-[#555]' : item.isPast ? 'text-yellow-500' : 'text-white'
+              const tag = item.downloaded
+                ? <span className="text-[#444] text-[10px] shrink-0">[dl]</span>
+                : item.isPast
+                  ? <span className="text-yellow-700 text-[10px] shrink-0">[!]</span>
+                  : <span className="text-[#4a6a8a] text-[10px] shrink-0">[soon]</span>
+              return (
+                <div key={i} className="flex items-start gap-2 cursor-pointer group" onClick={() => onSelect(item.selected)}>
+                  <span className={`shrink-0 mt-px ${item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}`}>
+                    {item.type === 'movie' ? '‡' : '†'}
+                  </span>
+                  <span className={`${textClass} flex-1 min-w-0 leading-snug group-hover:text-[#ddd] transition-colors`}>
+                    {item.line}
+                  </span>
+                  {tag}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── view switcher ─────────────────────────────────────────────────────────────
+
+type CalView = 'month' | 'forecast' | 'agenda'
+
+function ViewSwitcher({ view, onChange }: { view: CalView; onChange: (v: CalView) => void }) {
+  return (
+    <div className="flex gap-1 font-mono text-[10px]">
+      {(['month', 'forecast', 'agenda'] as CalView[]).map(v => (
+        <button
+          key={v}
+          onClick={() => onChange(v)}
+          className={`px-1.5 py-0.5 border ${view === v ? 'border-[#7070a8] text-[#aaa]' : 'border-[#1a1a2e] text-[#555] hover:text-[#888]'}`}
+        >
+          {v}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -297,6 +440,19 @@ export default function TraktSection() {
   const [loading,            setLoading]            = useState(true)
   const [selected,           setSelected]           = useState<TraktSelectedItem | null>(null)
   const [expandedDay,        setExpandedDay]        = useState<string | null>(null)
+  const [view,               setView]               = useState<CalView>('month')
+  const [forecastOffset,     setForecastOffset]     = useState(0)
+  const [isMobile,           setIsMobile]           = useState(false)
+
+  useEffect(() => {
+    const mobile = window.innerWidth < 768
+    setIsMobile(mobile)
+    setView(mobile ? 'forecast' : 'month')
+
+    function onResize() { setIsMobile(window.innerWidth < 768) }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   useEffect(() => {
     async function load() {
@@ -319,21 +475,20 @@ export default function TraktSection() {
     return () => clearInterval(id)
   }, [])
 
+  const itemMap = useMemo(
+    () => buildItemMap(episodes, movies, downloadedMovies, downloadedEpisodes),
+    [episodes, movies, downloadedMovies, downloadedEpisodes],
+  )
+
   const now   = new Date()
   const year  = now.getFullYear()
   const month = now.getMonth()
-  const weeks = buildCalendar(year, month, episodes, movies, downloadedMovies, downloadedEpisodes)
+  const weeks = useMemo(() => buildCalendar(year, month, itemMap), [year, month, itemMap])
 
-  function toggleDay(key: string) {
-    setExpandedDay(prev => prev === key ? null : key)
-  }
+  function toggleDay(key: string) { setExpandedDay(prev => prev === key ? null : key) }
 
   const headerCells = DAY_NAMES.map((d, i) => (
-    <span
-      key={d}
-      className="block text-center py-0.5 font-bold select-none"
-      style={{ color: `hsl(${DAY_HUE[i]}, 70%, 65%)` }}
-    >
+    <span key={d} className="block text-center py-0.5 font-bold select-none" style={{ color: `hsl(${DAY_HUE[i]}, 70%, 65%)` }}>
       {d}
     </span>
   ))
@@ -341,24 +496,27 @@ export default function TraktSection() {
   return (
     <>
       <section id="trakt">
-        <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between">
+        <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between flex-wrap gap-2">
           <span>
             const{' '}
             <span className="text-white text-sm font-medium uppercase tracking-widest">Tr4kt Upc0m1ng</span>
             {' = { '}
             <span className="text-[#888]">// {MONTH_NAMES[month]} :: {year}</span>
           </span>
-          <span className="text-[#888] text-xs">
-            <span className="text-green-400">[n]</span> today&nbsp;&nbsp;
-            <span className="text-blue-400">†</span> sonarr&nbsp;&nbsp;
-            <span className="text-amber-400">‡</span> radarr
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-[#888] text-xs hidden sm:inline">
+              <span className="text-green-400">[n]</span> today&nbsp;&nbsp;
+              <span className="text-blue-400">†</span> sonarr&nbsp;&nbsp;
+              <span className="text-amber-400">‡</span> radarr
+            </span>
+            <ViewSwitcher view={view} onChange={setView} />
+          </div>
         </div>
 
         {error   && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}
         {loading && <Spinner />}
 
-        {!loading && !error && (
+        {!loading && !error && view === 'month' && (
           <div>
             <CalSep />
             <CalRow cells={headerCells} />
@@ -367,25 +525,32 @@ export default function TraktSection() {
               const expandedInWeek = week.find(d => d.dateKey === expandedDay)
               return (
                 <div key={wi}>
-                  <WeekRow
-                    week={week}
-                    expandedDay={expandedDay}
-                    onToggleDay={toggleDay}
-                    onSelect={setSelected}
-                  />
+                  <WeekRow week={week} expandedDay={expandedDay} onToggleDay={toggleDay} onSelect={setSelected} />
                   <CalSep highlight={!!expandedInWeek} />
                   {expandedInWeek && expandedDay && (
-                    <ExpandedPanel
-                      dateKey={expandedDay}
-                      items={expandedInWeek.items}
-                      onSelect={setSelected}
-                      onClose={() => setExpandedDay(null)}
-                    />
+                    <ExpandedPanel dateKey={expandedDay} items={expandedInWeek.items} onSelect={setSelected} onClose={() => setExpandedDay(null)} />
                   )}
                 </div>
               )
             })}
           </div>
+        )}
+
+        {!loading && !error && view === 'forecast' && (
+          <ForecastView
+            itemMap={itemMap}
+            offset={forecastOffset}
+            onOffsetChange={setForecastOffset}
+            onSelect={setSelected}
+          />
+        )}
+
+        {!loading && !error && view === 'agenda' && (
+          <AgendaView
+            itemMap={itemMap}
+            cap={isMobile ? 5 : 10}
+            onSelect={setSelected}
+          />
         )}
 
         <div className="font-mono text-xs text-[#6a9a7a] mt-2">{'}'}</div>
