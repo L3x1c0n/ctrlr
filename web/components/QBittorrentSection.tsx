@@ -190,25 +190,25 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
           loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono">No torrents</p>
         )}
         {torrents.length > 0 && (
-          <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-fixed md:table-auto">
+          <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-fixed">
             <thead>
               <tr className="text-[#999] text-xs uppercase border-b border-[#1a1a2e]">
                 <th className="py-1 pr-3 w-6"></th>
                 <th className="text-left py-1 pr-4">Name</th>
-                <th className="text-right pr-4 hidden md:table-cell">Size</th>
-                <th className="text-left pr-4 hidden md:table-cell">Progress</th>
-                <th className="text-right pr-4 hidden md:table-cell">Speed ↓</th>
-                <th className="text-right pr-4 hidden md:table-cell">ETA</th>
+                <th className="text-right pr-4 hidden md:table-cell w-[80px]">Size</th>
+                <th className="text-left pr-4 hidden md:table-cell w-[180px]">Progress</th>
+                <th className="text-right pr-4 hidden md:table-cell w-[72px]">Speed ↓</th>
+                <th className="text-right pr-4 hidden md:table-cell w-[72px]">ETA</th>
                 <th className="text-right pr-4 w-[76px]">State</th>
-                <th className="text-right w-[68px]">Actions</th>
+                <th className="text-right w-[110px]">Actions</th>
               </tr>
             </thead>
             <tbody>
               {torrents.map((t, i) => (
                 <tr key={t.hash} className="border-b border-[#0f0f1a]">
                   <td className="py-1 pr-3 text-right text-[#7070a8] tabular-nums select-none text-xs w-6">{i + 1}</td>
-                  <td className="py-1 pr-4 text-white min-w-0">
-                    <div className="flex items-center gap-2">
+                  <td className="py-1 pr-4 text-white min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-2 min-w-0">
                       <button
                         onClick={() => setSelected(t)}
                         className="btn-xs text-cyan-600 hover:text-cyan-400 flex-shrink-0"
