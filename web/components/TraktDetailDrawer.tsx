@@ -282,7 +282,7 @@ export default function TraktDetailDrawer({ item, onClose }: Props) {
                     {releases.length === 0 && <p className="text-[#888] text-xs">no results</p>}
                     <div className="space-y-1 max-h-96 overflow-y-auto">
                       {releases.map((r, i) => (
-                        <div key={i} className={`border border-[#1a1a2e] p-2 text-xs font-mono ${r.rejected ? 'opacity-40' : ''}`}>
+                        <div key={i} className="border border-[#1a1a2e] p-2 text-xs font-mono">
                           <div className="flex items-start justify-between gap-2 mb-1">
                             <span className="text-white leading-snug flex-1 break-all">{r.title}</span>
                             <button
@@ -292,7 +292,7 @@ export default function TraktDetailDrawer({ item, onClose }: Props) {
                                 setReleases(null)
                                 setActing(null)
                               }}
-                              disabled={!!acting || r.rejected}
+                              disabled={!!acting}
                               className="btn-xs text-green-400 shrink-0"
                             >
                               {acting === `grab-${i}` ? '...' : '--grab'}
