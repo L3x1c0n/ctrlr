@@ -69,7 +69,12 @@ export default function TopBar() {
               </a>
             ) : (
               <div style={{ background: seg.bg, color: seg.fg }} className="flex items-center px-2 text-xs font-medium">
-                {label}
+                {label === 'gh05t@moriarty' ? (
+                  <>
+                    <span className="md:hidden">gh05t</span>
+                    <span className="hidden md:inline">gh05t@moriarty</span>
+                  </>
+                ) : label}
               </div>
             )}
             <div style={{ background: nextBg }} className="flex items-center">
