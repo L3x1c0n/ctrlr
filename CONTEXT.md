@@ -211,7 +211,7 @@ All core sections implemented and functional. Build is clean.
 | Progress / position | ✅ | ✅ |
 | Transcode decision | ✅ | ✅ |
 | User / player / platform | ✅ | ✅ |
-| Terminate stream | ❌ | ❌ |
+| Terminate stream | ➡️ not needed | ➡️ not needed |
 | Play history | ❌ | ❌ |
 | User stats | ❌ | ❌ |
 
@@ -243,9 +243,8 @@ All core sections implemented and functional. Build is clean.
 ### Priority order to close parity
 
 **Neither platform can do these yet — highest impact:**
-1. Plex: mark watched / unwatched
-2. Tautulli: terminate stream
-3. Trakt: watch history / check-in / ratings
+1. Trakt: watch history / check-in / ratings
+2. Plex: mark watched / unwatched, library search, deep link to play (deferred — post housekeeping)
 
 **App catching up to dashboard:**
 1. Radarr/Sonarr: remove from queue + blacklist UI (client exists)
@@ -263,12 +262,9 @@ All core sections implemented and functional. Build is clean.
 ## Next steps / backlog
 
 ### Both platforms — not built anywhere yet
-- Plex: mark watched / unwatched
-- Plex: library search
-- Plex: deep link to play in Plex app
-- Tautulli: terminate stream (`terminate_session` API exists)
-- Tautulli: play history + user stats
 - Trakt: watch history, check-in, ratings
+- Plex: mark watched / unwatched, library search, deep link to play (deferred)
+- Tautulli: play history + user stats
 
 ### App — catching up to dashboard
 - Radarr/Sonarr: remove from queue + blacklist UI (client method exists, no UI wired)
