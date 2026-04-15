@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+/* offset anchor scroll for fixed topbar (22px) + breathing room */
+section[id], div[id="arr"] {
+  scroll-margin-top: 32px;
+}
+
+:root {
+  --bg: #0A0A0F;
+  --bg-card: #0d0d18;
+  --border: #1a1a2e;
+  --border-dark: #0f0f1a;
+}
+
+html {
+  font-size: 14px;
+}
+
+body {
+  background: var(--bg);
+  color: #e2e2e2;
+}
+
+@keyframes scroll-left {
+  0%   { transform: translateX(0); }
+  15%  { transform: translateX(0); }
+  85%  { transform: translateX(var(--scroll-dist, -50%)); }
+  100% { transform: translateX(var(--scroll-dist, -50%)); }
+}
+
+.scroll-hover {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.scroll-hover:hover .scroll-inner {
+  animation: scroll-left 3.5s ease-in-out infinite alternate;
+}
+
+.cal-day {
+  color: #4a4a7a;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: right;
+  padding-right: 0.25rem;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  line-height: 1;
+}
+.cal-day:hover { color: #ffffff; }
+.cal-day.expanded { color: #ffffff; }
+
+.cal-today {
+  color: #4ade80;
+  font-weight: bold;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: right;
+  padding-right: 0.25rem;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  line-height: 1;
+}
+.cal-today:hover { color: #bbf7d0; }
+.cal-today.expanded { color: #ffffff; }
+
+
+@layer components {
+  .section-title {
+    @apply text-white font-mono text-base uppercase tracking-widest mb-4 pb-2 border-b border-[#1a1a2e] flex items-center gap-2;
+  }
+
+  .section-title::before {
+    content: '>_';
+    color: #4a4a7a;
+    font-mono: monospace;
+    margin-right: 0.25rem;
+  }
+
+  .btn-xs {
+    @apply font-mono px-1 border border-current cursor-pointer inline-flex items-center leading-none;
+    font-size: 10px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+  }
+}

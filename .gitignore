@@ -1,0 +1,29 @@
+# ── Web ──────────────────────────────────────────────────────────────────────
+web/node_modules
+web/.next/
+web/out/
+web/build
+web/.env*
+web/npm-debug.log*
+web/*.tsbuildinfo
+web/next-env.d.ts
+web/.pnp
+web/.pnp.*
+
+# ── iOS / Xcode ───────────────────────────────────────────────────────────────
+ios/DerivedData/
+ios/build/
+ios/*.xcuserstate
+ios/xcuserdata/
+ios/*.xcworkspace/xcuserdata/
+ios/.DS_Store
+ios/**/.DS_Store
+ios/*.ipa
+ios/*.dSYM.zip
+ios/*.dSYM
+ios/Pods/
+ios/*.xcworkspace
+
+# ── General ───────────────────────────────────────────────────────────────────
+.DS_Store
+*.pem
