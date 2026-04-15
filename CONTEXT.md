@@ -187,7 +187,7 @@ All core sections implemented and functional. Build is clean.
 | Remove from queue | ✅ | ❌ (client exists, no UI in queue) |
 | Blacklist + remove | ✅ | ❌ |
 | Episode picker (Sonarr) | ✅ | ❌ |
-| Add new movie / show | ❌ | ❌ |
+| Add new movie / show | ➡️ via Seer | ➡️ via Seer |
 | Library search / browse | ❌ | ❌ |
 | Health check warnings | ❌ | ❌ |
 | ntfy real-time trigger | ❌ | ✅ |
@@ -243,11 +243,9 @@ All core sections implemented and functional. Build is clean.
 ### Priority order to close parity
 
 **Neither platform can do these yet — highest impact:**
-1. Radarr/Sonarr: add new movie/show to library
-2. Plex: mark watched / unwatched
-3. Tautulli: terminate stream
-4. Trakt: watch history / check-in / ratings
-5. Radarr/Sonarr: health check warnings surface in UI
+1. Plex: mark watched / unwatched
+2. Tautulli: terminate stream
+3. Trakt: watch history / check-in / ratings
 
 **App catching up to dashboard:**
 1. Radarr/Sonarr: remove from queue + blacklist UI (client exists)
@@ -265,7 +263,6 @@ All core sections implemented and functional. Build is clean.
 ## Next steps / backlog
 
 ### Both platforms — not built anywhere yet
-- Radarr/Sonarr: add new movie/show to library (search + add flow)
 - Plex: mark watched / unwatched
 - Plex: library search
 - Plex: deep link to play in Plex app
