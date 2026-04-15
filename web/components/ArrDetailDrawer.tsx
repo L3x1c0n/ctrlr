@@ -393,7 +393,7 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
                     }
                     <div className="space-y-1 max-h-96 overflow-y-auto">
                       {visible.map((r, i) => (
-                        <div key={r.guid} className={`border border-[#1a1a2e] p-2 text-xs font-mono ${r.rejected ? 'opacity-40' : ''}`}>
+                        <div key={r.guid} className="border border-[#1a1a2e] p-2 text-xs font-mono">
                           <div className="flex items-start justify-between gap-2 mb-1">
                             <span className="text-white leading-snug flex-1 break-all">{r.title}</span>
                             <button
@@ -408,7 +408,7 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
                                 onRefresh()
                                 setActing(null)
                               }}
-                              disabled={!!acting || r.rejected}
+                              disabled={!!acting}
                               className="btn-xs text-green-400 shrink-0"
                             >
                               {acting === `grab-${r.guid}` ? '...' : '--grab'}
