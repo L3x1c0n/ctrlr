@@ -11,7 +11,7 @@ const HREFS: (string | null)[] = [null, null, '#qbittorrent', '#arr', '#trakt', 
 
 function Chevron({ color }: { color: string }) {
   return (
-    <svg height={BAR_H} viewBox={`0 0 13 ${BAR_H}`} className="w-2 md:w-[13px]" style={{ display: 'block', flexShrink: 0, marginLeft: -1 }}>
+    <svg height={BAR_H} viewBox={`0 0 13 ${BAR_H}`} preserveAspectRatio="none" className="w-2 md:w-[13px]" style={{ display: 'block', flexShrink: 0, marginLeft: -1 }}>
       <polygon points={`0,0 13,${BAR_H / 2} 0,${BAR_H}`} fill={color} />
     </svg>
   )
