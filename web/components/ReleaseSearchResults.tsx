@@ -22,7 +22,7 @@ export interface Release {
   rejections: string[]
 }
 
-type SortKey = 'age' | 'title' | 'size' | 'peers'
+type SortKey = 'seeders' | 'age' | 'title' | 'size'
 type QualityTier = 'all' | 'SD' | 'HD' | 'UHD'
 
 function fmtSize(bytes: number): string {
@@ -54,11 +54,9 @@ interface Props {
 }
 
 export default function ReleaseSearchResults({ releases, loading, error, acting, onGrab }: Props) {
-  const [filter, setFilter]           = useState('')
-  const [sort, setSort]               = useState<SortKey>('peers')
+  const [sort, setSort]               = useState<SortKey>('seeders')
   const [sortDir, setSortDir]         = useState<'asc' | 'desc'>('desc')
   const [hideRejected, setHideRejected] = useState(false)
-  const [protocol, setProtocol]       = useState<'all' | 'torrent' | 'usenet'>('all')
   const [quality, setQuality]         = useState<QualityTier>('all')
 
   const visible = useMemo(() => {
@@ -66,27 +64,20 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
     return releases
       .filter(r => {
         if (hideRejected && r.rejected) return false
-        if (protocol !== 'all' && r.protocol !== protocol) return false
         if (quality !== 'all' && qualityTier(r.quality.quality.name) !== quality) return false
-        if (filter && !r.title.toLowerCase().includes(filter.toLowerCase())) return false
         return true
       })
       .sort((a, b) => {
         let cmp = 0
         switch (sort) {
-          case 'age':   cmp = a.ageHours - b.ageHours; break
-          case 'title': cmp = a.title.localeCompare(b.title); break
-          case 'size':  cmp = a.size - b.size; break
-          case 'peers': {
-            const ra = (a.seeders ?? 0) / Math.max(a.leechers ?? 1, 1)
-            const rb = (b.seeders ?? 0) / Math.max(b.leechers ?? 1, 1)
-            cmp = ra - rb
-            break
-          }
+          case 'seeders': cmp = (a.seeders ?? 0) - (b.seeders ?? 0); break
+          case 'age':     cmp = a.ageHours - b.ageHours; break
+          case 'title':   cmp = a.title.localeCompare(b.title); break
+          case 'size':    cmp = a.size - b.size; break
         }
         return sortDir === 'desc' ? -cmp : cmp
       })
-  }, [releases, filter, sort, sortDir, hideRejected, protocol, quality])
+  }, [releases, sort, sortDir, hideRejected, quality])
 
   function toggleSort(key: SortKey) {
     if (sort === key) setSortDir(d => d === 'desc' ? 'asc' : 'desc')
@@ -108,26 +99,11 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
     <div>
       <p className="text-[#7070a8] text-xs mb-2">{`/* releases (${visible.length}/${releases.length}) */`}</p>
 
-      {/* text filter */}
-      <div className="flex gap-1.5 mb-1.5">
-        <input
-          type="text"
-          placeholder="filter..."
-          value={filter}
-          onChange={e => setFilter(e.target.value)}
-          className="bg-[#0f0f1a] border border-[#1a1a2e] text-white text-xs font-mono px-2 py-1 flex-1 min-w-0 focus:outline-none focus:border-[#888] placeholder-[#999]"
-        />
-      </div>
-
       {/* quality + protocol + rejected */}
       <div className="flex flex-wrap gap-1 mb-1.5 text-[10px] font-mono">
         <span className="text-[#555] self-center">quality:</span>
         {(['SD', 'HD', 'UHD'] as QualityTier[]).map(q => (
           <button key={q} onClick={() => toggleBtn(quality, q, setQuality)} className={btnCls(quality === q)}>{q}</button>
-        ))}
-        <span className="text-[#555] self-center ml-2">proto:</span>
-        {(['torrent', 'usenet'] as const).map(p => (
-          <button key={p} onClick={() => toggleBtn(protocol, p, setProtocol)} className={btnCls(protocol === p)}>{p}</button>
         ))}
         <button
           onClick={() => setHideRejected(v => !v)}
@@ -140,7 +116,7 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
       {/* sort */}
       <div className="flex flex-wrap gap-1 mb-2 text-[10px] font-mono">
         <span className="text-[#555] self-center">sort:</span>
-        {(['age', 'title', 'size', 'peers'] as SortKey[]).map(k => (
+        {(['seeders', 'age', 'title', 'size'] as SortKey[]).map(k => (
           <button key={k} onClick={() => toggleSort(k)} className={btnCls(sort === k)}>
             {k}{sort === k ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
           </button>
@@ -167,7 +143,6 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[#888] text-[10px]">
-                    <span className={r.protocol === 'torrent' ? 'text-green-700' : 'text-blue-700'}>{r.protocol}</span>
                     <span>{r.quality.quality.name}</span>
                     <span>{fmtSize(r.size)}</span>
                     {r.seeders !== undefined && <span className="text-green-600">{r.seeders}S</span>}
