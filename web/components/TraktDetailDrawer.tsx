@@ -66,10 +66,11 @@ export default function TraktDetailDrawer({ item, onClose }: Props) {
   const [arrIds, setArrIds] = useState<{ movieId?: number; seriesId?: number; episodeId?: number } | null>(null)
   const [releases, setReleases] = useState<Release[] | null>(null)
   const [relLoading, setRelLoading] = useState(false)
+  const [relError, setRelError] = useState<string | null>(null)
   const [acting, setActing] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!item) { setDetail(null); setPosterPath(null); setBackdropPath(null); setWatchProviders([]); setArrIds(null); setReleases(null); return }
+    if (!item) { setDetail(null); setPosterPath(null); setBackdropPath(null); setWatchProviders([]); setArrIds(null); setReleases(null); setRelError(null); return }
     setInPlex(!!item.downloaded)
     setLoading(true)
     setArrIds(null)
@@ -242,11 +243,22 @@ export default function TraktDetailDrawer({ item, onClose }: Props) {
                         onClick={async () => {
                           setRelLoading(true)
                           setReleases(null)
-                          const searchId = arrIds.movieId ?? arrIds.episodeId
-                          const svc = arrIds.movieId ? 'radarr' : 'sonarr'
-                          const res = await fetch(`/api/${svc}?releasesFor=${searchId}`)
-                          setReleases(await res.json())
-                          setRelLoading(false)
+                          setRelError(null)
+                          try {
+                            const searchId = arrIds.movieId ?? arrIds.episodeId
+                            const svc = arrIds.movieId ? 'radarr' : 'sonarr'
+                            const res = await fetch(`/api/${svc}?releasesFor=${searchId}`)
+                            const data = await res.json()
+                            if (!res.ok || data?.error) {
+                              setRelError(data?.error ?? `HTTP ${res.status}`)
+                            } else {
+                              setReleases(data)
+                            }
+                          } catch (e: any) {
+                            setRelError(e.message ?? 'fetch failed')
+                          } finally {
+                            setRelLoading(false)
+                          }
                         }}
                         className="btn-xs text-violet-400"
                       >
@@ -259,6 +271,9 @@ export default function TraktDetailDrawer({ item, onClose }: Props) {
 
               {/* interactive results */}
               {relLoading && <Spinner />}
+              {relError && (
+                <p className="text-red-500 text-xs font-mono mt-2">// error: {relError}</p>
+              )}
               {releases !== null && (() => {
                 const svc = arrIds?.movieId ? 'radarr' : 'sonarr'
                 return (
