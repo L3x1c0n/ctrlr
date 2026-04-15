@@ -180,19 +180,23 @@ export async function getCalendarToday(): Promise<ArrCalendarItem[]> {
     }))
 }
 
-// Returns a set of "tvdbId:season:episode" strings for episodes that have a file
-export async function getEpisodeFileStatus(tvdbIds: number[]): Promise<Set<string>> {
-  const result = new Set<string>()
-  if (tvdbIds.length === 0) return result
+// Returns downloaded episode keys + which tvdbIds are in Sonarr at all
+export async function getEpisodeFileStatus(tvdbIds: number[]): Promise<{ downloaded: Set<string>; inArr: Set<number> }> {
+  const downloaded = new Set<string>()
+  const inArr      = new Set<number>()
+  if (tvdbIds.length === 0) return { downloaded, inArr }
 
-  // Build tvdbId → seriesId map
   const seriesRes = await fetch(`${BASE}/api/v3/series`, { headers, cache: 'no-store' })
-  if (!seriesRes.ok) return result
+  if (!seriesRes.ok) return { downloaded, inArr }
   const allSeries: Array<{ id: number; tvdbId: number }> = await seriesRes.json()
-  const tvdbToId = new Map(allSeries.map(s => [s.tvdbId, s.id]))
+  const wanted    = new Set(tvdbIds)
+  const tvdbToId  = new Map(allSeries.map(s => [s.tvdbId, s.id]))
 
-  const seriesIds = tvdbIds.map(tvdbId => tvdbToId.get(tvdbId)).filter(Boolean) as number[]
-  if (seriesIds.length === 0) return result
+  const matchingSeries = allSeries.filter(s => wanted.has(s.tvdbId))
+  for (const s of matchingSeries) inArr.add(s.tvdbId)
+
+  const seriesIds = matchingSeries.map(s => s.id)
+  if (seriesIds.length === 0) return { downloaded, inArr }
 
   await Promise.all(seriesIds.map(async seriesId => {
     const series = allSeries.find(s => s.id === seriesId)!
@@ -200,11 +204,11 @@ export async function getEpisodeFileStatus(tvdbIds: number[]): Promise<Set<strin
     if (!epRes.ok) return
     const eps: Array<{ seasonNumber: number; episodeNumber: number; hasFile: boolean }> = await epRes.json()
     for (const ep of eps) {
-      if (ep.hasFile) result.add(`${series.tvdbId}:${ep.seasonNumber}:${ep.episodeNumber}`)
+      if (ep.hasFile) downloaded.add(`${series.tvdbId}:${ep.seasonNumber}:${ep.episodeNumber}`)
     }
   }))
 
-  return result
+  return { downloaded, inArr }
 }
 
 export async function getMonitored(): Promise<MonitoredSeries[]> {
