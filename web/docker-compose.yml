@@ -1,0 +1,9 @@
+services:
+  ctrlr-web:
+    build: .
+    container_name: ctrlr-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file: .env.local
+    network_mode: host
