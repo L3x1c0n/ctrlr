@@ -186,10 +186,13 @@ function PreviewPane({
           />
         )}
 
-        {/* title over backdrop */}
-        <div className="absolute bottom-2 right-3" style={{ left: poster ? 137 : 12 }}>
-          <p className="text-white text-sm font-mono font-medium leading-tight line-clamp-2">{title}</p>
-          <div className="flex flex-wrap items-center gap-x-2 mt-0.5 font-mono text-xs text-[#888]">
+        {/* right-side block: title + meta, aligned to poster top, same height */}
+        <div
+          className="absolute flex flex-col overflow-hidden"
+          style={{ bottom: 0, left: poster ? 137 : 12, right: 8, height: 188, paddingTop: 4 }}
+        >
+          <p className="text-white text-sm font-mono font-medium leading-tight line-clamp-2 shrink-0">{title}</p>
+          <div className="flex flex-wrap items-center gap-x-2 mt-0.5 mb-1.5 font-mono text-xs text-[#888] shrink-0">
             {year && <span>{year}</span>}
             {runtime && <span>{runtime}m</span>}
             {seasons && <span>{seasons} seasons</span>}
@@ -197,21 +200,17 @@ function PreviewPane({
             {status === 5 && <span style={{ color: PLEX_ORANGE }}>plex</span>}
             {status != null && status >= 2 && status <= 4 && <span className="text-blue-400">req&apos;d</span>}
           </div>
+          {detailLoading && !detail ? (
+            <span className="text-[#555] font-mono text-xs">// loading...</span>
+          ) : (
+            <div className="space-y-0.5 font-mono text-xs overflow-hidden">
+              {genres   && <MetaRow label="genre"  value={genres}   />}
+              {director && <MetaRow label="dir"    value={director} />}
+              {cast     && <MetaRow label="cast"   value={cast}     />}
+              {studio   && <MetaRow label="studio" value={studio}   />}
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* metadata */}
-      <div className="px-3 py-2 border-b border-[#0f0f1a] font-mono text-xs shrink-0">
-        {detailLoading && !detail ? (
-          <span className="text-[#555]">// loading...</span>
-        ) : (
-          <div className="space-y-0.5">
-            {genres   && <MetaRow label="genre"  value={genres}   />}
-            {director && <MetaRow label="dir"    value={director} />}
-            {cast     && <MetaRow label="cast"   value={cast}     />}
-            {studio   && <MetaRow label="studio" value={studio}   />}
-          </div>
-        )}
       </div>
 
       {/* overview */}
