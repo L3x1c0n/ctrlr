@@ -1,7 +1,5 @@
 'use client'
 
-// TODO: mobile layout — on narrow screens the split pane collapses; needs a dedicated
-// treatment (e.g. poster-card row or bottom-sheet detail). Deferred for a future session.
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { SeerSearchResult, DiscoverDetail } from '@/types'
@@ -399,9 +397,59 @@ export default function DiscoverSection() {
           />
         </div>
 
-        {/* mobile fallback — poster card rows (TODO: design dedicated mobile layout) */}
-        <div className="md:hidden font-mono text-xs text-[#555] px-1 py-4">
-          // discover — open on desktop for full view
+        {/* mobile layout */}
+        <div className="md:hidden grid gap-2" style={{ gridTemplateColumns: '1fr 112px', height: 460 }}>
+
+          {/* left: combined list */}
+          <div className="border border-[#1a1a2e] overflow-y-auto">
+            {(tvLoading && moviesLoading) ? (
+              <div className="p-3"><Spinner /></div>
+            ) : [...tvShows, ...movies].map((item) => (
+              <div
+                key={`${item.mediaType}-${item.id}`}
+                onClick={() => activate(item)}
+                className={`flex items-center gap-1.5 px-2 py-1.5 cursor-default select-none border-l-2 font-mono text-xs transition-colors ${
+                  activeId === `${item.mediaType}-${item.id}`
+                    ? 'border-[#4a4a7a] bg-[#0d0d1a] text-white'
+                    : 'border-transparent text-[#bbb]'
+                }`}
+              >
+                <span className="flex-1 truncate min-w-0">{item.title ?? item.name}</span>
+                {(item.releaseDate ?? item.firstAirDate) && (
+                  <span className="text-[#888] shrink-0 text-[10px]">
+                    {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
+                  </span>
+                )}
+                <AddButton item={item} onAdded={() => {}} />
+              </div>
+            ))}
+          </div>
+
+          {/* right: poster + director + synopsis */}
+          <div className="flex flex-col border border-[#1a1a2e] overflow-hidden">
+            {activeItem?.posterPath ? (
+              <img
+                src={TMDB_W(185, activeItem.posterPath)}
+                alt=""
+                className="w-full shrink-0"
+                style={{ aspectRatio: '2/3' }}
+              />
+            ) : (
+              <div className="w-full bg-[#080810] shrink-0" style={{ aspectRatio: '2/3' }} />
+            )}
+            <div className="flex-1 overflow-y-auto px-1.5 py-1.5 font-mono text-[10px] space-y-1.5">
+              {detail?.credits?.crew?.find(c => c.job === 'Director') && (
+                <p>
+                  <span className="text-[#6a9a7a]">// dir</span>
+                  <br />
+                  <span className="text-[#ccc]">{detail.credits!.crew!.find(c => c.job === 'Director')!.name}</span>
+                </p>
+              )}
+              {(detail?.overview ?? activeItem?.overview) && (
+                <p className="text-[#999] leading-relaxed">{detail?.overview ?? activeItem?.overview}</p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="font-mono text-xs text-[#6a9a7a] mt-3">{'}'}</div>
