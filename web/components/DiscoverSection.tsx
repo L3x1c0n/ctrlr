@@ -233,7 +233,7 @@ function PreviewPane({
 function MetaRow({ label, value, lines = 1 }: { label: string; value: string; lines?: 1 | 2 }) {
   return (
     <p className="flex gap-2 overflow-hidden">
-      <span className="text-[#6a9a7a] w-14 shrink-0">// {label}</span>
+      <span className="text-[#6a9a7a] shrink-0 whitespace-nowrap">// {label}</span>
       <span className={`text-[#ccc] min-w-0 ${lines === 2 ? 'line-clamp-2' : 'truncate'}`}>{value}</span>
     </p>
   )
