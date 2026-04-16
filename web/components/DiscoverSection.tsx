@@ -398,7 +398,7 @@ export default function DiscoverSection() {
         </div>
 
         {/* mobile layout */}
-        <div className="md:hidden grid gap-2" style={{ gridTemplateColumns: '1fr 112px', height: 460 }}>
+        <div className="md:hidden grid gap-2" style={{ gridTemplateColumns: '1fr 140px', height: 540 }}>
 
           {/* left: combined list */}
           <div className="border border-[#1a1a2e] overflow-y-auto">
@@ -437,7 +437,7 @@ export default function DiscoverSection() {
             ) : (
               <div className="w-full bg-[#080810] shrink-0" style={{ aspectRatio: '2/3' }} />
             )}
-            <div className="flex-1 overflow-y-auto px-1.5 py-1.5 font-mono text-xs space-y-1.5">
+            <div className="flex-1 overflow-y-auto px-1 pt-0 pb-1 font-mono text-xs space-y-1.5">
               {detail?.credits?.crew?.find(c => c.job === 'Director') && (
                 <p>
                   <span className="text-[#6a9a7a]">// dir</span>
