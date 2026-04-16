@@ -191,95 +191,53 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
           loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono">No torrents</p>
         )}
         {torrents.length > 0 && (
-          <div className="overflow-x-auto"><table className="w-full text-xs font-mono table-fixed">
-            <thead>
-              <tr className="text-[#999] text-xs uppercase border-b border-[#1a1a2e]">
-                <th className="py-1 pr-3 w-6"></th>
-                <th className="text-left py-1 pr-4">Name</th>
-                <th className="text-right pr-4 hidden md:table-cell w-[80px]">Size</th>
-                <th className="text-right pr-4 hidden md:table-cell w-[136px]">Progress</th>
-                <th className="text-left pr-4 hidden md:table-cell w-[76px]">Speed ↓</th>
-                <th className="text-right pr-4 hidden md:table-cell w-[88px]">ETA</th>
-                <th className="text-right pr-4 w-[100px]">State</th>
-                <th className="text-right w-[110px]">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {torrents.map((t, i) => (
-                <tr key={t.hash} className="border-b border-[#0f0f1a]">
-                  <td className="py-1 pr-3 text-right text-[#7070a8] tabular-nums select-none text-xs w-6">{i + 1}</td>
-                  <td className="py-1 pr-4 text-white min-w-0 overflow-hidden">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <button
-                        onClick={() => setSelected(t)}
-                        className="btn-xs text-cyan-600 hover:text-cyan-400 flex-shrink-0"
-                      >
-                        --info
-                      </button>
-                      <MarqueeText className="flex-1 min-w-0">
-                        <ScrambledName name={t.name} active={t.state === 'downloading'} />
-                      </MarqueeText>
-                    </div>
-                  </td>
-                  <td className="text-right pr-4 text-[#888] hidden md:table-cell whitespace-nowrap">{fmtSize(t.size)}</td>
-                  <td className="pr-4 hidden md:table-cell overflow-hidden">
-                    <div className="flex items-center justify-between w-full">
-                      <ProgressBar pct={t.progress * 100} width={10} label={false} />
-                      <span className="text-[#999] text-xs tabular-nums w-9 text-right">{Math.round(t.progress * 100)}%</span>
-                    </div>
-                  </td>
-                  <td className="text-left pr-4 text-green-400 hidden md:table-cell whitespace-nowrap">{fmtSpeed(t.dlspeed)}</td>
-                  <td className="text-right pr-4 text-[#888] hidden md:table-cell whitespace-nowrap">{fmtEta(t.eta)}</td>
-                  <td className={`text-right pr-4 whitespace-nowrap ${stateColor[t.state] ?? 'text-[#888]'}`}>
-                    {t.state}
-                  </td>
-                  <td className="text-right">
-                    <div className="flex gap-2 justify-end">
-                      {t.state.includes('paused') || t.state.includes('Paused') ? (
-                        <button
-                          onClick={() => action('resume', t.hash)}
-                          className="btn-xs text-green-400"
-                        >
-                          --resume
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => action('pause', t.hash)}
-                          className="btn-xs text-yellow-400"
-                        >
-                          --pause
-                        </button>
-                      )}
-                      {pendingDelete === t.hash ? (
-                        <>
-                          <button
-                            onClick={() => { setPendingDelete(null); action('delete', t.hash, { deleteFiles: false }) }}
-                            className="btn-xs text-red-400"
-                          >
-                            --torrent
-                          </button>
-                          <button
-                            onClick={() => { if (confirm(`Delete ${t.name} AND files?`)) { setPendingDelete(null); action('delete', t.hash, { deleteFiles: true }) } }}
-                            className="btn-xs text-red-600"
-                          >
-                            --files
-                          </button>
-                          <button onClick={() => setPendingDelete(null)} className="btn-xs text-[#888]">×</button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => setPendingDelete(t.hash)}
-                          className="btn-xs text-red-400"
-                        >
-                          --rm
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
+          <div className="font-mono text-xs overflow-x-auto">
+            <div className="flex items-center gap-3 text-[#999] text-xs uppercase border-b border-[#1a1a2e] py-1 select-none min-w-0">
+              <span className="w-5 shrink-0" />
+              <span className="flex-1">Name</span>
+              <span className="hidden md:block shrink-0">Size</span>
+              <span className="hidden md:block shrink-0">Progress</span>
+              <span className="hidden md:block shrink-0">Speed ↓</span>
+              <span className="hidden md:block shrink-0">ETA</span>
+              <span className="shrink-0">State</span>
+              <span className="shrink-0">Actions</span>
+            </div>
+            {torrents.map((t, i) => (
+              <div key={t.hash} className="flex items-center gap-3 border-b border-[#0f0f1a] py-1">
+                <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums select-none">{i + 1}</span>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <button onClick={() => setSelected(t)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                  <MarqueeText className="min-w-0">
+                    <ScrambledName name={t.name} active={t.state === 'downloading'} />
+                  </MarqueeText>
+                </div>
+                <span className="hidden md:flex shrink-0 text-[#888] whitespace-nowrap">{fmtSize(t.size)}</span>
+                <div className="hidden md:flex items-center gap-1.5 shrink-0">
+                  <ProgressBar pct={t.progress * 100} width={10} label={false} />
+                  <span className="text-[#999] tabular-nums">{Math.round(t.progress * 100)}%</span>
+                </div>
+                <span className="hidden md:flex shrink-0 text-green-400 whitespace-nowrap">{fmtSpeed(t.dlspeed)}</span>
+                <span className="hidden md:flex shrink-0 text-[#888] whitespace-nowrap">{fmtEta(t.eta)}</span>
+                <span className={`shrink-0 whitespace-nowrap ${stateColor[t.state] ?? 'text-[#888]'}`}>{t.state}</span>
+                <div className="shrink-0 flex gap-2">
+                  {t.state.includes('paused') || t.state.includes('Paused') ? (
+                    <button onClick={() => action('resume', t.hash)} className="btn-xs text-green-400">--resume</button>
+                  ) : (
+                    <button onClick={() => action('pause', t.hash)} className="btn-xs text-yellow-400">--pause</button>
+                  )}
+                  {pendingDelete === t.hash ? (
+                    <>
+                      <button onClick={() => { setPendingDelete(null); action('delete', t.hash, { deleteFiles: false }) }} className="btn-xs text-red-400">--torrent</button>
+                      <button onClick={() => { if (confirm(`Delete ${t.name} AND files?`)) { setPendingDelete(null); action('delete', t.hash, { deleteFiles: true }) } }} className="btn-xs text-red-600">--files</button>
+                      <button onClick={() => setPendingDelete(null)} className="btn-xs text-[#888]">×</button>
+                    </>
+                  ) : (
+                    <button onClick={() => setPendingDelete(t.hash)} className="btn-xs text-red-400">--rm</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
         <div className="font-mono text-xs text-[#6a9a7a] mt-1">] // {torrents.length} active</div>
       </section>
