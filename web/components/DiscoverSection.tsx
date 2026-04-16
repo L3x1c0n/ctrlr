@@ -187,7 +187,7 @@ function PreviewPane({
     <div className="flex flex-col h-full border border-[#1a1a2e] overflow-hidden">
 
       {/* backdrop */}
-      <div className="relative shrink-0" style={{ height: 260 }}>
+      <div className="relative shrink-0" style={{ height: 300 }}>
         {backdrop
           ? <img src={TMDB_W(780, backdrop)} alt="" className="w-full h-full object-cover" />
           : <div className="w-full h-full bg-[#080810]" />
@@ -200,13 +200,18 @@ function PreviewPane({
           <img
             src={TMDB_W(185, poster)}
             alt=""
-            className="absolute bottom-0 left-0 border-r border-t border-[#2a2a3a] shadow-lg"
-            style={{ width: 110, height: 165, objectFit: 'cover' }}
+            className="absolute bottom-0 left-0"
+            style={{
+              width: 160, height: 240, objectFit: 'cover',
+              boxShadow: '4px 0 24px rgba(0,0,0,0.85), 0 -4px 24px rgba(0,0,0,0.6)',
+              outline: '1px solid rgba(255,255,255,0.12)',
+              outlineOffset: '-1px',
+            }}
           />
         )}
 
         {/* title over backdrop */}
-        <div className="absolute bottom-2 right-3" style={{ left: poster ? 122 : 12 }}>
+        <div className="absolute bottom-2 right-3" style={{ left: poster ? 172 : 12 }}>
           <p className="text-white text-sm font-mono font-medium leading-tight line-clamp-2">{title}</p>
           <div className="flex flex-wrap items-center gap-x-2 mt-0.5 font-mono text-[10px] text-[#888]">
             {year && <span>{year}</span>}
@@ -382,7 +387,7 @@ export default function DiscoverSection() {
           const <span className="text-white text-sm font-medium uppercase tracking-widest">D1sc0ver</span> = {'{'}</div>
 
         {/* split pane — hidden below md */}
-        <div className="hidden md:grid grid-cols-[1fr_360px] gap-4" style={{ height: 560 }}>
+        <div className="hidden md:grid grid-cols-[1fr_360px] gap-4" style={{ height: 580 }}>
 
           {/* left: two stacked lists */}
           <div className="grid grid-rows-2 gap-0 border border-[#1a1a2e] overflow-hidden">
