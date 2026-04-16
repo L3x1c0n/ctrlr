@@ -190,7 +190,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
           loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono">No torrents</p>
         )}
         {torrents.length > 0 && (
-          <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-fixed">
+          <div className="overflow-x-auto"><table className="w-full text-xs font-mono table-fixed">
             <thead>
               <tr className="text-[#999] text-xs uppercase border-b border-[#1a1a2e]">
                 <th className="py-1 pr-3 w-6"></th>
@@ -218,7 +218,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                       <ScrambledName name={t.name} active={t.state === 'downloading'} />
                     </div>
                   </td>
-                  <td className="text-right pr-4 text-[#888] hidden md:table-cell">{fmtSize(t.size)}</td>
+                  <td className="text-right pr-4 text-[#888] hidden md:table-cell whitespace-nowrap">{fmtSize(t.size)}</td>
                   <td className="pr-4 hidden md:table-cell">
                     <div className="flex items-center gap-1.5">
                       <ProgressBar pct={t.progress * 100} width={16} label={false} size="text-base" />
