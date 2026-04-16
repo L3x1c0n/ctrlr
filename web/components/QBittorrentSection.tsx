@@ -197,7 +197,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                 <th className="py-1 pr-3 w-6"></th>
                 <th className="text-left py-1 pr-4">Name</th>
                 <th className="text-right pr-4 hidden md:table-cell w-[80px]">Size</th>
-                <th className="text-right pr-4 hidden md:table-cell w-[110px]">Progress</th>
+                <th className="text-right pr-4 hidden md:table-cell w-[136px]">Progress</th>
                 <th className="text-right pr-4 hidden md:table-cell w-[76px]">Speed ↓</th>
                 <th className="text-right pr-4 hidden md:table-cell w-[88px]">ETA</th>
                 <th className="text-right pr-4 w-[100px]">State</th>
@@ -223,9 +223,9 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                   </td>
                   <td className="text-right pr-4 text-[#888] hidden md:table-cell whitespace-nowrap">{fmtSize(t.size)}</td>
                   <td className="pr-4 hidden md:table-cell overflow-hidden">
-                    <div className="flex items-center gap-1.5 justify-end">
-                      <ProgressBar pct={t.progress * 100} width={6} label={false} />
-                      <span className="text-[#999] text-xs tabular-nums text-right">{Math.round(t.progress * 100)}%</span>
+                    <div className="flex items-center gap-1.5 justify-end w-full">
+                      <ProgressBar pct={t.progress * 100} width={10} label={false} />
+                      <span className="text-[#999] text-xs tabular-nums w-9 text-right">{Math.round(t.progress * 100)}%</span>
                     </div>
                   </td>
                   <td className="text-right pr-4 text-green-400 hidden md:table-cell whitespace-nowrap">{fmtSpeed(t.dlspeed)}</td>
