@@ -223,7 +223,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                   </td>
                   <td className="text-right pr-4 text-[#888] hidden md:table-cell whitespace-nowrap">{fmtSize(t.size)}</td>
                   <td className="pr-4 hidden md:table-cell overflow-hidden">
-                    <div className="flex items-center gap-1.5 justify-end w-full">
+                    <div className="flex items-center justify-between w-full">
                       <ProgressBar pct={t.progress * 100} width={10} label={false} />
                       <span className="text-[#999] text-xs tabular-nums w-9 text-right">{Math.round(t.progress * 100)}%</span>
                     </div>
