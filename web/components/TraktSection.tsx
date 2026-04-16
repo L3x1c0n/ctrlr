@@ -237,7 +237,7 @@ function ItemTags({ item }: { item: CalItem }) {
 
   // Movie meta: runtime + rating (shown regardless of inArr)
   const movieExtra = item.type === 'movie' && meta ? (
-    <span className="text-[#555] text-[10px] shrink-0 font-mono">
+    <span className="text-[#555] text-xs shrink-0 font-mono">
       {meta.runtime ? `${meta.runtime}m` : ''}
       {meta.runtime && meta.rating ? ' ' : ''}
       {meta.rating ? `★${meta.rating.toFixed(1)}` : ''}
@@ -247,11 +247,11 @@ function ItemTags({ item }: { item: CalItem }) {
 
   // Plex / provider badge
   const badge = item.downloaded ? (
-    <span style={{ color: '#E5A00D' }} className="text-[10px] shrink-0">[plex]</span>
+    <span style={{ color: '#E5A00D' }} className="text-xs shrink-0">[plex]</span>
   ) : meta && meta.providers.length > 0 ? (
     <span className="flex items-center gap-0.5 shrink-0">
       {meta.providers.slice(0, 2).map((p, i) => (
-        <span key={i} style={{ color: p.color }} className="text-[10px]">[{p.abbr}]</span>
+        <span key={i} style={{ color: p.color }} className="text-xs">[{p.abbr}]</span>
       ))}
     </span>
   ) : null
@@ -387,7 +387,7 @@ function ForecastView({ itemMap, offset, onOffsetChange, onSelect }: {
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between mb-2 font-mono text-[10px]">
+      <div className="flex items-center justify-between mb-2 font-mono text-xs">
         <button onClick={() => onOffsetChange(offset - 3)} className="btn-xs text-[#888] hover:text-white">← prev</button>
         {offset !== 0 && (
           <button onClick={() => onOffsetChange(0)} className="btn-xs text-[#6a9a7a]">today</button>
@@ -401,7 +401,7 @@ function ForecastView({ itemMap, offset, onOffsetChange, onSelect }: {
             <span className={isToday ? 'text-[#4ade80] font-bold' : 'text-[#6a9a7a]'}>
               {isToday ? `[${fmtDateHeader(key)}]` : fmtDateHeader(key)}
             </span>
-            {isToday && <span className="text-[#4ade80] text-[10px]">today</span>}
+            {isToday && <span className="text-[#4ade80] text-xs">today</span>}
           </div>
           <div className="px-3 py-2 space-y-1.5">
             {items.length === 0 ? (
@@ -463,7 +463,7 @@ function AgendaView({ itemMap, cap, agendaOffset, onOffsetChange, onSelect }: {
   return (
     <div>
       {/* nav */}
-      <div className="flex items-center justify-between mb-3 font-mono text-[10px]">
+      <div className="flex items-center justify-between mb-3 font-mono text-xs">
         <button onClick={() => onOffsetChange(agendaOffset - cap)} className="btn-xs text-[#888] hover:text-white">← prev</button>
         {agendaOffset !== 0 && (
           <button onClick={() => onOffsetChange(0)} className="btn-xs text-[#6a9a7a]">today</button>
@@ -481,7 +481,7 @@ function AgendaView({ itemMap, cap, agendaOffset, onOffsetChange, onSelect }: {
                 <span className={isToday ? 'text-[#4ade80] font-bold' : isPast ? 'text-[#4a4a6a]' : 'text-[#6a9a7a]'}>
                   {fmtDateKey(key)}
                 </span>
-                {isToday && <span className="text-[#4ade80] text-[10px]">← today</span>}
+                {isToday && <span className="text-[#4ade80] text-xs">← today</span>}
               </div>
               <div className="space-y-1 pl-2">
                 {items.map((item, i) => {
@@ -513,7 +513,7 @@ type CalView = 'month' | 'forecast' | 'agenda'
 
 function ViewSwitcher({ view, onChange }: { view: CalView; onChange: (v: CalView) => void }) {
   return (
-    <div className="flex gap-1 font-mono text-[10px]">
+    <div className="flex gap-1 font-mono text-xs">
       {(['month', 'forecast', 'agenda'] as CalView[]).map(v => (
         <button
           key={v}

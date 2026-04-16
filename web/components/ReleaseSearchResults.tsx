@@ -93,14 +93,14 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
   if (!releases) return null
 
   const btnCls = (active: boolean) =>
-    `px-1.5 py-0.5 border text-[10px] font-mono ${active ? 'border-[#7070a8] text-[#aaa]' : 'border-[#1a1a2e] text-[#555] hover:text-[#888]'}`
+    `px-1.5 py-0.5 border text-xs font-mono ${active ? 'border-[#7070a8] text-[#aaa]' : 'border-[#1a1a2e] text-[#555] hover:text-[#888]'}`
 
   return (
     <div>
       <p className="text-[#7070a8] text-xs mb-2">{`/* releases (${visible.length}/${releases.length}) */`}</p>
 
       {/* quality + protocol + rejected */}
-      <div className="flex flex-wrap gap-1 mb-1.5 text-[10px] font-mono">
+      <div className="flex flex-wrap gap-1 mb-1.5 text-xs font-mono">
         <span className="text-[#555] self-center">quality:</span>
         {(['SD', 'HD', 'UHD'] as QualityTier[]).map(q => (
           <button key={q} onClick={() => toggleBtn(quality, q, setQuality)} className={btnCls(quality === q)}>{q}</button>
@@ -114,7 +114,7 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
       </div>
 
       {/* sort */}
-      <div className="flex flex-wrap gap-1 mb-2 text-[10px] font-mono">
+      <div className="flex flex-wrap gap-1 mb-2 text-xs font-mono">
         <span className="text-[#555] self-center">sort:</span>
         {(['seeders', 'age', 'title', 'size'] as SortKey[]).map(k => (
           <button key={k} onClick={() => toggleSort(k)} className={btnCls(sort === k)}>
@@ -142,7 +142,7 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
                       {acting === grabKey ? '...' : '--grab'}
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[#888] text-[10px]">
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[#888] text-xs">
                     <span>{r.quality.quality.name}</span>
                     <span>{fmtSize(r.size)}</span>
                     {r.seeders !== undefined && <span className="text-green-600">{r.seeders}S</span>}
@@ -159,7 +159,7 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
                     )}
                   </div>
                   {r.rejected && r.rejections.length > 0 && (
-                    <p className="text-red-600 text-[10px] mt-0.5">{r.rejections[0]}</p>
+                    <p className="text-red-600 text-xs mt-0.5">{r.rejections[0]}</p>
                   )}
                 </div>
               )

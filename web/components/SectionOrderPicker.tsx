@@ -63,7 +63,7 @@ export default function SectionOrderPicker() {
           <button disabled className="btn-xs opacity-20 cursor-not-allowed">▼</button>
         </div>
         <span className="font-mono text-xs text-[#666]">&gt;_ qB1tt0rr3nt</span>
-        <span className="ml-auto font-mono text-[10px] text-[#444] uppercase tracking-wider">pinned</span>
+        <span className="ml-auto font-mono text-xs text-[#444] uppercase tracking-wider">pinned</span>
       </div>
 
       {order.map((key, i) => (

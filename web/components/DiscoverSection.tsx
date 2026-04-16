@@ -18,9 +18,9 @@ function AddButton({ item, onAdded }: { item: SeerSearchResult; onAdded: () => v
   const [done, setDone]     = useState(false)
   const status = item.mediaInfo?.status
 
-  if (status === 5)                              return <span className="font-mono text-[10px] shrink-0" style={{ color: PLEX_ORANGE }}>// plex</span>
-  if (status != null && status >= 2 && status <= 4) return <span className="font-mono text-[10px] shrink-0 text-blue-400">// req&apos;d</span>
-  if (done) return <span className="font-mono text-[10px] text-blue-400 shrink-0">// queued</span>
+  if (status === 5)                              return <span className="font-mono text-xs shrink-0" style={{ color: PLEX_ORANGE }}>// plex</span>
+  if (status != null && status >= 2 && status <= 4) return <span className="font-mono text-xs shrink-0 text-blue-400">// req&apos;d</span>
+  if (done) return <span className="font-mono text-xs text-blue-400 shrink-0">// queued</span>
 
   return (
     <button
@@ -94,7 +94,7 @@ function ListPanel({
 }) {
   return (
     <div className="flex flex-col min-h-0">
-      <div className="font-mono text-[10px] text-[#6a9a7a] px-3 py-1.5 border-b border-[#1a1a2e] shrink-0">
+      <div className="font-mono text-xs text-[#6a9a7a] px-3 py-1.5 border-b border-[#1a1a2e] shrink-0">
         // {label}
       </div>
       <div className="overflow-y-auto flex-1">
@@ -116,7 +116,7 @@ function ListPanel({
           <button
             onClick={onLoadMore}
             disabled={loadingMore}
-            className="w-full text-center font-mono text-[10px] text-[#555] hover:text-[#888] py-2 border-t border-[#0f0f1a] disabled:opacity-40"
+            className="w-full text-center font-mono text-xs text-[#555] hover:text-[#888] py-2 border-t border-[#0f0f1a] disabled:opacity-40"
           >
             {loadingMore ? '...' : '--more'}
           </button>
@@ -187,7 +187,7 @@ function PreviewPane({
         {/* title over backdrop */}
         <div className="absolute bottom-2 right-3" style={{ left: poster ? 137 : 12 }}>
           <p className="text-white text-sm font-mono font-medium leading-tight line-clamp-2">{title}</p>
-          <div className="flex flex-wrap items-center gap-x-2 mt-0.5 font-mono text-[10px] text-[#888]">
+          <div className="flex flex-wrap items-center gap-x-2 mt-0.5 font-mono text-xs text-[#888]">
             {year && <span>{year}</span>}
             {runtime && <span>{runtime}m</span>}
             {seasons && <span>{seasons} seasons</span>}
@@ -199,7 +199,7 @@ function PreviewPane({
       </div>
 
       {/* metadata */}
-      <div className="px-3 py-2 border-b border-[#0f0f1a] font-mono text-[10px] shrink-0">
+      <div className="px-3 py-2 border-b border-[#0f0f1a] font-mono text-xs shrink-0">
         {detailLoading && !detail ? (
           <span className="text-[#555]">// loading...</span>
         ) : (
@@ -213,7 +213,7 @@ function PreviewPane({
       </div>
 
       {/* overview */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 font-mono text-[10px]">
+      <div className="flex-1 overflow-y-auto px-3 py-2 font-mono text-xs">
         {overview ? (
           <>
             <p className="text-[#6a9a7a] mb-1">{'/*'}</p>
@@ -416,7 +416,7 @@ export default function DiscoverSection() {
               >
                 <span className="flex-1 truncate min-w-0">{item.title ?? item.name}</span>
                 {(item.releaseDate ?? item.firstAirDate) && (
-                  <span className="text-[#888] shrink-0 text-[10px]">
+                  <span className="text-[#888] shrink-0 text-xs">
                     {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
                   </span>
                 )}
@@ -437,7 +437,7 @@ export default function DiscoverSection() {
             ) : (
               <div className="w-full bg-[#080810] shrink-0" style={{ aspectRatio: '2/3' }} />
             )}
-            <div className="flex-1 overflow-y-auto px-1.5 py-1.5 font-mono text-[10px] space-y-1.5">
+            <div className="flex-1 overflow-y-auto px-1.5 py-1.5 font-mono text-xs space-y-1.5">
               {detail?.credits?.crew?.find(c => c.job === 'Director') && (
                 <p>
                   <span className="text-[#6a9a7a]">// dir</span>
