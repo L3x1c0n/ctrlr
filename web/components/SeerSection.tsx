@@ -160,10 +160,10 @@ export default function SeerSection() {
               <tr className="text-[#999] text-xs uppercase border-b border-[#1a1a2e]">
                 <th className="py-1 pr-2 w-6"></th>
                 <th className="text-left py-1 px-3">Title</th>
-                <th className="text-left py-1 px-3 hidden md:table-cell w-[72px]">Type</th>
-                <th className="text-left py-1 px-3 w-[108px]">Status</th>
-                <th className="text-left py-1 px-3 hidden md:table-cell w-[68px]">By</th>
-                <th className="py-1 pl-3 w-[128px]"></th>
+                <th className="text-center py-1 px-3 hidden md:table-cell w-[68px]">Type</th>
+                <th className="text-center py-1 px-3 w-[108px]">Status</th>
+                <th className="text-center py-1 px-3 hidden md:table-cell w-[68px]">By</th>
+                <th className="text-center py-1 px-3">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -181,18 +181,20 @@ export default function SeerSection() {
                       <MarqueeText className="flex-1 min-w-0">{r.media.title ?? r.media.name}</MarqueeText>
                     </div>
                   </td>
-                  <td className="text-left px-3 text-[#999] text-xs uppercase hidden md:table-cell">{r.type}</td>
-                  <td className={`text-left px-3 whitespace-nowrap ${statusColor[r.status] ?? 'text-[#888]'}`}>
+                  <td className="text-center px-3 text-[#999] text-xs uppercase hidden md:table-cell">{r.type}</td>
+                  <td className={`text-center px-3 whitespace-nowrap ${statusColor[r.status] ?? 'text-[#888]'}`}>
                     {statusLabel[r.status] ?? r.status}
                   </td>
-                  <td className="text-left px-3 text-[#999] hidden md:table-cell">{r.requestedBy.displayName}</td>
-                  <td className="pl-3 pr-2" style={{ overflow: 'visible' }}>
-                    <div className="flex gap-1 justify-end">
-                      {r.status === 1 && (
-                        <button onClick={() => approveRequest(r.id)} className="btn-xs text-green-400 whitespace-nowrap">
-                          --approve
-                        </button>
-                      )}
+                  <td className="text-center px-3 text-[#999] hidden md:table-cell">{r.requestedBy.displayName}</td>
+                  <td className="px-3">
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => approveRequest(r.id)}
+                        className="btn-xs text-green-400 whitespace-nowrap"
+                        style={r.status !== 1 ? { visibility: 'hidden' } : undefined}
+                      >
+                        --approve
+                      </button>
                       <button
                         onClick={() => { if (confirm('Delete request?')) deleteRequest(r.id) }}
                         className="btn-xs text-red-400 whitespace-nowrap"
