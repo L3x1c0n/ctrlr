@@ -195,18 +195,18 @@ function PreviewPane({
         {/* gradient fade */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/20 to-transparent" />
 
-        {/* inset poster */}
+        {/* inset poster — full height of artwork area */}
         {poster && (
           <img
             src={TMDB_W(185, poster)}
             alt=""
-            className="absolute bottom-0 left-3 w-20 border border-[#2a2a3a] shadow-lg shrink-0"
-            style={{ aspectRatio: '2/3' }}
+            className="absolute inset-y-0 left-0 h-full border-r border-[#2a2a3a] shadow-lg"
+            style={{ aspectRatio: '2/3', objectFit: 'cover' }}
           />
         )}
 
         {/* title over backdrop */}
-        <div className="absolute bottom-2 right-3" style={{ left: poster ? 92 : 12 }}>
+        <div className="absolute bottom-2 right-3" style={{ left: poster ? 'calc(160px * 2/3 + 8px)' : 12 }}>
           <p className="text-white text-sm font-mono font-medium leading-tight line-clamp-2">{title}</p>
           <div className="flex flex-wrap items-center gap-x-2 mt-0.5 font-mono text-[10px] text-[#888]">
             {year && <span>{year}</span>}
