@@ -12,10 +12,12 @@ const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${p
 
 // ── status helpers ─────────────────────────────────────────────────────────────
 
-function statusBadge(status: number | undefined): { label: string; color: string } | null {
-  if (status === 5)              return { label: '[ok]',   color: 'text-green-400' }
-  if (status === 2)              return { label: '[wait]', color: 'text-yellow-400' }
-  if (status === 3 || status === 4) return { label: '[dl]', color: 'text-blue-400' }
+const PLEX_ORANGE = '#E5A00D'
+
+function statusBadge(status: number | undefined): { label: string; color: string; style?: React.CSSProperties } | null {
+  if (status === 5)                 return { label: '[plex]', color: '', style: { color: PLEX_ORANGE } }
+  if (status === 2)                 return { label: '[wait]', color: 'text-yellow-400' }
+  if (status === 3 || status === 4) return { label: '[dl]',   color: 'text-blue-400' }
   return null
 }
 
@@ -26,7 +28,7 @@ function AddButton({ item, onAdded }: { item: SeerSearchResult; onAdded: () => v
   const isAvail = status === 5
   const isReq   = status != null && status >= 2 && status < 5
 
-  if (isAvail) return <span className="font-mono text-[10px] text-green-400 shrink-0">// plex</span>
+  if (isAvail) return <span className="font-mono text-[10px] shrink-0" style={{ color: PLEX_ORANGE }}>// plex</span>
   if (isReq)   return <span className="font-mono text-[10px] text-yellow-400 shrink-0">// rq'd</span>
   if (done)    return <span className="font-mono text-[10px] text-blue-400 shrink-0">// queued</span>
 
@@ -81,7 +83,7 @@ function ListRow({
     >
       <span className="text-[#444] w-4 tabular-nums text-right shrink-0">{index + 1}</span>
       {badge
-        ? <span className={`shrink-0 text-[10px] ${badge.color}`}>{badge.label}</span>
+        ? <span className={`shrink-0 text-[10px] ${badge.color}`} style={badge.style}>{badge.label}</span>
         : <span className="shrink-0 w-[28px]" />
       }
       <span className="flex-1 truncate">{title}</span>
@@ -191,29 +193,29 @@ function PreviewPane({
           : <div className="w-full h-full bg-[#080810]" />
         }
         {/* gradient fade */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/20 to-transparent" />
 
         {/* inset poster */}
         {poster && (
           <img
-            src={TMDB_W(92, poster)}
+            src={TMDB_W(185, poster)}
             alt=""
-            className="absolute bottom-2 left-3 w-10 border border-[#2a2a3a] shrink-0"
+            className="absolute bottom-0 left-3 w-20 border border-[#2a2a3a] shadow-lg shrink-0"
             style={{ aspectRatio: '2/3' }}
           />
         )}
 
         {/* title over backdrop */}
-        <div className="absolute bottom-2 right-3" style={{ left: poster ? 54 : 12 }}>
+        <div className="absolute bottom-2 right-3" style={{ left: poster ? 92 : 12 }}>
           <p className="text-white text-sm font-mono font-medium leading-tight line-clamp-2">{title}</p>
           <div className="flex flex-wrap items-center gap-x-2 mt-0.5 font-mono text-[10px] text-[#888]">
             {year && <span>{year}</span>}
             {runtime && <span>{runtime}m</span>}
             {seasons && <span>{seasons} seasons</span>}
             {rating != null && rating > 0 && <span>★ {rating.toFixed(1)}</span>}
-            {statusBadge(status) && (
-              <span className={statusBadge(status)!.color}>{statusBadge(status)!.label}</span>
-            )}
+            {statusBadge(status) && (() => { const b = statusBadge(status)!; return (
+              <span className={b.color} style={b.style}>{b.label}</span>
+            )})()}
           </div>
         </div>
       </div>
@@ -275,8 +277,14 @@ export default function DiscoverSection() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [drawerItem,    setDrawerItem]    = useState<SeerSearchResult | null>(null)
 
-  const activeId = activeItem ? `${activeItem.mediaType}-${activeItem.id}` : null
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const activeId     = activeItem ? `${activeItem.mediaType}-${activeItem.id}` : null
+  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const allItemsRef  = useRef<SeerSearchResult[]>([])
+
+  // Keep a stable ref to the flat item list for use in the keydown handler
+  useEffect(() => {
+    allItemsRef.current = [...tvShows, ...movies]
+  }, [tvShows, movies])
 
   // ── initial fetch ────────────────────────────────────────────────────────────
 
@@ -326,6 +334,28 @@ export default function DiscoverSection() {
     if (activeItem) fetchDetail(activeItem)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // ── keyboard navigation ──────────────────────────────────────────────────────
+
+  const activateRef = useRef(activate)
+  useEffect(() => { activateRef.current = activate })
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+      const items = allItemsRef.current
+      if (items.length === 0) return
+      e.preventDefault()
+      const currentId = activeItem ? `${activeItem.mediaType}-${activeItem.id}` : null
+      const idx = items.findIndex(i => `${i.mediaType}-${i.id}` === currentId)
+      const next = e.key === 'ArrowDown'
+        ? Math.min(idx + 1, items.length - 1)
+        : Math.max(idx - 1, 0)
+      if (next !== idx) activateRef.current(items[next])
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [activeItem])
 
   // ── load more ────────────────────────────────────────────────────────────────
 
