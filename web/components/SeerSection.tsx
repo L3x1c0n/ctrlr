@@ -159,18 +159,18 @@ export default function SeerSection() {
             <thead>
               <tr className="text-[#999] text-xs uppercase border-b border-[#1a1a2e]">
                 <th className="py-1 pr-2 w-6"></th>
-                <th className="text-left py-1 pr-2">Title</th>
-                <th className="text-right pr-2 hidden md:table-cell">Type</th>
-                <th className="text-right pr-2 w-[72px]">Status</th>
-                <th className="text-right pr-2 hidden md:table-cell">By</th>
-                <th className="text-right w-[100px]">Actions</th>
+                <th className="text-left py-1 px-3">Title</th>
+                <th className="text-right py-1 px-3 hidden md:table-cell w-[68px]">Type</th>
+                <th className="text-right py-1 px-3 w-[96px]">Status</th>
+                <th className="text-right py-1 px-3 hidden md:table-cell">By</th>
+                <th className="text-right py-1 pl-3 w-[108px]">Actions</th>
               </tr>
             </thead>
             <tbody>
               {requests.slice(0, 10).map((r, i) => (
                 <tr key={r.id} className="border-b border-[#0f0f1a]">
                   <td className="py-0.5 pr-2 text-right text-[#7070a8] tabular-nums select-none text-xs w-6">{i + 1}</td>
-                  <td className="py-0.5 pr-2 text-white min-w-0">
+                  <td className="py-0.5 px-3 text-white min-w-0">
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => setSelected(r)}
@@ -181,12 +181,12 @@ export default function SeerSection() {
                       <MarqueeText className="flex-1 min-w-0">{r.media.title ?? r.media.name}</MarqueeText>
                     </div>
                   </td>
-                  <td className="text-right pr-2 text-[#999] text-xs uppercase hidden md:table-cell">{r.type}</td>
-                  <td className={`text-right pr-2 whitespace-nowrap ${statusColor[r.status] ?? 'text-[#888]'}`}>
+                  <td className="text-right px-3 text-[#999] text-xs uppercase hidden md:table-cell">{r.type}</td>
+                  <td className={`text-right px-3 whitespace-nowrap ${statusColor[r.status] ?? 'text-[#888]'}`}>
                     {statusLabel[r.status] ?? r.status}
                   </td>
-                  <td className="text-right pr-2 text-[#999] hidden md:table-cell">{r.requestedBy.displayName}</td>
-                  <td className="text-right">
+                  <td className="text-right px-3 text-[#999] hidden md:table-cell">{r.requestedBy.displayName}</td>
+                  <td className="text-right pl-3">
                     <div className="flex gap-2 justify-end">
                       {r.status === 1 && (
                         <button onClick={() => approveRequest(r.id)} className="btn-xs text-green-400">
