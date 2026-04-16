@@ -159,8 +159,8 @@ export default function SeerSection() {
             <div className="flex items-center gap-3 text-[#999] text-xs uppercase border-b border-[#1a1a2e] py-1 select-none">
               <span className="w-5 shrink-0"></span>
               <span className="flex-1">Title</span>
-              <span className="hidden md:block shrink-0">Type</span>
-              <span className="shrink-0 w-[88px] text-right">Status</span>
+              <span className="hidden md:block shrink-0 w-[48px]">Type</span>
+              <span className="shrink-0 w-[88px]">Status</span>
               <span className="hidden md:block shrink-0">By</span>
               <span className="shrink-0">Actions</span>
             </div>
@@ -171,8 +171,8 @@ export default function SeerSection() {
                   <button onClick={() => setSelected(r)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                   <MarqueeText className="min-w-0">{r.media.title ?? r.media.name}</MarqueeText>
                 </div>
-                <span className="hidden md:block shrink-0 text-[#999] text-xs uppercase whitespace-nowrap">{r.type}</span>
-                <span className={`shrink-0 w-[88px] text-right whitespace-nowrap ${statusColor[r.status] ?? 'text-[#888]'}`}>{statusLabel[r.status] ?? r.status}</span>
+                <span className="hidden md:block shrink-0 text-[#999] text-xs uppercase whitespace-nowrap w-[48px]">{r.type}</span>
+                <span className={`shrink-0 w-[88px] whitespace-nowrap ${statusColor[r.status] ?? 'text-[#888]'}`}>{statusLabel[r.status] ?? r.status}</span>
                 <span className="hidden md:block shrink-0 text-[#999] whitespace-nowrap">{r.requestedBy.displayName}</span>
                 <div className="shrink-0 flex gap-1">
                   {r.status === 1 && <button onClick={() => approveRequest(r.id)} className="btn-xs text-green-400 whitespace-nowrap">--approve</button>}
