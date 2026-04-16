@@ -196,10 +196,10 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                 <th className="py-1 pr-3 w-6"></th>
                 <th className="text-left py-1 pr-4">Name</th>
                 <th className="text-right pr-4 hidden md:table-cell w-[80px]">Size</th>
-                <th className="text-left pr-4 hidden md:table-cell w-[180px]">Progress</th>
-                <th className="text-right pr-4 hidden md:table-cell w-[72px]">Speed ↓</th>
-                <th className="text-right pr-4 hidden md:table-cell w-[72px]">ETA</th>
-                <th className="text-right pr-4 w-[76px]">State</th>
+                <th className="text-left pr-4 hidden md:table-cell w-[160px]">Progress</th>
+                <th className="text-right pr-4 hidden md:table-cell w-[96px]">Speed ↓</th>
+                <th className="text-right pr-4 hidden md:table-cell w-[88px]">ETA</th>
+                <th className="text-right pr-4 w-[100px]">State</th>
                 <th className="text-right w-[110px]">Actions</th>
               </tr>
             </thead>
@@ -225,9 +225,9 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                       <span className="text-[#999] text-xs tabular-nums w-9 text-right">{Math.round(t.progress * 100)}%</span>
                     </div>
                   </td>
-                  <td className="text-right pr-4 text-green-400 hidden md:table-cell">{fmtSpeed(t.dlspeed)}</td>
-                  <td className="text-right pr-4 text-[#888] hidden md:table-cell">{fmtEta(t.eta)}</td>
-                  <td className={`text-right pr-4 ${stateColor[t.state] ?? 'text-[#888]'}`}>
+                  <td className="text-right pr-4 text-green-400 hidden md:table-cell whitespace-nowrap">{fmtSpeed(t.dlspeed)}</td>
+                  <td className="text-right pr-4 text-[#888] hidden md:table-cell whitespace-nowrap">{fmtEta(t.eta)}</td>
+                  <td className={`text-right pr-4 whitespace-nowrap ${stateColor[t.state] ?? 'text-[#888]'}`}>
                     {t.state}
                   </td>
                   <td className="text-right">
