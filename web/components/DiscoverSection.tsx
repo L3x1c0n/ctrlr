@@ -14,23 +14,19 @@ const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${p
 
 const PLEX_ORANGE = '#E5A00D'
 
-function statusBadge(status: number | undefined): { label: string; color: string; style?: React.CSSProperties } | null {
-  if (status === 5)                 return { label: '[plex]', color: '', style: { color: PLEX_ORANGE } }
-  if (status === 2)                 return { label: '[wait]', color: 'text-yellow-400' }
-  if (status === 3 || status === 4) return { label: '[dl]',   color: 'text-blue-400' }
-  return null
-}
 
 function AddButton({ item, onAdded }: { item: SeerSearchResult; onAdded: () => void }) {
   const [adding, setAdding] = useState(false)
   const [done, setDone]     = useState(false)
   const status = item.mediaInfo?.status
-  const isAvail = status === 5
-  const isReq   = status != null && status >= 2 && status < 5
 
-  if (isAvail) return null
-  if (isReq)   return null
-  if (done)    return <span className="font-mono text-[10px] text-blue-400 shrink-0">// queued</span>
+  if (status === 5)                        return <span className="font-mono text-[10px] shrink-0" style={{ color: PLEX_ORANGE }}>// plex</span>
+  if (status != null && status >= 2 && status <= 4) {
+    const label = status === 2 ? '// wait' : '// dl'
+    const color = status === 2 ? 'text-yellow-400' : 'text-blue-400'
+    return <span className={`font-mono text-[10px] shrink-0 ${color}`}>{label}</span>
+  }
+  if (done) return <span className="font-mono text-[10px] text-blue-400 shrink-0">// queued</span>
 
   return (
     <button
@@ -68,7 +64,6 @@ function ListRow({
 }) {
   const title  = item.title ?? item.name ?? '—'
   const year   = (item.releaseDate ?? item.firstAirDate)?.slice(0, 4)
-  const badge  = statusBadge(item.mediaInfo?.status)
 
   return (
     <div
@@ -81,10 +76,6 @@ function ListRow({
       }`}
     >
       <span className="text-[#444] w-4 tabular-nums text-right shrink-0">{index + 1}</span>
-      {badge
-        ? <span className={`shrink-0 text-[10px] ${badge.color}`} style={badge.style}>{badge.label}</span>
-        : <span className="shrink-0 w-[28px]" />
-      }
       <span className="flex-1 truncate">{title}</span>
       {year && <span className="text-[#555] shrink-0">{year}</span>}
       <AddButton item={item} onAdded={onAdded} />
@@ -208,9 +199,9 @@ function PreviewPane({
             {runtime && <span>{runtime}m</span>}
             {seasons && <span>{seasons} seasons</span>}
             {rating != null && rating > 0 && <span>★ {rating.toFixed(1)}</span>}
-            {statusBadge(status) && (() => { const b = statusBadge(status)!; return (
-              <span className={b.color} style={b.style}>{b.label}</span>
-            )})()}
+            {status === 5 && <span style={{ color: PLEX_ORANGE }}>plex</span>}
+            {status === 2 && <span className="text-yellow-400">wait</span>}
+            {(status === 3 || status === 4) && <span className="text-blue-400">dl</span>}
           </div>
         </div>
       </div>
