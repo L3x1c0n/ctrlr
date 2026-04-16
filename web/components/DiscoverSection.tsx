@@ -131,12 +131,11 @@ function ListPanel({
 // ── preview pane ───────────────────────────────────────────────────────────────
 
 function PreviewPane({
-  item, detail, detailLoading, onAdded,
+  item, detail, detailLoading,
 }: {
   item: SeerSearchResult | null
   detail: DiscoverDetail | null
   detailLoading: boolean
-  onAdded: () => void
 }) {
   if (!item) {
     return (
@@ -223,10 +222,6 @@ function PreviewPane({
         }
       </div>
 
-      {/* actions */}
-      <div className="px-3 py-2 border-t border-[#1a1a2e] flex items-center gap-3 shrink-0">
-        <AddButton item={item} onAdded={onAdded} />
-      </div>
     </div>
   )
 }
@@ -396,7 +391,6 @@ export default function DiscoverSection() {
             item={activeItem}
             detail={detail}
             detailLoading={detailLoading}
-            onAdded={() => {}}
           />
         </div>
 
