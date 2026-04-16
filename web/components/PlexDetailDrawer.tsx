@@ -87,7 +87,7 @@ function ArtGrid({
 
   return (
     <>
-      <p className="text-[#7070a8] text-[10px] font-mono mb-1.5">// {photos.length} available — click to set</p>
+      <p className="text-[#7070a8] text-xs font-mono mb-1.5">// {photos.length} available — click to set</p>
       <div className={`grid gap-2 ${isPortrait ? 'grid-cols-4' : 'grid-cols-3'}`}>
         {photos.map((p, i) => (
           <div key={i} className="flex flex-col gap-0.5">

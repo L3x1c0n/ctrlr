@@ -105,7 +105,7 @@ export default function TopBar() {
 
       {/* clock — ml-auto pushes it to far right of bar on both breakpoints */}
       <div className="ml-auto flex items-center px-3 flex-none">
-        {time && <span className="font-mono text-[10px] md:text-sm tabular-nums text-white">{time}</span>}
+        {time && <span className="font-mono text-xs md:text-sm tabular-nums text-white">{time}</span>}
       </div>
     </div>
     </>

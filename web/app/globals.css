@@ -13,7 +13,7 @@ section[id], div[id="arr"] {
 }
 
 html {
-  font-size: 14px;
+  font-size: 16px;
 }
 
 body {
@@ -81,7 +81,7 @@ body {
 
   .btn-xs {
     @apply font-mono px-1 border border-current cursor-pointer inline-flex items-center leading-none;
-    font-size: 10px;
+    font-size: 11px;
     padding-top: 1px;
     padding-bottom: 1px;
   }

@@ -356,14 +356,14 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
                               {acting === `grab-${i}` ? '...' : '--grab'}
                             </button>
                           </div>
-                          <div className="flex gap-3 text-[#888] text-[10px]">
+                          <div className="flex gap-3 text-[#888] text-xs">
                             <span>{r.quality.quality.name}</span>
                             <span>{fmtBytes(r.size)}</span>
                             {r.seeders !== undefined && <span className="text-green-600">{r.seeders}S</span>}
                             <span className="truncate">{r.indexer}</span>
                           </div>
                           {r.rejected && r.rejections.length > 0 && (
-                            <p className="text-red-600 text-[10px] mt-0.5">{r.rejections[0]}</p>
+                            <p className="text-red-600 text-xs mt-0.5">{r.rejections[0]}</p>
                           )}
                         </div>
                       )
