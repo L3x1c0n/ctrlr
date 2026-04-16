@@ -5,6 +5,7 @@ import { QBTorrent, QBTransferInfo } from '@/types'
 import ProgressBar from '@/components/ProgressBar'
 import Spinner from '@/components/Spinner'
 import QBDetailDrawer from '@/components/QBDetailDrawer'
+import MarqueeText from '@/components/MarqueeText'
 
 const SCRAMBLE_CHARS = '01ﾊﾐﾋｱｳｦ█▓▒░╪┼╬╫╩╦╠═'
 
@@ -83,7 +84,7 @@ function usePeekScramble(name: string, active: boolean) {
 
 function ScrambledName({ name, active }: { name: string; active: boolean }) {
   const text = usePeekScramble(name, active)
-  return <span className="truncate">{text}</span>
+  return <span>{text}</span>
 }
 
 function fmtSize(bytes: number): string {
@@ -215,7 +216,9 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                       >
                         --info
                       </button>
-                      <ScrambledName name={t.name} active={t.state === 'downloading'} />
+                      <MarqueeText className="flex-1 min-w-0">
+                        <ScrambledName name={t.name} active={t.state === 'downloading'} />
+                      </MarqueeText>
                     </div>
                   </td>
                   <td className="text-right pr-4 text-[#888] hidden md:table-cell whitespace-nowrap">{fmtSize(t.size)}</td>

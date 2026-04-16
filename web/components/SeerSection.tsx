@@ -5,6 +5,7 @@ import { SeerRequest, SeerSearchResult } from '@/types'
 import Spinner from '@/components/Spinner'
 import SeerDetailDrawer from '@/components/SeerDetailDrawer'
 import DiscoverSection from '@/components/DiscoverSection'
+import MarqueeText from '@/components/MarqueeText'
 
 const statusLabel: Record<number, string> = {
   1: 'Pending',
@@ -177,7 +178,7 @@ export default function SeerSection() {
                       >
                         --info
                       </button>
-                      <span className="truncate">{r.media.title ?? r.media.name}</span>
+                      <MarqueeText className="flex-1 min-w-0">{r.media.title ?? r.media.name}</MarqueeText>
                     </div>
                   </td>
                   <td className="text-right pr-4 text-[#999] text-xs uppercase hidden md:table-cell">{r.type}</td>

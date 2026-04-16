@@ -37,6 +37,12 @@ body {
   animation: scroll-left 3.5s ease-in-out infinite alternate;
 }
 
+@media (max-width: 767px) {
+  .scroll-hover .scroll-inner {
+    animation: scroll-left 3.5s ease-in-out infinite alternate;
+  }
+}
+
 .cal-day {
   color: #4a4a7a;
   cursor: pointer;

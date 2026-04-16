@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { SeerSearchResult, DiscoverDetail } from '@/types'
 import Spinner from '@/components/Spinner'
 import DiscoverDetailDrawer from '@/components/DiscoverDetailDrawer'
+import MarqueeText from '@/components/MarqueeText'
 
 const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${path}`
 
@@ -414,7 +415,7 @@ export default function DiscoverSection() {
                     : 'border-transparent text-[#bbb]'
                 }`}
               >
-                <span className="flex-1 truncate min-w-0">{item.title ?? item.name}</span>
+                <MarqueeText className="flex-1 min-w-0">{item.title ?? item.name}</MarqueeText>
                 {(item.releaseDate ?? item.firstAirDate) && (
                   <span className="text-[#888] shrink-0 text-xs">
                     {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
