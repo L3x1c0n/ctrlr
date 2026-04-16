@@ -186,8 +186,8 @@ export default function SeerSection() {
                     {statusLabel[r.status] ?? r.status}
                   </td>
                   <td className="text-left px-3 text-[#999] hidden md:table-cell">{r.requestedBy.displayName}</td>
-                  <td className="pl-3 pr-2 whitespace-nowrap">
-                    <div className="flex gap-1">
+                  <td className="pl-3 pr-2" style={{ overflow: 'visible' }}>
+                    <div className="flex gap-1 justify-end">
                       {r.status === 1 && (
                         <button onClick={() => approveRequest(r.id)} className="btn-xs text-green-400 whitespace-nowrap">
                           --approve
