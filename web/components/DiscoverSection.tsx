@@ -164,7 +164,7 @@ function PreviewPane({
       {/* backdrop */}
       <div className="relative shrink-0 w-full" style={{ aspectRatio: '16/9' }}>
         {backdrop
-          ? <img src={TMDB_W(780, backdrop)} alt="" className="w-full h-full object-cover" style={{ filter: 'blur(1.5px) brightness(0.88)' }} />
+          ? <img src={TMDB_W(780, backdrop)} alt="" className="w-full h-full object-cover" style={{ filter: 'blur(0.8px) brightness(0.95)' }} />
           : <div className="w-full h-full bg-[#080810]" />
         }
         {/* frosted glass overlay + bottom fade */}
