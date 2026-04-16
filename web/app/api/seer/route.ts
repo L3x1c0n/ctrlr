@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { search, getRequests, submitRequest, approveRequest, deleteRequest, getMediaDetail, getSeerProfiles, updateSeerRequest, getRootFolders } from '@/lib/seer'
+import { search, getRequests, submitRequest, approveRequest, deleteRequest, getMediaDetail, getSeerProfiles, updateSeerRequest, getRootFolders, getTrending } from '@/lib/seer'
 
 export async function GET(req: NextRequest) {
   try {
@@ -7,6 +7,13 @@ export async function GET(req: NextRequest) {
     const query = searchParams.get('query')
     const mediaId = searchParams.get('mediaId')
     const mediaType = searchParams.get('mediaType')
+    const action = searchParams.get('action')
+    if (action === 'discover') {
+      const mt   = (searchParams.get('mediaType') ?? 'movie') as 'movie' | 'tv'
+      const page = parseInt(searchParams.get('page') ?? '1')
+      const results = await getTrending(mt, page)
+      return NextResponse.json(results)
+    }
     if (query) {
       const results = await search(query)
       return NextResponse.json(results)

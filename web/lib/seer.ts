@@ -1,4 +1,4 @@
-import { SeerSearchResponse, SeerRequest } from '@/types'
+import { SeerSearchResponse, SeerRequest, SeerSearchResult } from '@/types'
 
 const BASE = process.env.SEER_URL!
 const KEY = process.env.SEER_API_KEY!
@@ -118,4 +118,29 @@ export async function deleteRequest(id: number): Promise<void> {
     headers,
     cache: 'no-store',
   })
+}
+
+export async function getTrending(mediaType: 'movie' | 'tv', page = 1): Promise<SeerSearchResult[]> {
+  try {
+    const endpoint = mediaType === 'tv' ? 'tv' : 'movies'
+    const res = await fetch(`${BASE}/api/v1/discover/${endpoint}?page=${page}`, {
+      headers,
+      cache: 'no-store',
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data.results ?? []).slice(0, 20).map((r: Record<string, unknown>) => ({
+      id:            r.id,
+      mediaType,
+      title:         (r.title ?? r.name) as string | undefined,
+      overview:      (r.overview ?? '') as string,
+      posterPath:    r.posterPath as string | undefined,
+      releaseDate:   r.releaseDate as string | undefined,
+      firstAirDate:  r.firstAirDate as string | undefined,
+      mediaInfo:     r.mediaInfo ? {
+        id:       (r.mediaInfo as Record<string, unknown>).id as number,
+        status:   (r.mediaInfo as Record<string, unknown>).status as number,
+      } : undefined,
+    }))
+  } catch { return [] }
 }

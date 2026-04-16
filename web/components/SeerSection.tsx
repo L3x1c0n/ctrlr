@@ -4,6 +4,120 @@ import { useState, useEffect, useCallback } from 'react'
 import { SeerRequest, SeerSearchResult } from '@/types'
 import Spinner from '@/components/Spinner'
 import SeerDetailDrawer from '@/components/SeerDetailDrawer'
+import DiscoverDetailDrawer from '@/components/DiscoverDetailDrawer'
+
+const TMDB_IMG = 'https://image.tmdb.org/t/p/w200'
+
+const discoverStatusBadge = (status: number | undefined): { label: string; color: string } | null => {
+  if (status === 5) return { label: '[ok]',   color: 'text-green-400' }
+  if (status === 2) return { label: '[wait]', color: 'text-yellow-400' }
+  if (status === 3 || status === 4) return { label: '[dl]', color: 'text-blue-400' }
+  return null
+}
+
+function DiscoverRow({ mediaType, label }: { mediaType: 'movie' | 'tv'; label: string }) {
+  const [items, setItems]     = useState<SeerSearchResult[]>([])
+  const [loading, setLoading] = useState(true)
+  const [page, setPage]       = useState(1)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [selected, setSelected] = useState<SeerSearchResult | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/seer?action=discover&mediaType=${mediaType}&page=1`)
+      .then(r => r.json())
+      .then(d => setItems(Array.isArray(d) ? d : []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false))
+  }, [mediaType])
+
+  async function loadMore() {
+    const nextPage = page + 1
+    setLoadingMore(true)
+    try {
+      const res  = await fetch(`/api/seer?action=discover&mediaType=${mediaType}&page=${nextPage}`)
+      const data = await res.json()
+      if (Array.isArray(data) && data.length > 0) {
+        setItems(prev => [...prev, ...data])
+        setPage(nextPage)
+      }
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="mb-1 font-mono text-xs text-[#6a9a7a]">
+        {'  '}// {label}
+      </div>
+      <div className="overflow-x-auto pb-2">
+        {loading ? (
+          <div className="px-1 py-3"><Spinner /></div>
+        ) : (
+          <div className="flex gap-3 w-max">
+            {items.map(item => {
+              const badge = discoverStatusBadge(item.mediaInfo?.status)
+              const year  = (item.releaseDate ?? item.firstAirDate)?.slice(0, 4)
+              const title = item.title ?? item.name ?? '—'
+              return (
+                <div
+                  key={`${item.mediaType}-${item.id}`}
+                  onClick={() => setSelected(item)}
+                  className="cursor-pointer group w-[100px] shrink-0"
+                >
+                  {/* poster */}
+                  <div className="relative border border-[#1a1a2e] group-hover:border-[#3a3a5a] transition-colors"
+                    style={{ width: 100, height: 150 }}>
+                    {item.posterPath ? (
+                      <img
+                        src={`${TMDB_IMG}${item.posterPath}`}
+                        alt={title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-[#0f0f1a] flex items-center justify-center text-[#333] font-mono text-xs">
+                        {mediaType === 'tv' ? 'tv' : '▣'}
+                      </div>
+                    )}
+                    {badge && (
+                      <span className={`absolute top-1 right-1 font-mono text-[10px] ${badge.color} bg-black/70 px-0.5 leading-tight`}>
+                        {badge.label}
+                      </span>
+                    )}
+                    {/* hover overlay */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="btn-xs text-cyan-400 border-cyan-700">--info</span>
+                    </div>
+                  </div>
+                  {/* title + year */}
+                  <div className="mt-1 font-mono">
+                    <p className="text-white text-[10px] leading-tight line-clamp-2">{title}</p>
+                    {year && <p className="text-[#555] text-[10px] mt-0.5">{year}</p>}
+                  </div>
+                </div>
+              )
+            })}
+            {/* load more */}
+            <div
+              onClick={loadMore}
+              className="cursor-pointer w-[100px] shrink-0 flex flex-col items-center justify-center border border-[#1a1a2e] hover:border-[#3a3a5a] transition-colors text-[#555] hover:text-[#888] font-mono text-[10px] gap-1"
+              style={{ height: 150 }}
+            >
+              {loadingMore ? '...' : <><span className="text-lg leading-none">+</span><span>more</span></>}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <DiscoverDetailDrawer
+        item={selected}
+        onClose={() => setSelected(null)}
+        onRequested={() => setSelected(null)}
+      />
+    </>
+  )
+}
 
 const statusLabel: Record<number, string> = {
   1: 'Pending',
@@ -206,6 +320,17 @@ export default function SeerSection() {
         )}
         <div className="font-mono text-xs text-[#6a9a7a] mt-1">
           ] // {Math.min(requests.length, 10)} shown{requests.length > 10 ? `, ${requests.length} total` : ''}
+        </div>
+
+        {/* discover */}
+        <div className="mt-6 pt-4 border-t border-[#1a1a2e]">
+          <div className="font-mono text-xs text-[#6a9a7a] mb-3">
+            const <span className="text-white text-sm font-medium uppercase tracking-widest">D1sc0ver</span> = {'{'}</div>
+          <div className="space-y-5">
+            <DiscoverRow mediaType="movie" label="trending :: movies" />
+            <DiscoverRow mediaType="tv"    label="trending :: tv" />
+          </div>
+          <div className="font-mono text-xs text-[#6a9a7a] mt-3">{'}'}</div>
         </div>
       </section>
 
