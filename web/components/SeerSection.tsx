@@ -162,8 +162,8 @@ export default function SeerSection() {
                 <th className="text-left py-1 px-3">Title</th>
                 <th className="text-center py-1 px-3 hidden md:table-cell w-[68px]">Type</th>
                 <th className="text-center py-1 px-3 w-[96px]">Status</th>
-                <th className="text-center py-1 px-3 hidden md:table-cell w-[80px]">By</th>
-                <th className="text-right py-1 pl-3 w-[108px]">Actions</th>
+                <th className="text-center py-1 px-3 hidden md:table-cell w-[64px]">By</th>
+                <th className="text-right py-1 pl-3 w-[80px]">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -187,7 +187,7 @@ export default function SeerSection() {
                   </td>
                   <td className="text-center px-3 text-[#999] hidden md:table-cell">{r.requestedBy.displayName}</td>
                   <td className="text-right pl-3">
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex gap-1 justify-end">
                       {r.status === 1 && (
                         <button onClick={() => approveRequest(r.id)} className="btn-xs text-green-400">
                           --approve
