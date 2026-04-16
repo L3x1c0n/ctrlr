@@ -164,11 +164,12 @@ function PreviewPane({
       {/* backdrop */}
       <div className="relative shrink-0 w-full" style={{ aspectRatio: '16/9' }}>
         {backdrop
-          ? <img src={TMDB_W(780, backdrop)} alt="" className="w-full h-full object-cover" style={{ filter: 'brightness(0.6) saturate(0.7)' }} />
+          ? <img src={TMDB_W(780, backdrop)} alt="" className="w-full h-full object-cover" style={{ filter: 'blur(1.5px) brightness(0.88)' }} />
           : <div className="w-full h-full bg-[#080810]" />
         }
-        {/* gradient fade — bottom-to-dark + slight vignette */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/30 to-[#0A0A0F]/10" />
+        {/* frosted glass overlay + bottom fade */}
+        <div className="absolute inset-0 bg-[#0A0A0F]/15" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/20 to-transparent" />
 
         {/* inset poster — full height of artwork area */}
         {poster && (
