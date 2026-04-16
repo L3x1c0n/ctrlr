@@ -20,12 +20,8 @@ function AddButton({ item, onAdded }: { item: SeerSearchResult; onAdded: () => v
   const [done, setDone]     = useState(false)
   const status = item.mediaInfo?.status
 
-  if (status === 5)                        return <span className="font-mono text-[10px] shrink-0" style={{ color: PLEX_ORANGE }}>// plex</span>
-  if (status != null && status >= 2 && status <= 4) {
-    const label = status === 2 ? '// wait' : '// dl'
-    const color = status === 2 ? 'text-yellow-400' : 'text-blue-400'
-    return <span className={`font-mono text-[10px] shrink-0 ${color}`}>{label}</span>
-  }
+  if (status === 5)                              return <span className="font-mono text-[10px] shrink-0" style={{ color: PLEX_ORANGE }}>// plex</span>
+  if (status != null && status >= 2 && status <= 4) return <span className="font-mono text-[10px] shrink-0 text-blue-400">// req&apos;d</span>
   if (done) return <span className="font-mono text-[10px] text-blue-400 shrink-0">// queued</span>
 
   return (
@@ -200,8 +196,7 @@ function PreviewPane({
             {seasons && <span>{seasons} seasons</span>}
             {rating != null && rating > 0 && <span>★ {rating.toFixed(1)}</span>}
             {status === 5 && <span style={{ color: PLEX_ORANGE }}>plex</span>}
-            {status === 2 && <span className="text-yellow-400">wait</span>}
-            {(status === 3 || status === 4) && <span className="text-blue-400">dl</span>}
+            {status != null && status >= 2 && status <= 4 && <span className="text-blue-400">req&apos;d</span>}
           </div>
         </div>
       </div>
