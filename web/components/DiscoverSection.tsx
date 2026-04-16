@@ -71,9 +71,9 @@ function ListRow({
           : 'border-transparent text-[#bbb] hover:bg-[#0a0a14] hover:text-white'
       }`}
     >
-      <span className="text-[#444] w-4 tabular-nums text-right shrink-0">{index + 1}</span>
+      <span className="text-[#666] w-4 tabular-nums text-right shrink-0">{index + 1}</span>
       <span className="flex-1 truncate">{title}</span>
-      {year && <span className="text-[#555] shrink-0">{year}</span>}
+      {year && <span className="text-[#888] shrink-0">{year}</span>}
       <AddButton item={item} onAdded={onAdded} />
     </div>
   )
@@ -203,23 +203,28 @@ function PreviewPane({
       {/* metadata */}
       <div className="px-3 py-2 border-b border-[#0f0f1a] font-mono text-[10px] shrink-0">
         {detailLoading && !detail ? (
-          <span className="text-[#444]">// loading...</span>
+          <span className="text-[#555]">// loading...</span>
         ) : (
           <div className="space-y-0.5">
-            {genres  && <MetaRow label="genre"  value={genres}  />}
+            {genres   && <MetaRow label="genre"  value={genres}   />}
             {director && <MetaRow label="dir"    value={director} />}
-            {cast    && <MetaRow label="cast"    value={cast}    />}
-            {studio  && <MetaRow label="studio"  value={studio}  />}
+            {cast     && <MetaRow label="cast"   value={cast}     />}
+            {studio   && <MetaRow label="studio" value={studio}   />}
           </div>
         )}
       </div>
 
       {/* overview */}
-      <div className="flex-1 overflow-y-auto px-3 py-2">
-        {overview
-          ? <p className="font-mono text-[10px] text-[#888] leading-relaxed">{overview}</p>
-          : <span className="font-mono text-[10px] text-[#333]">// no synopsis</span>
-        }
+      <div className="flex-1 overflow-y-auto px-3 py-2 font-mono text-[10px]">
+        {overview ? (
+          <>
+            <p className="text-[#6a9a7a] mb-1">{'/*'}</p>
+            <p className="text-[#999] leading-relaxed pl-2">{overview}</p>
+            <p className="text-[#6a9a7a] mt-1">{'*/'}</p>
+          </>
+        ) : (
+          <span className="text-[#444]">// no synopsis</span>
+        )}
       </div>
 
     </div>
@@ -229,8 +234,8 @@ function PreviewPane({
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <p className="flex gap-2">
-      <span className="text-[#444] w-12 shrink-0">{label}</span>
-      <span className="text-[#aaa] truncate">{value}</span>
+      <span className="text-[#6a9a7a] w-14 shrink-0">// {label}</span>
+      <span className="text-[#ccc] truncate">{value}</span>
     </p>
   )
 }
