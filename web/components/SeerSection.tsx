@@ -163,7 +163,7 @@ export default function SeerSection() {
                 <th className="text-left py-1 px-3 hidden md:table-cell w-[72px]">Type</th>
                 <th className="text-left py-1 px-3 w-[108px]">Status</th>
                 <th className="text-left py-1 px-3 hidden md:table-cell w-[68px]">By</th>
-                <th className="py-1 pl-3 w-[100px]"></th>
+                <th className="py-1 pl-3 w-[116px]"></th>
               </tr>
             </thead>
             <tbody>
@@ -186,13 +186,15 @@ export default function SeerSection() {
                     {statusLabel[r.status] ?? r.status}
                   </td>
                   <td className="text-left px-3 text-[#999] hidden md:table-cell">{r.requestedBy.displayName}</td>
-                  <td className="text-right pl-3 pr-2">
-                    <div className="flex gap-1 justify-start">
-                      {r.status === 1 && (
-                        <button onClick={() => approveRequest(r.id)} className="btn-xs text-green-400">
-                          --approve
-                        </button>
-                      )}
+                  <td className="pl-3 pr-2">
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => approveRequest(r.id)}
+                        className="btn-xs text-green-400"
+                        style={{ visibility: r.status === 1 ? 'visible' : 'hidden' }}
+                      >
+                        --approve
+                      </button>
                       <button
                         onClick={() => { if (confirm('Delete request?')) deleteRequest(r.id) }}
                         className="btn-xs text-red-400"
