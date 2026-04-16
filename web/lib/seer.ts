@@ -137,6 +137,7 @@ export async function getTrending(mediaType: 'movie' | 'tv', page = 1): Promise<
       posterPath:    r.posterPath as string | undefined,
       releaseDate:   r.releaseDate as string | undefined,
       firstAirDate:  r.firstAirDate as string | undefined,
+      voteAverage:   r.voteAverage as number | undefined,
       mediaInfo:     r.mediaInfo ? {
         id:       (r.mediaInfo as Record<string, unknown>).id as number,
         status:   (r.mediaInfo as Record<string, unknown>).status as number,
