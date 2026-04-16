@@ -28,8 +28,8 @@ function AddButton({ item, onAdded }: { item: SeerSearchResult; onAdded: () => v
   const isAvail = status === 5
   const isReq   = status != null && status >= 2 && status < 5
 
-  if (isAvail) return <span className="font-mono text-[10px] shrink-0" style={{ color: PLEX_ORANGE }}>// plex</span>
-  if (isReq)   return <span className="font-mono text-[10px] text-yellow-400 shrink-0">// rq'd</span>
+  if (isAvail) return null
+  if (isReq)   return null
   if (done)    return <span className="font-mono text-[10px] text-blue-400 shrink-0">// queued</span>
 
   return (
@@ -57,14 +57,13 @@ function AddButton({ item, onAdded }: { item: SeerSearchResult; onAdded: () => v
 // ── left list row ──────────────────────────────────────────────────────────────
 
 function ListRow({
-  item, index, isActive, onHover, onClick, onInfo, onAdded,
+  item, index, isActive, onHover, onClick, onAdded,
 }: {
   item: SeerSearchResult
   index: number
   isActive: boolean
   onHover: () => void
   onClick: () => void
-  onInfo: () => void
   onAdded: () => void
 }) {
   const title  = item.title ?? item.name ?? '—'
@@ -89,12 +88,6 @@ function ListRow({
       <span className="flex-1 truncate">{title}</span>
       {year && <span className="text-[#555] shrink-0">{year}</span>}
       <AddButton item={item} onAdded={onAdded} />
-      <button
-        onClick={(e) => { e.stopPropagation(); onInfo() }}
-        className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0"
-      >
-        --info
-      </button>
     </div>
   )
 }
@@ -102,7 +95,7 @@ function ListRow({
 // ── left list panel ────────────────────────────────────────────────────────────
 
 function ListPanel({
-  label, mediaType, items, loading, activeId, onActivate, onInfo, onAdded, onLoadMore, loadingMore,
+  label, mediaType, items, loading, activeId, onActivate, onAdded, onLoadMore, loadingMore,
 }: {
   label: string
   mediaType: 'movie' | 'tv'
@@ -110,7 +103,6 @@ function ListPanel({
   loading: boolean
   activeId: string | null
   onActivate: (item: SeerSearchResult) => void
-  onInfo: (item: SeerSearchResult) => void
   onAdded: () => void
   onLoadMore: () => void
   loadingMore: boolean
@@ -131,7 +123,6 @@ function ListPanel({
               isActive={activeId === `${item.mediaType}-${item.id}`}
               onHover={() => onActivate(item)}
               onClick={() => onActivate(item)}
-              onInfo={() => onInfo(item)}
               onAdded={onAdded}
             />
           ))
@@ -153,12 +144,11 @@ function ListPanel({
 // ── preview pane ───────────────────────────────────────────────────────────────
 
 function PreviewPane({
-  item, detail, detailLoading, onInfo, onAdded,
+  item, detail, detailLoading, onAdded,
 }: {
   item: SeerSearchResult | null
   detail: DiscoverDetail | null
   detailLoading: boolean
-  onInfo: () => void
   onAdded: () => void
 }) {
   if (!item) {
@@ -250,7 +240,6 @@ function PreviewPane({
       {/* actions */}
       <div className="px-3 py-2 border-t border-[#1a1a2e] flex items-center gap-3 shrink-0">
         <AddButton item={item} onAdded={onAdded} />
-        <button onClick={onInfo} className="btn-xs text-cyan-600 hover:text-cyan-400">--info</button>
       </div>
     </div>
   )
@@ -398,7 +387,6 @@ export default function DiscoverSection() {
               loading={tvLoading}
               activeId={activeId}
               onActivate={activate}
-              onInfo={setDrawerItem}
               onAdded={() => {}}
               onLoadMore={() => loadMore('tv')}
               loadingMore={tvMore}
@@ -411,7 +399,6 @@ export default function DiscoverSection() {
               loading={moviesLoading}
               activeId={activeId}
               onActivate={activate}
-              onInfo={setDrawerItem}
               onAdded={() => {}}
               onLoadMore={() => loadMore('movie')}
               loadingMore={moviesMore}
@@ -423,7 +410,6 @@ export default function DiscoverSection() {
             item={activeItem}
             detail={detail}
             detailLoading={detailLoading}
-            onInfo={() => activeItem && setDrawerItem(activeItem)}
             onAdded={() => {}}
           />
         </div>
