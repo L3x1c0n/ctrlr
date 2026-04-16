@@ -428,16 +428,27 @@ export default function DiscoverSection() {
 
           {/* right: poster + director + synopsis */}
           <div className="flex flex-col border border-[#1a1a2e] overflow-hidden">
-            {activeItem?.posterPath ? (
-              <img
-                src={TMDB_W(185, activeItem.posterPath)}
-                alt=""
-                className="w-full shrink-0"
-                style={{ aspectRatio: '2/3' }}
-              />
-            ) : (
-              <div className="w-full bg-[#080810] shrink-0" style={{ aspectRatio: '2/3' }} />
-            )}
+            {/* poster area: blurred fill + sharp centered poster */}
+            <div className="relative w-full shrink-0 overflow-hidden bg-[#080810]" style={{ aspectRatio: '2/3' }}>
+              {activeItem?.posterPath && (
+                <img
+                  src={TMDB_W(185, activeItem.posterPath)}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ filter: 'blur(10px) brightness(0.35)', transform: 'scale(1.15)' }}
+                />
+              )}
+              {activeItem?.posterPath ? (
+                <img
+                  src={TMDB_W(185, activeItem.posterPath)}
+                  alt=""
+                  className="absolute top-0 left-1/2 -translate-x-1/2"
+                  style={{ width: 90, height: 135, objectFit: 'cover', outline: '1px solid rgba(255,255,255,0.1)', outlineOffset: '-1px' }}
+                />
+              ) : (
+                <div className="absolute inset-0" />
+              )}
+            </div>
             <div className="flex-1 overflow-y-auto px-1 pt-0 pb-1 font-mono text-xs space-y-1.5">
               {detail?.credits?.crew?.find(c => c.job === 'Director') && (
                 <p>
