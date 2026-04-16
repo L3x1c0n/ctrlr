@@ -109,11 +109,33 @@ export interface SeerSearchResult {
   posterPath?: string
   releaseDate?: string
   firstAirDate?: string
+  voteAverage?: number
   mediaInfo?: {
     id: number
     status: number
     requests?: SeerRequest[]
   }
+}
+
+export interface DiscoverDetail {
+  title?: string
+  name?: string
+  overview?: string
+  posterPath?: string
+  backdropPath?: string
+  releaseDate?: string
+  firstAirDate?: string
+  voteAverage?: number
+  runtime?: number
+  numberOfSeasons?: number
+  genres?: { id: number; name: string }[]
+  productionCompanies?: { id: number; name: string }[]
+  networks?: { id: number; name: string }[]
+  credits?: {
+    cast?: { name: string; character?: string }[]
+    crew?: { name: string; job: string; department: string }[]
+  }
+  mediaInfo?: { status?: number }
 }
 
 export interface SeerSearchResponse {
