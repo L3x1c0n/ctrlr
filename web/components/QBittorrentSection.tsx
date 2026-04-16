@@ -197,7 +197,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                 <th className="py-1 pr-3 w-6"></th>
                 <th className="text-left py-1 pr-4">Name</th>
                 <th className="text-right pr-4 hidden md:table-cell w-[80px]">Size</th>
-                <th className="text-right pr-4 hidden md:table-cell w-[160px]">Progress</th>
+                <th className="text-right pr-4 hidden md:table-cell w-[120px]">Progress</th>
                 <th className="text-right pr-4 hidden md:table-cell w-[96px]">Speed ↓</th>
                 <th className="text-right pr-4 hidden md:table-cell w-[88px]">ETA</th>
                 <th className="text-right pr-4 w-[100px]">State</th>
