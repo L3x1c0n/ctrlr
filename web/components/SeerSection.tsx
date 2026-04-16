@@ -155,56 +155,32 @@ export default function SeerSection() {
 
         {requests.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono">no requests</p>)}
         {requests.length > 0 && (
-          <div className="overflow-x-auto"><table className="w-full text-xs md:text-sm font-mono table-fixed md:table-auto">
-            <thead>
-              <tr className="text-[#999] text-xs uppercase border-b border-[#1a1a2e]">
-                <th className="py-1 pr-2 w-6"></th>
-                <th className="text-left py-1 pr-4">Title</th>
-                <th className="text-right pr-4 hidden md:table-cell w-24 md:w-auto">Type</th>
-                <th className="text-right pr-4 w-24 md:w-auto">Status</th>
-                <th className="text-right pr-4 hidden md:table-cell w-20 md:w-auto">By</th>
-                <th className="text-right w-28 md:w-auto">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {requests.slice(0, 10).map((r, i) => (
-                <tr key={r.id} className="border-b border-[#0f0f1a]">
-                  <td className="py-0.5 pr-2 text-right text-[#7070a8] tabular-nums select-none text-xs w-6">{i + 1}</td>
-                  <td className="py-0.5 pr-4 text-white min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setSelected(r)}
-                        className="btn-xs text-cyan-600 hover:text-cyan-400 flex-shrink-0"
-                      >
-                        --info
-                      </button>
-                      <MarqueeText className="flex-1 min-w-0">{r.media.title ?? r.media.name}</MarqueeText>
-                    </div>
-                  </td>
-                  <td className="text-right pr-4 text-[#999] text-xs uppercase hidden md:table-cell whitespace-nowrap">{r.type}</td>
-                  <td className={`text-right pr-4 whitespace-nowrap ${statusColor[r.status] ?? 'text-[#888]'}`}>
-                    {statusLabel[r.status] ?? r.status}
-                  </td>
-                  <td className="text-right pr-4 text-[#999] hidden md:table-cell whitespace-nowrap">{r.requestedBy.displayName}</td>
-                  <td className="text-right">
-                    <div className="flex gap-1 justify-end">
-                      {r.status === 1 && (
-                        <button onClick={() => approveRequest(r.id)} className="btn-xs text-green-400 whitespace-nowrap">
-                          --approve
-                        </button>
-                      )}
-                      <button
-                        onClick={() => { if (confirm('Delete request?')) deleteRequest(r.id) }}
-                        className="btn-xs text-red-400 whitespace-nowrap"
-                      >
-                        --rm
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
+          <div className="font-mono text-xs md:text-sm">
+            <div className="flex items-center gap-3 text-[#999] text-xs uppercase border-b border-[#1a1a2e] py-1 select-none">
+              <span className="w-5 shrink-0"></span>
+              <span className="flex-1">Title</span>
+              <span className="hidden md:block shrink-0">Type</span>
+              <span className="shrink-0 w-[88px] text-right">Status</span>
+              <span className="hidden md:block shrink-0">By</span>
+              <span className="shrink-0">Actions</span>
+            </div>
+            {requests.slice(0, 10).map((r, i) => (
+              <div key={r.id} className="flex items-center gap-3 border-b border-[#0f0f1a] py-0.5">
+                <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums text-xs">{i + 1}</span>
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <button onClick={() => setSelected(r)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                  <MarqueeText className="min-w-0">{r.media.title ?? r.media.name}</MarqueeText>
+                </div>
+                <span className="hidden md:block shrink-0 text-[#999] text-xs uppercase whitespace-nowrap">{r.type}</span>
+                <span className={`shrink-0 w-[88px] text-right whitespace-nowrap ${statusColor[r.status] ?? 'text-[#888]'}`}>{statusLabel[r.status] ?? r.status}</span>
+                <span className="hidden md:block shrink-0 text-[#999] whitespace-nowrap">{r.requestedBy.displayName}</span>
+                <div className="shrink-0 flex gap-1">
+                  {r.status === 1 && <button onClick={() => approveRequest(r.id)} className="btn-xs text-green-400 whitespace-nowrap">--approve</button>}
+                  <button onClick={() => { if (confirm('Delete request?')) deleteRequest(r.id) }} className="btn-xs text-red-400 whitespace-nowrap">--rm</button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
         <div className="font-mono text-xs text-[#6a9a7a] mt-1">
           ] // {Math.min(requests.length, 10)} shown{requests.length > 10 ? `, ${requests.length} total` : ''}
