@@ -202,7 +202,7 @@ function PreviewPane({
             alt=""
             className="absolute bottom-0 left-0"
             style={{
-              width: 160, height: 240, objectFit: 'cover',
+              width: 130, height: 195, objectFit: 'cover',
               boxShadow: '4px 0 24px rgba(0,0,0,0.85), 0 -4px 24px rgba(0,0,0,0.6)',
               outline: '1px solid rgba(255,255,255,0.12)',
               outlineOffset: '-1px',
@@ -211,7 +211,7 @@ function PreviewPane({
         )}
 
         {/* title over backdrop */}
-        <div className="absolute bottom-2 right-3" style={{ left: poster ? 172 : 12 }}>
+        <div className="absolute bottom-2 right-3" style={{ left: poster ? 142 : 12 }}>
           <p className="text-white text-sm font-mono font-medium leading-tight line-clamp-2">{title}</p>
           <div className="flex flex-wrap items-center gap-x-2 mt-0.5 font-mono text-[10px] text-[#888]">
             {year && <span>{year}</span>}
