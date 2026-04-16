@@ -163,7 +163,7 @@ export default function SeerSection() {
                 <th className="text-center py-1 px-3 hidden md:table-cell w-[68px]">Type</th>
                 <th className="text-center py-1 px-3 w-[108px]">Status</th>
                 <th className="text-center py-1 px-3 hidden md:table-cell w-[68px]">By</th>
-                <th className="text-center py-1 px-3">Actions</th>
+                <th className="text-center py-1 px-3 w-[132px]">Actions</th>
               </tr>
             </thead>
             <tbody>
