@@ -77,7 +77,7 @@ export default function PlexSection() {
                 }).then(load)
               }
             }}
-            className="btn-xs text-red-400"
+            className="btn-xs text-red-400 whitespace-nowrap"
           >
             --rm
           </button>
