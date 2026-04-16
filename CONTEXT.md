@@ -1,7 +1,7 @@
 # CTRLr — Project Context
 
 This file is the shared brain between Claude instances. Keep it updated as the project evolves.
-Last updated: 2026-04-16 (unified drawer system design added — open questions pending)
+Last updated: 2026-04-17 (Seer table→flex rewrite, Discover preview pane restructure)
 
 ---
 
@@ -273,8 +273,8 @@ All core sections implemented and functional. Build is clean.
 - qBittorrent: file list in torrent detail sheet
 
 ### Dashboard — catching up to app
-- Seer discover/trending section
-- Seer list pagination (request list gets very long)
+- ~~Seer discover/trending section~~ — implemented (DiscoverSection.tsx, trending movies + TV with preview pane)
+- Seer list pagination (request list gets very long, only 10 shown of up to 43+)
 - Trakt detail drawer: fix silent error — `searchReleases` throws but drawer shows "no results"; needs `relError` state (same pattern as ArrDetailDrawer)
 
 ---
@@ -370,6 +370,41 @@ Drawer renders progressively as cross-service lookups resolve. Entry point provi
 3. **Platform alignment** — web and app drawers structurally identical (same sections, same labels), or just functionally equivalent with platform-appropriate UI patterns?
 
 4. **Implementation scope** — start by retrofitting existing drawers into this structure, or design new drawers first for the missing features (mark watched, terminate stream, add to library) which have no current drawer at all?
+
+---
+
+## Dashboard layout conventions
+
+### List rows — use flex, not tables
+For lists with a dominant title column + compact metadata (Seer requests, Tautulli sessions), use **flex rows**, not `<table>`. Tables with `w-full` always distribute extra horizontal space across ALL columns — every attempt to fight this with `table-fixed`, `visibility:hidden`, or `justify-*` makes it worse.
+
+Correct pattern:
+```tsx
+// container
+<div className="font-mono text-xs">
+  // header row — identical structure to body rows
+  <div className="flex items-center gap-3 text-[#999] text-xs uppercase border-b ...">
+    <span className="w-5 shrink-0" />           {/* row number */}
+    <span className="flex-1">Title</span>         {/* takes all remaining space */}
+    <span className="shrink-0 w-[Npx]">Status</span>  {/* fixed width = longest value */}
+    <span className="shrink-0">Actions</span>
+  </div>
+  // body rows
+  {items.map(item => (
+    <div className="flex items-center gap-3 border-b ...">
+      <span className="w-5 shrink-0 ...">{i + 1}</span>
+      <div className="flex-1 min-w-0">...</div>    {/* title, flex-1 min-w-0 */}
+      <span className="shrink-0 w-[Npx] whitespace-nowrap">...</span>
+      <div className="shrink-0 flex gap-1">...</div>  {/* actions */}
+    </div>
+  ))}
+</div>
+```
+
+Tables (`table-fixed md:table-auto`, `pr-4` padding) are fine for QB-style data where ALL columns are uniform and there's no dominant label column.
+
+### Fixed-width metadata columns
+When a flex-row column has variable text (e.g. status: "Pending" / "Processing" / "Available"), give it a fixed `w-[Npx]` sized to the **longest possible value** at the relevant font size. This prevents the title column from jittering as values change.
 
 ---
 
