@@ -206,8 +206,8 @@ function PreviewPane({
             <div className="space-y-0.5 font-mono text-xs overflow-hidden">
               {genres   && <MetaRow label="genre"  value={genres}   />}
               {director && <MetaRow label="dir"    value={director} />}
-              {cast     && <MetaRow label="cast"   value={cast}     />}
-              {studio   && <MetaRow label="studio" value={studio}   />}
+              {cast     && <MetaRow label="cast"   value={cast}   lines={2} />}
+              {studio   && <MetaRow label="studio" value={studio} lines={2} />}
             </div>
           )}
         </div>
@@ -230,11 +230,11 @@ function PreviewPane({
   )
 }
 
-function MetaRow({ label, value }: { label: string; value: string }) {
+function MetaRow({ label, value, lines = 1 }: { label: string; value: string; lines?: 1 | 2 }) {
   return (
-    <p className="flex gap-2">
+    <p className="flex gap-2 overflow-hidden">
       <span className="text-[#6a9a7a] w-14 shrink-0">// {label}</span>
-      <span className="text-[#ccc] truncate">{value}</span>
+      <span className={`text-[#ccc] min-w-0 ${lines === 2 ? 'line-clamp-2' : 'truncate'}`}>{value}</span>
     </p>
   )
 }
