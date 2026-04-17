@@ -251,6 +251,7 @@ export default function DiscoverSection() {
   const [moviesMore,  setMoviesMore]  = useState(false)
   const [tvMore,      setTvMore]      = useState(false)
 
+  const [tab,           setTab]           = useState<'movie' | 'tv'>('movie')
   const [activeItem,    setActiveItem]    = useState<SeerSearchResult | null>(null)
   const [detail,        setDetail]        = useState<DiscoverDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -258,12 +259,12 @@ export default function DiscoverSection() {
 
   const activeId     = activeItem ? `${activeItem.mediaType}-${activeItem.id}` : null
   const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const allItemsRef  = useRef<SeerSearchResult[]>([])
+  const tabItemsRef  = useRef<SeerSearchResult[]>([])
 
-  // Keep a stable ref to the flat item list for use in the keydown handler
+  // Keep a stable ref to current tab's items for keyboard navigation
   useEffect(() => {
-    allItemsRef.current = [...tvShows, ...movies]
-  }, [tvShows, movies])
+    tabItemsRef.current = tab === 'movie' ? movies : tvShows
+  }, [tab, movies, tvShows])
 
   // ── initial fetch ────────────────────────────────────────────────────────────
 
@@ -282,10 +283,6 @@ export default function DiscoverSection() {
   useEffect(() => {
     if (!activeItem && movies.length > 0) setActiveItem(movies[0])
   }, [movies, activeItem])
-
-  useEffect(() => {
-    if (!activeItem && tvShows.length > 0 && movies.length === 0) setActiveItem(tvShows[0])
-  }, [tvShows, activeItem, movies.length])
 
   // ── detail fetch (debounced) ─────────────────────────────────────────────────
 
@@ -314,6 +311,14 @@ export default function DiscoverSection() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ── tab switch ───────────────────────────────────────────────────────────────
+
+  function switchTab(t: 'movie' | 'tv') {
+    setTab(t)
+    const firstItem = t === 'movie' ? movies[0] : tvShows[0]
+    if (firstItem) activate(firstItem)
+  }
+
   // ── keyboard navigation ──────────────────────────────────────────────────────
 
   const activateRef = useRef(activate)
@@ -322,7 +327,7 @@ export default function DiscoverSection() {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
-      const items = allItemsRef.current
+      const items = tabItemsRef.current
       if (items.length === 0) return
       e.preventDefault()
       const currentId = activeItem ? `${activeItem.mediaType}-${activeItem.id}` : null
@@ -363,31 +368,47 @@ export default function DiscoverSection() {
         {/* split pane — hidden below md */}
         <div className="hidden md:grid grid-cols-[1fr_500px] gap-4" style={{ height: 580 }}>
 
-          {/* left: two stacked lists */}
-          <div className="grid grid-rows-2 gap-0 border border-[#1a1a2e] overflow-hidden">
-            <ListPanel
-              label="trending :: tv"
-              mediaType="tv"
-              items={tvShows}
-              loading={tvLoading}
-              activeId={activeId}
-              onActivate={activate}
-              onAdded={() => {}}
-              onLoadMore={() => loadMore('tv')}
-              loadingMore={tvMore}
-            />
-            <div className="border-t border-[#1a1a2e]" />
-            <ListPanel
-              label="trending :: movies"
-              mediaType="movie"
-              items={movies}
-              loading={moviesLoading}
-              activeId={activeId}
-              onActivate={activate}
-              onAdded={() => {}}
-              onLoadMore={() => loadMore('movie')}
-              loadingMore={moviesMore}
-            />
+          {/* left: tabbed list */}
+          <div className="flex flex-col border border-[#1a1a2e] overflow-hidden">
+            {/* tab bar */}
+            <div className="flex shrink-0 border-b border-[#1a1a2e]">
+              {(['movie', 'tv'] as const).map(t => (
+                <button
+                  key={t}
+                  onClick={() => switchTab(t)}
+                  className={`px-4 py-1.5 font-mono text-xs border-r border-[#1a1a2e] transition-colors ${
+                    tab === t ? 'text-white bg-[#0d0d1a]' : 'text-[#555] hover:text-[#888]'
+                  }`}
+                >
+                  // {t === 'movie' ? 'movies' : 'tv'}
+                </button>
+              ))}
+            </div>
+            {tab === 'movie' ? (
+              <ListPanel
+                label="trending :: movies"
+                mediaType="movie"
+                items={movies}
+                loading={moviesLoading}
+                activeId={activeId}
+                onActivate={activate}
+                onAdded={() => {}}
+                onLoadMore={() => loadMore('movie')}
+                loadingMore={moviesMore}
+              />
+            ) : (
+              <ListPanel
+                label="trending :: tv"
+                mediaType="tv"
+                items={tvShows}
+                loading={tvLoading}
+                activeId={activeId}
+                onActivate={activate}
+                onAdded={() => {}}
+                onLoadMore={() => loadMore('tv')}
+                loadingMore={tvMore}
+              />
+            )}
           </div>
 
           {/* right: preview pane */}
@@ -401,29 +422,45 @@ export default function DiscoverSection() {
         {/* mobile layout */}
         <div className="md:hidden grid gap-2" style={{ gridTemplateColumns: '1fr 140px', height: 540 }}>
 
-          {/* left: combined list */}
-          <div className="border border-[#1a1a2e] overflow-y-auto">
-            {(tvLoading && moviesLoading) ? (
-              <div className="p-3"><Spinner /></div>
-            ) : [...tvShows, ...movies].map((item) => (
-              <div
-                key={`${item.mediaType}-${item.id}`}
-                onClick={() => activate(item)}
-                className={`flex items-center gap-1.5 px-2 py-1.5 cursor-default select-none border-l-2 font-mono text-xs transition-colors ${
-                  activeId === `${item.mediaType}-${item.id}`
-                    ? 'border-[#4a4a7a] bg-[#0d0d1a] text-white'
-                    : 'border-transparent text-[#bbb]'
-                }`}
-              >
-                <MarqueeText className="flex-1 min-w-0">{item.title ?? item.name}</MarqueeText>
-                {(item.releaseDate ?? item.firstAirDate) && (
-                  <span className="text-[#888] shrink-0 text-xs">
-                    {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
-                  </span>
-                )}
-                <AddButton item={item} onAdded={() => {}} />
-              </div>
-            ))}
+          {/* left: tabbed list */}
+          <div className="flex flex-col border border-[#1a1a2e] overflow-hidden">
+            {/* tab bar */}
+            <div className="flex shrink-0 border-b border-[#1a1a2e]">
+              {(['movie', 'tv'] as const).map(t => (
+                <button
+                  key={t}
+                  onClick={() => switchTab(t)}
+                  className={`px-3 py-1.5 font-mono text-xs border-r border-[#1a1a2e] transition-colors ${
+                    tab === t ? 'text-white bg-[#0d0d1a]' : 'text-[#555] hover:text-[#888]'
+                  }`}
+                >
+                  // {t === 'movie' ? 'movies' : 'tv'}
+                </button>
+              ))}
+            </div>
+            <div className="overflow-y-auto flex-1">
+              {((tab === 'movie' ? moviesLoading : tvLoading)) ? (
+                <div className="p-3"><Spinner /></div>
+              ) : (tab === 'movie' ? movies : tvShows).map((item) => (
+                <div
+                  key={`${item.mediaType}-${item.id}`}
+                  onClick={() => activate(item)}
+                  className={`flex items-center gap-1.5 px-2 py-1.5 cursor-default select-none border-l-2 font-mono text-xs transition-colors ${
+                    activeId === `${item.mediaType}-${item.id}`
+                      ? 'border-[#4a4a7a] bg-[#0d0d1a] text-white'
+                      : 'border-transparent text-[#bbb]'
+                  }`}
+                >
+                  <MarqueeText className="flex-1 min-w-0">{item.title ?? item.name}</MarqueeText>
+                  {(item.releaseDate ?? item.firstAirDate) && (
+                    <span className="text-[#888] shrink-0 text-xs">
+                      {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
+                    </span>
+                  )}
+                  <AddButton item={item} onAdded={() => {}} />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* right: poster + director + synopsis */}
