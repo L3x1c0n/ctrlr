@@ -262,7 +262,8 @@ All core sections implemented and functional. Build is clean.
 ## Next steps / backlog
 
 ### Infrastructure — top priority
-- **Migrate Jackett → Prowlarr** — 1 private tracker, low effort. Docker install, re-add indexers, sync to Sonarr+Radarr, update Caddy (replace jackett.gh05t.duckdns.org), remove Jackett. ~20 min.
+- **Migrate Jackett → Prowlarr (Docker)** — Run Prowlarr as Docker container. 9 indexers: 8 public + xspeeds (private, needs creds). Stop Jackett systemd after. First step toward full Dockerization.
+- **Dockerize full stack** — Planned hardware migration makes this high value; Docker = copy compose + volumes to new machine. Services: qBittorrent, Sonarr, Radarr, Plex, Tautulli, CTRLr Web. Use linuxserver.io images. Do after Prowlarr. Watch: qBit/Sonarr/Radarr path mappings, Plex GPU passthrough, PUID/PGID.
 
 ### Both platforms — not built anywhere yet
 - Trakt: watch history, check-in, ratings
