@@ -261,6 +261,9 @@ All core sections implemented and functional. Build is clean.
 
 ## Next steps / backlog
 
+### Infrastructure — top priority
+- **Migrate Jackett → Prowlarr** — 1 private tracker, low effort. Docker install, re-add indexers, sync to Sonarr+Radarr, update Caddy (replace jackett.gh05t.duckdns.org), remove Jackett. ~20 min.
+
 ### Both platforms — not built anywhere yet
 - Trakt: watch history, check-in, ratings
 - Plex: mark watched / unwatched, library search, deep link to play (deferred)
