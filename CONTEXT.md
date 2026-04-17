@@ -1,7 +1,7 @@
 # CTRLr — Project Context
 
 This file is the shared brain between Claude instances. Keep it updated as the project evolves.
-Last updated: 2026-04-17 (Seer table→flex rewrite, Discover preview pane restructure)
+Last updated: 2026-04-18 (Discover movies/tv tabs, Docker migration plan agreed)
 
 ---
 
@@ -261,9 +261,30 @@ All core sections implemented and functional. Build is clean.
 
 ## Next steps / backlog
 
-### Infrastructure — top priority
-- **Migrate Jackett → Prowlarr (Docker)** — Run Prowlarr as Docker container. 9 indexers: 8 public + xspeeds (private, needs creds). Stop Jackett systemd after. First step toward full Dockerization.
-- **Dockerize full stack** — Planned hardware migration makes this high value; Docker = copy compose + volumes to new machine. Services: qBittorrent, Sonarr, Radarr, Plex, Tautulli, CTRLr Web. Use linuxserver.io images. Do after Prowlarr. Watch: qBit/Sonarr/Radarr path mappings, Plex GPU passthrough, PUID/PGID.
+### Infrastructure — this weekend
+
+Full Docker migration plan agreed 2026-04-17. Detailed blueprint in MORIARTY memory: `project_docker_migration.md`.
+
+**Phase 1 — Prowlarr (Docker)**
+Replace Jackett (native systemd) with Prowlarr in Docker. 9 indexers to re-add: 8 public (thepiratebay, eztv, acgrip, kickasstorrents-to, 1337x, therarbg, showrss, kickasstorrents-ws) + 1 private (xspeeds, needs creds). Jackett API key: `q5sgecasbgrpm4dxsnluy2swb3n4knqo`, config at `/home/gh05t/.config/Jackett/`. Stop Jackett systemd after.
+
+**Phase 2 — Full stack Dockerization**
+Services → Docker: qBittorrent, Sonarr, Radarr, Seer, Tautulli, CTRLr Web, autobrr, profilarr.
+**Plex stays native** — reads same filesystem paths, no GPU passthrough complexity.
+
+Critical path structure for hardlinks (all containers share `/data` root):
+```
+/data/
+  torrents/tv/
+  torrents/movies/
+  media/tv/
+  media/movies/
+```
+Use linuxserver.io images. PUID/PGID = gh05t. Set `mem_limit` on Sonarr + Radarr (bloat history).
+
+New tools: **autobrr** (IRC announce grabs — xspeeds IRC confirmed: `irc.xspeeds.eu` / `#announce`), **profilarr** (quality profile sync).
+
+**Phase 3 — Hardware migration** — trivial once Docker: copy compose + volumes to new machine.
 
 ### Both platforms — not built anywhere yet
 - Trakt: watch history, check-in, ratings
@@ -277,7 +298,7 @@ All core sections implemented and functional. Build is clean.
 - qBittorrent: file list in torrent detail sheet
 
 ### Dashboard — catching up to app
-- ~~Seer discover/trending section~~ — implemented (DiscoverSection.tsx, trending movies + TV with preview pane)
+- ~~Seer discover/trending section~~ — implemented (DiscoverSection.tsx, trending movies + TV with movies/tv tabs + preview pane)
 - Seer list pagination (request list gets very long, only 10 shown of up to 43+)
 - Trakt detail drawer: fix silent error — `searchReleases` throws but drawer shows "no results"; needs `relError` state (same pattern as ArrDetailDrawer)
 
