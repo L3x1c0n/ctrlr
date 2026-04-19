@@ -182,14 +182,59 @@ export default function PlexSection() {
               <p className="text-[#999] text-sm font-mono pl-4">no results</p>
             )}
             {!searchLoading && searchResults && searchResults.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm font-mono table-fixed md:table-auto">
-                  <tbody>
-                    {searchResults.map((item, i) => (
-                      <MediaRow key={item.ratingKey} item={item} index={i} />
-                    ))}
-                  </tbody>
-                </table>
+              <div className="font-mono text-xs md:text-sm">
+                <div className="flex items-center gap-3 text-[#999] text-xs uppercase border-b border-[#1a1a2e] py-1 select-none">
+                  <span className="w-5 shrink-0" />
+                  <span className="flex-1">Title</span>
+                  <span className="hidden md:block shrink-0 w-[48px]">Type</span>
+                  <span className="shrink-0 w-[36px]">Year</span>
+                  <span className="shrink-0 w-[16px]">W</span>
+                  <span className="shrink-0">Actions</span>
+                </div>
+                {searchResults.map((item, i) => (
+                  <div key={item.ratingKey} className="flex items-center gap-3 border-b border-[#0f0f1a] py-0.5">
+                    <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums text-xs">{i + 1}</span>
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <button onClick={() => setSelected(item)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                      <span className="truncate text-white">
+                        {item.grandparentTitle ?? item.title}
+                        {item.grandparentTitle && (
+                          <span className="text-[#888] ml-2">
+                            S{String(item.parentIndex ?? 0).padStart(2, '0')}E{String(item.index ?? 0).padStart(2, '0')}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <span className="hidden md:block shrink-0 w-[48px] text-[#999] text-xs uppercase whitespace-nowrap">
+                      {item.type === 'show' ? 'tv' : item.type ?? ''}
+                    </span>
+                    <span className="shrink-0 w-[36px] text-right text-[#999] text-xs">{item.year ?? ''}</span>
+                    <span className="shrink-0 w-[16px] text-center text-xs">
+                      {item.viewCount && item.viewCount > 0
+                        ? <span className="text-[#999]">1</span>
+                        : <span className="text-yellow-400">Ø</span>}
+                    </span>
+                    <div className="shrink-0 flex gap-1">
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete ${item.title} from Plex library?`)) {
+                            fetch('/api/plex', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ action: 'delete', ratingKey: item.ratingKey }),
+                            }).then(() => {
+                              setSearchResults(prev => prev ? prev.filter(r => r.ratingKey !== item.ratingKey) : prev)
+                              load()
+                            })
+                          }
+                        }}
+                        className="btn-xs text-red-400 whitespace-nowrap"
+                      >
+                        --rm
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
