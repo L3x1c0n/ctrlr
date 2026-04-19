@@ -181,3 +181,25 @@ export async function applyMatch(ratingKey: string, guid: string, name: string, 
   const url   = `${PLEX_URL}/library/metadata/${ratingKey}/match?agent=${agent}&guid=${encodeURIComponent(guid)}&name=${encodeURIComponent(name)}&language=en-US`
   await fetch(url, { method: 'PUT', headers, cache: 'no-store' })
 }
+
+// ── library search ────────────────────────────────────────────────────────────
+
+export async function searchLibrary(query: string): Promise<PlexMedia[]> {
+  const url = `${PLEX_URL}/hubs/search?query=${encodeURIComponent(query)}&limit=30&includeExtras=0`
+  try {
+    const res  = await fetch(url, { headers, cache: 'no-store' })
+    if (!res.ok) return []
+    const data = await res.json()
+    const hubs = data?.MediaContainer?.Hub ?? []
+    const results: PlexMedia[] = []
+    for (const hub of hubs) {
+      if (!['movie', 'show'].includes(hub.type)) continue
+      for (const item of (hub.Metadata ?? [])) {
+        results.push(item as PlexMedia)
+      }
+    }
+    return results
+  } catch {
+    return []
+  }
+}
