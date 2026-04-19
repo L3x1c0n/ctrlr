@@ -1,7 +1,7 @@
 # CTRLr — Project Context
 
 This file is the shared brain between Claude instances. Keep it updated as the project evolves.
-Last updated: 2026-04-18 (Discover movies/tv tabs, Docker migration plan agreed)
+Last updated: 2026-04-19 (Plex library search, autobrr IRC+filters, Prowlarr→Docker done)
 
 ---
 
@@ -37,7 +37,8 @@ The two are developed in this monorepo so features, issues, and API contracts st
 | qBittorrent WebUI | 22388 | Not exposed via Caddy — SSH tunnel only |
 | Sonarr | 8989 | `sonarr.gh05t.duckdns.org` |
 | Radarr | 7878 | `radarr.gh05t.duckdns.org` |
-| Jackett | 9117 | `jackett.gh05t.duckdns.org` |
+| Prowlarr | 9696 | `prowlarr.gh05t.duckdns.org`, Docker |
+| autobrr | 7474 | `autobrr.gh05t.duckdns.org`, Docker |
 | Seer (Overseerr fork) | 5055 | `overseerr.gh05t.duckdns.org`, Docker container |
 | Plex | 32400 | Direct, relay mode, not proxied |
 | Tautulli | 8181 | Snap service, not exposed via Caddy |
@@ -201,7 +202,7 @@ All core sections implemented and functional. Build is clean.
 | Poster / art selection | ✅ | ✅ (SelectPosterSheet) |
 | Metadata refresh | ✅ | ✅ (RecentlyAddedDetailSheet) |
 | Mark watched / unwatched | ❌ | ❌ |
-| Library search | ❌ | ❌ |
+| Library search | ✅ | ❌ |
 | Play (deep link to Plex app) | ❌ | ❌ |
 
 ### Tautulli
@@ -299,6 +300,7 @@ New tools: **autobrr** (IRC announce grabs — xspeeds IRC confirmed: `irc.xspee
 
 ### Dashboard — catching up to app
 - ~~Seer discover/trending section~~ — implemented (DiscoverSection.tsx, trending movies + TV with movies/tv tabs + preview pane)
+- ~~Plex library search~~ — implemented 2026-04-19 (full-width input + grep button, results expand above recently-added, flex row layout)
 - Seer list pagination (request list gets very long, only 10 shown of up to 43+)
 - Trakt detail drawer: fix silent error — `searchReleases` throws but drawer shows "no results"; needs `relError` state (same pattern as ArrDetailDrawer)
 
