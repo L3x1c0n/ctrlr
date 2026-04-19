@@ -6,6 +6,7 @@ import Spinner from '@/components/Spinner'
 import SeerDetailDrawer from '@/components/SeerDetailDrawer'
 import DiscoverSection from '@/components/DiscoverSection'
 import MarqueeText from '@/components/MarqueeText'
+import RequestModal from '@/components/RequestModal'
 
 const statusLabel: Record<number, string> = {
   1: 'Pending',
@@ -31,6 +32,8 @@ export default function SeerSection() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<SeerRequest | null>(null)
+  const [requestItem, setRequestItem] = useState<SeerSearchResult | null>(null)
+  const [syncing, setSyncing] = useState(false)
 
   const loadRequests = useCallback(async () => {
     try {
@@ -71,15 +74,8 @@ export default function SeerSection() {
     setSearching(false)
   }
 
-  async function requestItem(result: SeerSearchResult) {
-    await fetch('/api/seer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'submit', mediaType: result.mediaType, mediaId: result.id }),
-    })
-    setResults([])
-    setQuery('')
-    await loadRequests()
+  function openRequestModal(result: SeerSearchResult) {
+    setRequestItem(result)
   }
 
   async function approveRequest(id: number) {
@@ -103,8 +99,20 @@ export default function SeerSection() {
   return (
     <>
       <section id="seer">
-        <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e]">
-          const <span className="text-white text-sm font-medium uppercase tracking-widest">S33r</span>: SeerRequest[] = [
+        <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between">
+          <span>const <span className="text-white text-sm font-medium uppercase tracking-widest">S33r</span>: SeerRequest[] = [</span>
+          <button
+            onClick={async () => {
+              setSyncing(true)
+              await fetch('/api/seer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync' }) })
+              await loadRequests()
+              setSyncing(false)
+            }}
+            disabled={syncing}
+            className="btn-xs text-[#7070a8] hover:text-[#aaaadd] disabled:opacity-40"
+          >
+            {syncing ? '...' : '--sync-arrs'}
+          </button>
         </div>
         {error && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}
 
@@ -143,10 +151,10 @@ export default function SeerSection() {
                   )}
                 </div>
                 <button
-                  onClick={() => requestItem(r)}
-                  className="btn-xs text-blue-400"
+                  onClick={() => openRequestModal(r)}
+                  className="btn-xs text-cyan-600 hover:text-cyan-400"
                 >
-                  --get
+                  --info
                 </button>
               </div>
             ))}
@@ -194,6 +202,19 @@ export default function SeerSection() {
         onClose={() => setSelected(null)}
         onRefresh={loadRequests}
       />
+
+      {requestItem && (
+        <RequestModal
+          item={requestItem}
+          onClose={() => setRequestItem(null)}
+          onDone={() => {
+            setRequestItem(null)
+            setResults([])
+            setQuery('')
+            loadRequests()
+          }}
+        />
+      )}
     </>
   )
 }
