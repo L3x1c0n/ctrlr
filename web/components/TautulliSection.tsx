@@ -5,6 +5,7 @@ import { TautulliActivity, TautulliSession } from '@/types'
 import ProgressBar from '@/components/ProgressBar'
 import Spinner from '@/components/Spinner'
 import TautulliDetailDrawer from '@/components/TautulliDetailDrawer'
+import SystemStatus from '@/components/SystemStatus'
 
 function useWaveIndex(length: number, stepMs = 110) {
   const [index, setIndex] = useState(0)
@@ -142,6 +143,8 @@ export default function TautulliSection() {
           ))}
           <div className="font-mono text-xs text-[#6a9a7a] mt-2">{'}'} // {activity?.stream_count ?? 0} active</div>
         </section>
+
+        <SystemStatus />
       </div>
 
       <TautulliDetailDrawer session={selected} onClose={() => setSelected(null)} />
