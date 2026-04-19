@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { SeerSearchResult } from '@/types'
+import { SeerSearchResult, DiscoverDetail } from '@/types'
 
 interface Profile    { id: number; name: string }
 interface RootFolder { path: string; freeSpace: number }
+
+const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${path}`
 
 function fmtFree(bytes: number): string {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(0)}GB free`
@@ -16,6 +18,15 @@ function isUltraHD(name: string): boolean {
   return n.includes('ultra') || n.includes('2160') || n.includes('4k') || n.includes('uhd')
 }
 
+function MetaRow({ label, value, lines = 1 }: { label: string; value: string; lines?: 1 | 2 }) {
+  return (
+    <p className="flex gap-2 overflow-hidden">
+      <span className="text-[#6a9a7a] shrink-0 whitespace-nowrap w-[72px]">// {label}</span>
+      <span className={`text-[#ccc] min-w-0 ${lines === 2 ? 'line-clamp-2' : 'truncate'}`}>{value}</span>
+    </p>
+  )
+}
+
 interface Props {
   item: SeerSearchResult | null
   onClose: () => void
@@ -25,6 +36,7 @@ interface Props {
 export default function RequestModal({ item, onClose, onDone }: Props) {
   const isOpen = item !== null
 
+  const [detail,     setDetail]     = useState<DiscoverDetail | null>(null)
   const [profiles,   setProfiles]   = useState<Profile[]>([])
   const [folders,    setFolders]    = useState<RootFolder[]>([])
   const [profileId,  setProfileId]  = useState<number | null>(null)
@@ -35,14 +47,16 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
   useEffect(() => {
     if (!item) return
     setLoading(true)
+    setDetail(null)
     setProfiles([])
     setFolders([])
     setProfileId(null)
     setRootFolder(null)
     fetch(`/api/seer?mediaId=${item.id}&mediaType=${item.mediaType}`)
       .then(r => r.json())
-      .then(({ profiles: p, rootFolders: f }: { profiles: Profile[]; rootFolders: RootFolder[] }) => {
+      .then(({ detail: d, profiles: p, rootFolders: f }: { detail: DiscoverDetail; profiles: Profile[]; rootFolders: RootFolder[] }) => {
         const sortedFolders = [...(f ?? [])].sort((a, b) => b.freeSpace - a.freeSpace)
+        setDetail(d ?? null)
         setProfiles(p ?? [])
         setFolders(sortedFolders)
         const defaultProfile = (p ?? []).find(pr => isUltraHD(pr.name)) ?? p?.[0]
@@ -71,11 +85,18 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
     onDone()
   }
 
-  const title = item?.title ?? item?.name ?? '—'
-  const year  = (item?.releaseDate ?? item?.firstAirDate)?.slice(0, 4)
-  const posterUrl = item?.posterPath
-    ? `https://image.tmdb.org/t/p/w300${item.posterPath}`
-    : null
+  const title    = detail?.title    ?? detail?.name    ?? item?.title ?? item?.name ?? '—'
+  const year     = (detail?.releaseDate ?? detail?.firstAirDate ?? item?.releaseDate ?? item?.firstAirDate)?.slice(0, 4)
+  const backdrop = detail?.backdropPath
+  const poster   = detail?.posterPath ?? item?.posterPath
+  const overview = detail?.overview  ?? item?.overview
+  const rating   = detail?.voteAverage ?? item?.voteAverage
+  const genres   = detail?.genres?.map(g => g.name).join(', ')
+  const runtime  = item?.mediaType === 'movie' ? detail?.runtime : undefined
+  const seasons  = item?.mediaType === 'tv'    ? detail?.numberOfSeasons : undefined
+  const cast     = detail?.credits?.cast?.slice(0, 5).map(c => c.name).join(', ')
+  const director = detail?.credits?.crew?.find(c => c.job === 'Director')?.name
+  const studio   = (detail?.productionCompanies ?? detail?.networks)?.map(c => c.name).slice(0, 2).join(', ')
 
   return (
     <>
@@ -86,98 +107,127 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
       />
 
       {/* drawer */}
-      <div className={`fixed top-0 right-0 bottom-0 z-50 w-full md:w-[420px] bg-[#16162a] border-l-2 border-[#2a2a4a] shadow-[-8px_0_32px_rgba(0,0,0,0.6)] overflow-y-auto transition-[transform,visibility] duration-200 font-mono ${isOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}`}>
+      <div className={`fixed top-0 right-0 bottom-0 z-50 w-full md:w-[420px] bg-[#0A0A0F] border-l-2 border-[#2a2a4a] shadow-[-8px_0_32px_rgba(0,0,0,0.6)] overflow-y-auto transition-[transform,visibility] duration-200 font-mono ${isOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}`}>
 
         {/* header */}
-        <div className="sticky top-0 z-10 bg-[#16162a] border-b border-[#2a2a4a] px-4 py-3 flex items-center justify-between">
+        <div className="sticky top-0 z-10 bg-[#0A0A0F] border-b border-[#2a2a4a] px-4 py-3 flex items-center justify-between">
           <span className="text-[#6a9a7a] text-xs">// request</span>
           <button onClick={onClose} className="text-[#555] hover:text-[#888] text-lg leading-none">×</button>
         </div>
 
         {item && (
-          <div className="p-4 space-y-4">
+          <div>
+            {/* backdrop area — same as Discover preview pane */}
+            <div className="relative shrink-0 w-full" style={{ aspectRatio: '16/9' }}>
+              {backdrop
+                ? <img src={TMDB_W(780, backdrop)} alt="" className="w-full h-full object-cover" style={{ filter: 'blur(2px) brightness(0.8)' }} />
+                : <div className="w-full h-full bg-[#080810]" />
+              }
+              <div className="absolute inset-0 bg-[#0A0A0F]/30" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/20 to-transparent" />
 
-            {/* poster + title block */}
-            <div className="flex gap-4">
-              {posterUrl && (
+              {/* inset poster */}
+              {poster && (
                 <img
-                  src={posterUrl}
-                  alt={title}
-                  className="w-20 shrink-0 rounded object-cover"
+                  src={TMDB_W(185, poster)}
+                  alt=""
+                  className="absolute bottom-0 left-0"
+                  style={{
+                    width: 125, height: 188, objectFit: 'cover',
+                    boxShadow: '4px 0 24px rgba(0,0,0,0.85), 0 -4px 24px rgba(0,0,0,0.6)',
+                    outline: '1px solid rgba(255,255,255,0.12)',
+                    outlineOffset: '-1px',
+                  }}
                 />
               )}
-              <div className="min-w-0">
-                <p className="text-white text-sm font-medium leading-snug">{title}</p>
-                <p className="text-[#7070a8] text-xs mt-1">
-                  {item.mediaType === 'movie' ? 'movie' : 'tv series'}
-                  {year && <span className="ml-2">{year}</span>}
-                  {item.voteAverage && item.voteAverage > 0 && (
-                    <span className="ml-2 text-yellow-400">★ {item.voteAverage.toFixed(1)}</span>
-                  )}
-                </p>
+
+              {/* title + meta to the right of poster */}
+              <div
+                className="absolute flex flex-col overflow-hidden"
+                style={{ bottom: 0, left: poster ? 137 : 12, right: 8, height: 188, paddingTop: 4 }}
+              >
+                <p className="text-white text-sm font-mono font-medium leading-tight line-clamp-2 shrink-0">{title}</p>
+                <div className="flex flex-wrap items-center gap-x-2 mt-0.5 mb-1.5 font-mono text-xs text-[#888] shrink-0">
+                  {year    && <span>{year}</span>}
+                  {runtime && <span>{runtime}m</span>}
+                  {seasons && <span>{seasons} seasons</span>}
+                  {rating != null && rating > 0 && <span>★ {rating.toFixed(1)}</span>}
+                </div>
+                {loading ? (
+                  <span className="text-[#555] font-mono text-xs">// loading...</span>
+                ) : (
+                  <div className="space-y-0.5 font-mono text-xs overflow-hidden">
+                    {genres   && <MetaRow label="genre"  value={genres} />}
+                    {director && <MetaRow label="dir"    value={director} />}
+                    {cast     && <MetaRow label="cast"   value={cast} lines={2} />}
+                    {studio   && <MetaRow label="studio" value={studio} lines={2} />}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* overview */}
-            {item.overview && (
-              <div>
-                <div className="text-[#6a9a7a] text-xs mb-1">// overview</div>
-                <p className="text-[#aaa] text-xs leading-relaxed line-clamp-4">{item.overview}</p>
-              </div>
-            )}
+            <div className="px-3 py-2 font-mono text-xs border-b border-[#1a1a2e]">
+              {overview ? (
+                <>
+                  <p className="text-[#6a9a7a] mb-1">{'/*'}</p>
+                  <p className="text-[#999] leading-relaxed pl-2 line-clamp-4">{overview}</p>
+                  <p className="text-[#6a9a7a] mt-1">{'*/'}</p>
+                </>
+              ) : (
+                <span className="text-[#444]">// no synopsis</span>
+              )}
+            </div>
 
-            <div className="border-t border-[#2a2a4a]" />
+            {/* request options */}
+            <div className="px-4 py-4 space-y-3">
+              {loading ? (
+                <p className="text-[#555] text-xs">// loading options...</p>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-[#6a9a7a] text-xs block mb-1">// quality</label>
+                    <select
+                      value={profileId ?? ''}
+                      onChange={e => setProfileId(Number(e.target.value))}
+                      className="w-full bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-[#4a4a7a]"
+                    >
+                      {profiles.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}{isUltraHD(p.name) ? ' ✦' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-            {/* options */}
-            {loading ? (
-              <p className="text-[#555] text-xs">// loading options...</p>
-            ) : (
-              <div className="space-y-3">
-                {/* quality profile */}
-                <div>
-                  <label className="text-[#6a9a7a] text-xs block mb-1">// quality</label>
-                  <select
-                    value={profileId ?? ''}
-                    onChange={e => setProfileId(Number(e.target.value))}
-                    className="w-full bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-[#4a4a7a]"
-                  >
-                    {profiles.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}{isUltraHD(p.name) ? ' ✦' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <div>
+                    <label className="text-[#6a9a7a] text-xs block mb-1">// disk</label>
+                    <select
+                      value={rootFolder ?? ''}
+                      onChange={e => setRootFolder(e.target.value)}
+                      className="w-full bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-[#4a4a7a]"
+                    >
+                      {folders.map(f => (
+                        <option key={f.path} value={f.path}>
+                          {f.path} — {fmtFree(f.freeSpace)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                {/* root folder */}
-                <div>
-                  <label className="text-[#6a9a7a] text-xs block mb-1">// disk</label>
-                  <select
-                    value={rootFolder ?? ''}
-                    onChange={e => setRootFolder(e.target.value)}
-                    className="w-full bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-[#4a4a7a]"
-                  >
-                    {folders.map(f => (
-                      <option key={f.path} value={f.path}>
-                        {f.path} — {fmtFree(f.freeSpace)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* actions */}
-                <div className="flex gap-3 pt-1">
-                  <button
-                    onClick={submit}
-                    disabled={submitting}
-                    className="btn-xs text-blue-400 disabled:opacity-40"
-                  >
-                    {submitting ? '...' : '--request'}
-                  </button>
-                  <button onClick={onClose} className="btn-xs text-[#555]">--cancel</button>
-                </div>
-              </div>
-            )}
+                  <div className="flex gap-3 pt-1">
+                    <button
+                      onClick={submit}
+                      disabled={submitting}
+                      className="btn-xs text-blue-400 disabled:opacity-40"
+                    >
+                      {submitting ? '...' : '--request'}
+                    </button>
+                    <button onClick={onClose} className="btn-xs text-[#555]">--cancel</button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
