@@ -211,7 +211,7 @@ export default function PlexSection() {
         <div className="md:hidden">
           {(() => {
             const PLEX_TABS = [
-              { key: 'shows',  label: 'Shows',  color: '#a78bfa' },
+              { key: 'shows',  label: 'Shows',  color: '#34d399' },
               { key: 'movies', label: 'Movies', color: '#fb923c' },
             ] as const
             return (
