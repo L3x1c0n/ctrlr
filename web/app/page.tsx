@@ -11,6 +11,11 @@ import PlexSection from '@/components/PlexSection'
 import TautulliSection from '@/components/TautulliSection'
 import { SECTION_ORDER_KEY, DEFAULT_ORDER, loadSectionOrder, type SectionKey } from '@/components/SectionOrderPicker'
 
+const ARR_TABS = [
+  { key: 'sonarr', label: 'S0n4rr', active: 'border-blue-400 text-blue-400',   inactive: 'border-transparent text-[#555] hover:text-blue-400/60'   },
+  { key: 'radarr', label: 'R4d4rr', active: 'border-yellow-400 text-yellow-400', inactive: 'border-transparent text-[#555] hover:text-yellow-400/60' },
+] as const
+
 function ArrTabs() {
   const [tab, setTab] = useState<'sonarr' | 'radarr'>('sonarr')
   return (
@@ -18,24 +23,21 @@ function ArrTabs() {
       {/* Mobile: tab switcher */}
       <div className="md:hidden">
         <div className="flex mb-4 border-b border-[#1a1a2e]">
-          {(['sonarr', 'radarr'] as const).map(s => (
+          {ARR_TABS.map(t => (
             <button
-              key={s}
-              onClick={() => setTab(s)}
-              className={`flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-colors border-b-2 -mb-px ${
-                tab === s
-                  ? 'border-[#7070a8] text-white'
-                  : 'border-transparent text-[#555] hover:text-[#888]'
-              }`}
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-colors border-b-2 -mb-px ${tab === t.key ? t.active : t.inactive}`}
             >
-              {s === 'sonarr' ? 'S0n4rr' : 'R4d4rr'}
+              {t.label}
             </button>
           ))}
         </div>
-        {tab === 'sonarr'
-          ? <ArrSection service="sonarr" label="S0n4rr" />
-          : <ArrSection service="radarr" label="R4d4rr" />
-        }
+        {ARR_TABS.map(t => (
+          <div key={t.key} className={tab === t.key ? '' : 'hidden'}>
+            <ArrSection service={t.key} label={t.label} />
+          </div>
+        ))}
       </div>
       {/* Desktop: side by side */}
       <div className="hidden md:grid md:grid-cols-2 gap-6">

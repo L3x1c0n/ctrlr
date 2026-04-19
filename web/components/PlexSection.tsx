@@ -13,6 +13,7 @@ export default function PlexSection() {
   const [error, setError]     = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<PlexMedia | null>(null)
+  const [plexTab, setPlexTab]   = useState<'shows' | 'movies'>('shows')
 
   // search
   const [searchQuery, setSearchQuery]     = useState('')
@@ -206,13 +207,49 @@ export default function PlexSection() {
           </div>
         )}
 
-        {/* recently added */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* recently added — mobile: tabs, desktop: side by side */}
+        <div className="md:hidden">
+          <div className="flex mb-4 border-b border-[#1a1a2e]">
+            <button
+              onClick={() => setPlexTab('shows')}
+              className={`flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-colors border-b-2 -mb-px ${plexTab === 'shows' ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-[#555] hover:text-cyan-400/60'}`}
+            >
+              Shows
+            </button>
+            <button
+              onClick={() => setPlexTab('movies')}
+              className={`flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-colors border-b-2 -mb-px ${plexTab === 'movies' ? 'border-orange-400 text-orange-400' : 'border-transparent text-[#555] hover:text-orange-400/60'}`}
+            >
+              Movies
+            </button>
+          </div>
+          <div className={plexTab === 'shows' ? '' : 'hidden'}>
+            <div className="font-mono text-xs text-[#6a9a7a] mb-2">  shows: [</div>
+            {shows.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
+            {shows.length > 0 && (
+              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-fixed">
+                <tbody>{shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}</tbody>
+              </table></div>
+            )}
+            <div className="font-mono text-xs text-[#6a9a7a] mt-1">  ], // {shows.length}</div>
+          </div>
+          <div className={plexTab === 'movies' ? '' : 'hidden'}>
+            <div className="font-mono text-xs text-[#6a9a7a] mb-2">  movies: [</div>
+            {movies.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
+            {movies.length > 0 && (
+              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-fixed">
+                <tbody>{movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}</tbody>
+              </table></div>
+            )}
+            <div className="font-mono text-xs text-[#6a9a7a] mt-1">  ] // {movies.length}</div>
+          </div>
+        </div>
+        <div className="hidden md:grid md:grid-cols-2 gap-6">
           <div>
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  shows: [</div>
             {shows.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {shows.length > 0 && (
-              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-fixed md:table-auto">
+              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-auto">
                 <tbody>{shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}</tbody>
               </table></div>
             )}
@@ -222,7 +259,7 @@ export default function PlexSection() {
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  movies: [</div>
             {movies.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {movies.length > 0 && (
-              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-fixed md:table-auto">
+              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-auto">
                 <tbody>{movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}</tbody>
               </table></div>
             )}
