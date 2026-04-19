@@ -12,7 +12,7 @@ import TautulliSection from '@/components/TautulliSection'
 import { SECTION_ORDER_KEY, DEFAULT_ORDER, loadSectionOrder, type SectionKey } from '@/components/SectionOrderPicker'
 
 const ARR_TABS = [
-  { key: 'sonarr', label: 'S0n4rr', color: '#2dd4bf' },
+  { key: 'sonarr', label: 'S0n4rr', color: '#fde047' },
   { key: 'radarr', label: 'R4d4rr', color: '#f43f5e' },
 ] as const
 
