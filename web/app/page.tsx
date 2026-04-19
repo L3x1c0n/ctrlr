@@ -12,8 +12,8 @@ import TautulliSection from '@/components/TautulliSection'
 import { SECTION_ORDER_KEY, DEFAULT_ORDER, loadSectionOrder, type SectionKey } from '@/components/SectionOrderPicker'
 
 const ARR_TABS = [
-  { key: 'sonarr', label: 'S0n4rr', active: 'border-blue-400 text-blue-400',   inactive: 'border-transparent text-[#555] hover:text-blue-400/60'   },
-  { key: 'radarr', label: 'R4d4rr', active: 'border-yellow-400 text-yellow-400', inactive: 'border-transparent text-[#555] hover:text-yellow-400/60' },
+  { key: 'sonarr', label: 'S0n4rr', color: '#2dd4bf' },
+  { key: 'radarr', label: 'R4d4rr', color: '#f43f5e' },
 ] as const
 
 function ArrTabs() {
@@ -23,15 +23,23 @@ function ArrTabs() {
       {/* Mobile: tab switcher */}
       <div className="md:hidden">
         <div className="flex mb-4 border-b border-[#1a1a2e]">
-          {ARR_TABS.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-colors border-b-2 -mb-px ${tab === t.key ? t.active : t.inactive}`}
-            >
-              {t.label}
-            </button>
-          ))}
+          {ARR_TABS.map(t => {
+            const active = tab === t.key
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className="flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-all duration-150 border-b-2 -mb-px"
+                style={{
+                  borderColor: active ? t.color : 'transparent',
+                  color: active ? t.color : '#444',
+                  textShadow: active ? `0 0 12px ${t.color}88` : 'none',
+                }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
         </div>
         {ARR_TABS.map(t => (
           <div key={t.key} className={tab === t.key ? '' : 'hidden'}>
