@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PlexMedia } from '@/types'
 import Spinner from '@/components/Spinner'
 import PlexDetailDrawer from '@/components/PlexDetailDrawer'
@@ -15,12 +15,9 @@ export default function PlexSection() {
   const [selected, setSelected] = useState<PlexMedia | null>(null)
 
   // search
-  const [searchOpen, setSearchOpen]       = useState(false)
   const [searchQuery, setSearchQuery]     = useState('')
   const [searchResults, setSearchResults] = useState<PlexMedia[] | null>(null)
   const [searchLoading, setSearchLoading] = useState(false)
-  const searchInputRef = useRef<HTMLInputElement>(null)
-  const debounceRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -44,39 +41,19 @@ export default function PlexSection() {
     return () => clearInterval(id)
   }, [load])
 
-  // focus input when search opens
-  useEffect(() => {
-    if (searchOpen) searchInputRef.current?.focus()
-  }, [searchOpen])
-
-  // debounced search
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (!searchQuery.trim()) {
-      setSearchResults(null)
-      setSearchLoading(false)
-      return
-    }
+  async function doSearch() {
+    if (!searchQuery.trim()) return
     setSearchLoading(true)
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res  = await fetch(`/api/plex?search=${encodeURIComponent(searchQuery.trim())}`)
-        const data = await res.json()
-        setSearchResults(data.results ?? [])
-      } catch {
-        setSearchResults([])
-      } finally {
-        setSearchLoading(false)
-      }
-    }, 400)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [searchQuery])
-
-  function closeSearch() {
-    setSearchOpen(false)
-    setSearchQuery('')
     setSearchResults(null)
-    setSearchLoading(false)
+    try {
+      const res  = await fetch(`/api/plex?search=${encodeURIComponent(searchQuery.trim())}`)
+      const data = await res.json()
+      setSearchResults(data.results ?? [])
+    } catch {
+      setSearchResults([])
+    } finally {
+      setSearchLoading(false)
+    }
   }
 
   function MediaRow({ item, index }: { item: PlexMedia; index: number }) {
@@ -133,55 +110,44 @@ export default function PlexSection() {
     <>
       <section id="plex">
         {/* header */}
-        <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-center justify-between gap-3">
-          <span className="shrink-0">const <span className="text-white text-sm font-medium uppercase tracking-widest">Pl3x R3c3ntly 4dd3d</span> = {'{'}</span>
-          <div className="flex items-center gap-2 min-w-0">
-            {searchOpen ? (
-              <>
-                <span className="text-[#7070a8] shrink-0">&gt;_</span>
-                <input
-                  ref={searchInputRef}
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Escape' && closeSearch()}
-                  placeholder="search library..."
-                  className="bg-transparent border-b border-[#7070a8] text-white font-mono text-xs outline-none w-40 placeholder:text-[#555] focus:border-[#6a9a7a]"
-                />
-                <button onClick={closeSearch} className="text-[#7070a8] hover:text-red-400 font-mono text-xs shrink-0">✕</button>
-              </>
-            ) : (
-              <>
-                <span className="text-[#888] shrink-0">// top {max}, past {days}d first</span>
-                <button
-                  onClick={() => setSearchOpen(true)}
-                  className="btn-xs text-[#7070a8] hover:text-[#6a9a7a] shrink-0"
-                >
-                  &gt;_ search
-                </button>
-              </>
-            )}
-          </div>
+        <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between">
+          <span>const <span className="text-white text-sm font-medium uppercase tracking-widest">Pl3x R3c3ntly 4dd3d</span> = {'{'}</span>
+          <span className="text-[#888]">// top {max}, past {days}d first</span>
         </div>
 
         {error && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}
 
+        {/* search input */}
+        <div className="flex gap-2 mb-4">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && doSearch()}
+            placeholder="Search Plex library..."
+            className="bg-[#0f0f1a] border border-[#1a1a2e] text-white font-mono text-sm px-3 py-1.5 flex-1 focus:outline-none focus:border-[#888]"
+          />
+          <button
+            onClick={doSearch}
+            disabled={searchLoading}
+            className="bg-[#1a1a2e] text-violet-400 font-mono text-sm px-4 py-1.5 hover:bg-[#252540] disabled:opacity-50"
+          >
+            {searchLoading ? '...' : 'grep'}
+          </button>
+        </div>
+
         {/* search results — expands above recently added */}
-        {searchOpen && (
+        {searchResults !== null && (
           <div className="mb-4">
             <div className="font-mono text-xs text-[#7070a8] mb-2">
               {'/* ── '}
-              {searchLoading
-                ? 'searching...'
-                : searchResults
-                  ? `${searchResults.length} result${searchResults.length !== 1 ? 's' : ''}${searchQuery ? ` for "${searchQuery}"` : ''}`
-                  : 'type to search'}
+              {`${searchResults.length} result${searchResults.length !== 1 ? 's' : ''} for "${searchQuery}"`}
               {' ── */'}
             </div>
-            {searchLoading && <Spinner />}
-            {!searchLoading && searchResults && searchResults.length === 0 && (
+            {searchResults.length === 0 && (
               <p className="text-[#999] text-sm font-mono pl-4">no results</p>
             )}
-            {!searchLoading && searchResults && searchResults.length > 0 && (
+            {searchResults.length > 0 && (
               <div className="font-mono text-xs md:text-sm">
                 <div className="flex items-center gap-3 text-[#999] text-xs uppercase border-b border-[#1a1a2e] py-1 select-none">
                   <span className="w-5 shrink-0" />
