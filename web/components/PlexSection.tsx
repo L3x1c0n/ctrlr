@@ -209,20 +209,33 @@ export default function PlexSection() {
 
         {/* recently added — mobile: tabs, desktop: side by side */}
         <div className="md:hidden">
-          <div className="flex mb-4 border-b border-[#1a1a2e]">
-            <button
-              onClick={() => setPlexTab('shows')}
-              className={`flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-colors border-b-2 -mb-px ${plexTab === 'shows' ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-[#555] hover:text-cyan-400/60'}`}
-            >
-              Shows
-            </button>
-            <button
-              onClick={() => setPlexTab('movies')}
-              className={`flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-colors border-b-2 -mb-px ${plexTab === 'movies' ? 'border-orange-400 text-orange-400' : 'border-transparent text-[#555] hover:text-orange-400/60'}`}
-            >
-              Movies
-            </button>
-          </div>
+          {(() => {
+            const PLEX_TABS = [
+              { key: 'shows',  label: 'Shows',  color: '#a78bfa' },
+              { key: 'movies', label: 'Movies', color: '#fb923c' },
+            ] as const
+            return (
+              <div className="flex mb-4 border-b border-[#1a1a2e]">
+                {PLEX_TABS.map(t => {
+                  const active = plexTab === t.key
+                  return (
+                    <button
+                      key={t.key}
+                      onClick={() => setPlexTab(t.key)}
+                      className="flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-all duration-150 border-b-2 -mb-px"
+                      style={{
+                        borderColor: active ? t.color : 'transparent',
+                        color: active ? t.color : '#444',
+                        textShadow: active ? `0 0 12px ${t.color}88` : 'none',
+                      }}
+                    >
+                      {t.label}
+                    </button>
+                  )
+                })}
+              </div>
+            )
+          })()}
           <div className={plexTab === 'shows' ? '' : 'hidden'}>
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  shows: [</div>
             {shows.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
