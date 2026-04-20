@@ -2,6 +2,8 @@
 
 **One place for your entire media stack. Built out of frustration with jumping between Sonarr, Radarr, Plex, qBittorrent, and five other tabs just to see what's going on.**
 
+> **Work in progress.** This is a personal project that grew into something shareable. It runs daily on a real home server and the core functionality is solid, but rough edges exist. Mobile is enabled and largely working. New features and fixes are ongoing — issues and PRs welcome.
+
 ## How this was built
 
 I know AI vibe-coded projects have a reputation right now — slop shipped fast, no understanding of what's underneath, security holes left open because nobody thought to ask. I want to be upfront about what this is and isn't.
