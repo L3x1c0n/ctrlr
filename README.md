@@ -1,6 +1,6 @@
 # CTRLr
 
-A unified media stack dashboard for the *arr ecosystem. Built as a personal tool, made public in case it's useful to anyone else.
+**One place for your entire media stack. Built out of frustration with jumping between Sonarr, Radarr, Plex, qBittorrent, and five other tabs just to see what's going on.**
 
 ![Terminal mono aesthetic with neon accents](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/apple-touch-icon.png)
 
