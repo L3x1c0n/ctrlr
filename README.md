@@ -69,6 +69,8 @@ Every item in CTRLr is actionable end-to-end. A few examples of what that looks 
 **Trakt → grab:**
 You see something on your watchlist. One click opens the detail drawer — metadata, release search, available qualities. You grab it directly into Sonarr or Radarr. Done.
 
+![Trakt detail drawer](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/trakt-drawer.png)
+
 **Seer → approve → track:**
 A request comes in. You approve it from the Seer panel. It lands in Sonarr's queue. You watch it download in qBittorrent. All without switching tabs.
 
@@ -263,3 +265,7 @@ If you're interested in taking over maintenance, open an issue.
 ## License
 
 MIT
+
+## Disclaimer
+
+CTRLr is a management interface for software you already run. It doesn't download content, index trackers, or provide access to anything. The legality of what you do with your media stack is determined by the tools underneath and how you use them — not by the dashboard on top.
