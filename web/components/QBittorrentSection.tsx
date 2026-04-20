@@ -195,11 +195,11 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
             <div className="flex items-center gap-3 text-[#999] text-xs uppercase border-b border-[#1a1a2e] py-1 select-none min-w-0">
               <span className="w-5 shrink-0" />
               <span className="flex-1">Name</span>
-              <span className="hidden md:block shrink-0">Size</span>
-              <span className="hidden md:block shrink-0">Progress</span>
-              <span className="hidden md:block shrink-0">Speed ↓</span>
-              <span className="hidden md:block shrink-0">ETA</span>
-              <span className="shrink-0">State</span>
+              <span className="hidden md:block shrink-0 w-[64px] text-right">Size</span>
+              <span className="hidden md:block shrink-0 w-[100px] text-right">Progress</span>
+              <span className="hidden md:block shrink-0 w-[72px] text-right">Speed ↓</span>
+              <span className="hidden md:block shrink-0 w-[52px] text-right">ETA</span>
+              <span className="shrink-0 w-[88px]">State</span>
               <span className="shrink-0">Actions</span>
             </div>
             {torrents.map((t, i) => (
@@ -211,14 +211,14 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                     <ScrambledName name={t.name} active={t.state === 'downloading'} />
                   </MarqueeText>
                 </div>
-                <span className="hidden md:flex shrink-0 text-[#888] whitespace-nowrap">{fmtSize(t.size)}</span>
-                <div className="hidden md:flex items-center gap-1.5 shrink-0">
-                  <ProgressBar pct={t.progress * 100} width={10} label={false} />
-                  <span className="text-[#999] tabular-nums">{Math.round(t.progress * 100)}%</span>
+                <span className="hidden md:block shrink-0 w-[64px] text-right text-[#888] whitespace-nowrap tabular-nums">{fmtSize(t.size)}</span>
+                <div className="hidden md:flex items-center justify-end gap-1.5 shrink-0 w-[100px]">
+                  <ProgressBar pct={t.progress * 100} width={8} label={false} />
+                  <span className="text-[#999] tabular-nums w-[32px] text-right">{Math.round(t.progress * 100)}%</span>
                 </div>
-                <span className="hidden md:flex shrink-0 text-green-400 whitespace-nowrap">{fmtSpeed(t.dlspeed)}</span>
-                <span className="hidden md:flex shrink-0 text-[#888] whitespace-nowrap">{fmtEta(t.eta)}</span>
-                <span className={`shrink-0 whitespace-nowrap ${stateColor[t.state] ?? 'text-[#888]'}`}>{t.state}</span>
+                <span className="hidden md:block shrink-0 w-[72px] text-right text-green-400 whitespace-nowrap tabular-nums">{fmtSpeed(t.dlspeed)}</span>
+                <span className="hidden md:block shrink-0 w-[52px] text-right text-[#888] whitespace-nowrap tabular-nums">{fmtEta(t.eta)}</span>
+                <span className={`shrink-0 w-[88px] whitespace-nowrap ${stateColor[t.state] ?? 'text-[#888]'}`}>{t.state}</span>
                 <div className="shrink-0 flex gap-2">
                   {t.state.includes('paused') || t.state.includes('Paused') ? (
                     <button onClick={() => action('resume', t.hash)} className="btn-xs text-green-400">--resume</button>
