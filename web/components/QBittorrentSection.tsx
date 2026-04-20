@@ -192,17 +192,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
         )}
         {torrents.length > 0 && (
           <div className="font-mono text-xs overflow-x-auto">
-            <div className="flex items-center gap-3 text-[#999] text-xs uppercase border-b border-[#1a1a2e] py-1 select-none min-w-0">
-              <span className="w-5 shrink-0" />
-              <span className="flex-1">Name</span>
-              <span className="hidden md:block shrink-0 w-[64px] text-right">Size</span>
-              <span className="hidden md:block shrink-0 w-[100px] text-right">Progress</span>
-              <span className="hidden md:block shrink-0 w-[72px] text-right">Speed ↓</span>
-              <span className="hidden md:block shrink-0 w-[52px] text-right">ETA</span>
-              <span className="shrink-0 w-[88px]">State</span>
-              <span className="shrink-0">Actions</span>
-            </div>
-            {torrents.map((t, i) => (
+{torrents.map((t, i) => (
               <div key={t.hash} className="flex items-center gap-3 border-b border-[#0f0f1a] py-1">
                 <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums select-none">{i + 1}</span>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
