@@ -158,6 +158,29 @@ WantedBy=multi-user.target
 - Services must be reachable from the machine running CTRLr (localhost or LAN)
 - Not yet one-command deployable (working on it)
 
+## Security
+
+This project was built by a non-developer using AI. That warrants transparency about what has and hasn't been hardened.
+
+**What is in place:**
+- All API routes are protected by middleware — no endpoint is reachable without a valid session cookie
+- All calls to external services (Sonarr, Radarr, Plex, etc.) are server-side only — API keys are never sent to the browser
+- `.env.local` is gitignored and will never be committed
+- No database, no user table, no third-party auth dependencies — smaller attack surface by simplicity
+
+**What is not in place:**
+- No rate limiting on the login endpoint — brute force is possible
+- No CSRF protection
+- No Content Security Policy headers
+- Auth is a single shared secret (one user, no sessions with expiry)
+- The Settings page writes to `.env.local` — if auth were bypassed, credentials could be overwritten
+- No independent security audit has been performed
+
+**Intended deployment:**
+CTRLr is designed to run **behind a reverse proxy with HTTPS** (Caddy, nginx) and ideally behind a VPN. It is **not designed to be exposed directly on port 3000** to the internet. Running it without a reverse proxy or on an open port is not a supported or recommended configuration.
+
+If you find a security issue, open an issue or email directly. Given this is AI-generated code, scrutiny is welcome and expected.
+
 ## Contributing
 
 Issues and PRs welcome. This is a personal project that grew into something potentially useful — if you run a similar stack and something doesn't work or could be better, say so.
