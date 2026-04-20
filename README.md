@@ -40,7 +40,7 @@ There is a native SwiftUI companion app in `CTRLr/` targeting iPadOS/iOS 16+. It
 - Trakt detail drawer with release search and direct grab
 - Sonarr episode picker
 
-The app is a local build only — not on the App Store or TestFlight. The source is in this repo if you want to build it yourself in Xcode. Credentials are stored in Keychain; the app talks directly to each service rather than routing through the web dashboard (that migration is planned but not done).
+The app is a local build only — not on the App Store or TestFlight. The source is in this repo if you want to build it yourself in Xcode. Credentials are stored in Keychain; the app currently talks directly to each service, but the longer-term direction is to route everything through the web dashboard as a backend — one authenticated endpoint, one set of credentials, and services that don't need to be individually internet-exposed. That work is in progress.
 
 ---
 
