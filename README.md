@@ -25,6 +25,25 @@ Single-page dashboard that surfaces everything you care about across your media 
 
 Every tool in the *arr stack has its own UI. Switching between them constantly to check on downloads, approve requests, or see what's airing this week gets old. CTRLr puts it all in one place with a consistent aesthetic and a single login.
 
+## iPadOS / iOS companion app
+
+There is a native SwiftUI companion app in `CTRLr/` targeting iPadOS/iOS 16+. It talks to the same media stack and covers most of the same ground as the web dashboard — sometimes more, sometimes less.
+
+**What it has that the web doesn't:**
+- Live Activities and lock screen widgets (WidgetKit) for active downloads
+- Real-time push updates via ntfy WebSocket — Sonarr/Radarr/Plex refresh on event rather than polling
+- Siri/Shortcuts integration and Focus Filter via App Intents
+- Background refresh every 15 minutes via BGTaskScheduler
+
+**What the web has that the app doesn't:**
+- Plex library search
+- Trakt detail drawer with release search and direct grab
+- Sonarr episode picker
+
+The app is a local build only — not on the App Store or TestFlight. The source is in this repo if you want to build it yourself in Xcode. Credentials are stored in Keychain; the app talks directly to each service rather than routing through the web dashboard (that migration is planned but not done).
+
+---
+
 ## How this was built
 
 I'm a hobbyist with no programming background. I had a specific problem — too many tabs, too much context-switching — and none of the existing tools solved it quite the way I wanted. So I used [Claude Code](https://claude.com/claude-code) to build it.
