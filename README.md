@@ -80,7 +80,7 @@ A request comes in from someone on your server. You approve it from the Seer pan
 A torrent stalls or fails. You delete it from qBittorrent, open the detail drawer in the Arr panel, trigger a new release search, and grab a different one — it drops back into the queue and starts downloading. No need to open Sonarr, qBittorrent, or anything else directly.
 
 **Discover → request → download → library:**
-You find something trending on TMDB. Full metadata preview right in the drawer — cast, synopsis, ratings. One-click request via Seer, which hands it off to Sonarr or Radarr. From there it follows the same path: queue, torrent, download, import, Plex. You triggered the whole thing without leaving the dashboard.
+You find something trending on TMDB. Full metadata preview right in the drawer — cast, synopsis, ratings. Quality profile and save location are pre-populated with sensible defaults, but you can change them before requesting if you want. One click sends the request via Seer, which hands it off to Sonarr or Radarr. From there it follows the same path: queue, torrent, download, import, Plex. You triggered the whole thing without leaving the dashboard.
 
 ![Discover request flow](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/discover-drawer.png)
 
