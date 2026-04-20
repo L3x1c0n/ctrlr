@@ -78,6 +78,10 @@ One person (or one household) running a home media server on a NAS or spare PC, 
 
 ## iPadOS / iOS companion app
 
+The web dashboard is deliberately terminal-flavoured — monospace type, neon on dark, function over form. The iPadOS app is a different thing entirely. It's built to feel native to the device: fluid animations, translucent materials, the design language of a screen you pick up from the couch. But beyond aesthetics, it goes deeper into the platform than a web app can. Downloads surface on your lock screen as Live Activities. Sonarr and Radarr push updates in real time over WebSocket rather than polling. Siri and Shortcuts can reach into your media stack. The app is ambient in a way the dashboard isn't — it integrates with how you actually use an iPhone or iPad rather than asking you to open a tab.
+
+Same data. Different relationship with it.
+
 There is a native SwiftUI companion app in `CTRLr/` targeting iPadOS/iOS 16+. It talks to the same media stack and covers most of the same ground as the web dashboard — sometimes more, sometimes less.
 
 Since the web dashboard and app were built independently, they don't have full feature parity — each has capabilities the other lacks. Active work was underway to close that gap, but has been paused in favour of the more fundamental question: merging them into a proper frontend/backend architecture where the web dashboard serves as the API layer for the app. That work takes priority over parity patches that would need to be redone anyway once the backend unification lands.
