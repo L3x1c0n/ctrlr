@@ -73,8 +73,8 @@ You see something on your watchlist. One click opens the detail drawer — metad
 
 ![Trakt detail drawer](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/trakt-drawer.png)
 
-**Seer → approve → track:**
-A request comes in. You approve it from the Seer panel. It lands in Sonarr's queue. You watch it download in qBittorrent. All without switching tabs.
+**Seer → approve → download → library:**
+A request comes in from someone on your server. You approve it from the Seer panel — it lands straight in Sonarr or Radarr's queue, gets picked up by qBittorrent, and you can watch the download progress in real time. Once it's done, it imports automatically and shows up in Plex. The whole chain, visible from one place, without touching any of the individual tools.
 
 **Failed download → re-grab:**
 A torrent stalls or fails. You delete it from qBittorrent, trigger a new search in the Arr detail drawer, and grab a different release — without ever opening Sonarr or qBittorrent directly.
