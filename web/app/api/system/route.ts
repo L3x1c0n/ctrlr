@@ -12,9 +12,9 @@ const TAUTULLI_URL = process.env.TAUTULLI_URL!
 const TAUTULLI_KEY = process.env.TAUTULLI_API_KEY!
 const QBIT_URL    = process.env.QBIT_URL!
 
-const PROWLARR_URL = 'http://localhost:9696'
-const PROWLARR_KEY = 'bdf55afb408b4ec7955197f52633e7e1'
-const AUTOBRR_URL  = 'http://localhost:7474'
+const PROWLARR_URL = process.env.PROWLARR_URL ?? 'http://localhost:9696'
+const PROWLARR_KEY = process.env.PROWLARR_API_KEY ?? ''
+const AUTOBRR_URL  = process.env.AUTOBRR_URL ?? 'http://localhost:7474'
 
 export interface ServiceStatus {
   name:    string
@@ -35,6 +35,7 @@ export interface SystemInfo {
   swapTotal:    number
   swapUsed:     number
   cpuLoad1:     number
+  cpuCount:     number
   diskUsed:     number
   diskTotal:    number
   processes:    ProcessMem[]
@@ -120,6 +121,13 @@ function readSystem(): SystemInfo {
   const loadRaw  = readFileSync('/proc/loadavg', 'utf8')
   const cpuLoad1 = parseFloat(loadRaw.split(' ')[0])
 
+  // cpu count for load normalisation
+  let cpuCount = 1
+  try {
+    const cpuInfo = readFileSync('/proc/cpuinfo', 'utf8')
+    cpuCount = (cpuInfo.match(/^processor\s*:/gm) ?? []).length || 1
+  } catch {}
+
   // df /
   let diskUsed = 0, diskTotal = 0
   try {
@@ -156,6 +164,7 @@ function readSystem(): SystemInfo {
     swapTotal,
     swapUsed: swapTotal - swapFree,
     cpuLoad1,
+    cpuCount,
     diskUsed,
     diskTotal,
     processes,

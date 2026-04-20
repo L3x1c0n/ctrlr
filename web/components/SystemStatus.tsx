@@ -74,7 +74,7 @@ export default function SystemStatus() {
   const memPct  = sys ? Math.round((1 - sys.memAvailable / sys.memTotal) * 100) : 0
   const swapPct = sys && sys.swapTotal > 0 ? Math.round((sys.swapUsed / sys.swapTotal) * 100) : 0
   const diskPct = sys && sys.diskTotal > 0 ? Math.round((sys.diskUsed / sys.diskTotal) * 100) : 0
-  const cpuPct  = sys ? Math.min(Math.round((sys.cpuLoad1 / 4) * 100), 100) : 0  // normalize to 4 cores
+  const cpuPct  = sys ? Math.min(Math.round((sys.cpuLoad1 / (sys.cpuCount || 1)) * 100), 100) : 0
 
   return (
     <div className="border border-[#1a1a2e] mt-4">
