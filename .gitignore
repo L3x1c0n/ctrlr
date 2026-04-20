@@ -24,3 +24,6 @@ Pods/
 # ── General ───────────────────────────────────────────────────────────────────
 .DS_Store
 *.pem
+
+# ── Internal dev context (not for public repo) ─────────────────────────────────
+CONTEXT.md
