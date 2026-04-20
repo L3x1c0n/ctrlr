@@ -13,8 +13,16 @@ interface Profile    { id: number; name: string }
 interface RootFolder { path: string; freeSpace: number }
 
 function fmtFree(bytes: number): string {
-  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(0)}GB`
-  return `${(bytes / 1024 ** 2).toFixed(0)}MB`
+  if (bytes >= 1024 ** 4) return `${(bytes / 1024 ** 4).toFixed(1)} TB`
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`
+  return `${(bytes / 1024 ** 2).toFixed(0)} MB`
+}
+
+function diskColor(bytes: number): string {
+  const gb = bytes / 1024 ** 3
+  if (gb < 50)  return '#f43f5e'
+  if (gb < 200) return '#fbbf24'
+  return '#4ade80'
 }
 
 function isUltraHD(name: string): boolean {
@@ -53,12 +61,13 @@ function ListRow({ item, index, isActive, onHover, onClick }: {
 
 // ── list panel (desktop) ───────────────────────────────────────────────────────
 
-function ListPanel({ label, items, loading, activeId, onActivate, onLoadMore, loadingMore }: {
+function ListPanel({ label, items, loading, activeId, onActivate, onHoverActivate, onLoadMore, loadingMore }: {
   label: string
   items: SeerSearchResult[]
   loading: boolean
   activeId: string | null
   onActivate: (item: SeerSearchResult) => void
+  onHoverActivate: (item: SeerSearchResult) => void
   onLoadMore: () => void
   loadingMore: boolean
 }) {
@@ -76,7 +85,7 @@ function ListPanel({ label, items, loading, activeId, onActivate, onLoadMore, lo
               item={item}
               index={i}
               isActive={activeId === `${item.mediaType}-${item.id}`}
-              onHover={() => onActivate(item)}
+              onHover={() => onHoverActivate(item)}
               onClick={() => onActivate(item)}
             />
           ))
@@ -268,13 +277,33 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders }: {
                   className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
                 >
                   {folders.map(f => (
-                    <option key={f.path} value={f.path}>{f.path} ({fmtFree(f.freeSpace)} free)</option>
+                    <option key={f.path} value={f.path}>{f.path}</option>
                   ))}
                 </select>
               </div>
             ) : (
               <span className="text-[#555] text-xs">// loading options...</span>
             )}
+            {(() => {
+              const sel = folders.find(f => f.path === rootFolder)
+              if (!sel) return null
+              const color = diskColor(sel.freeSpace)
+              const barPct = Math.min((sel.freeSpace / (4 * 1024 ** 3)) * 100, 100)
+              return (
+                <div>
+                  <div className="flex justify-between font-mono text-xs mb-0.5">
+                    <span className="text-[#555] truncate">{sel.path}</span>
+                    <span style={{ color }}>{fmtFree(sel.freeSpace)} free</span>
+                  </div>
+                  <div className="h-1 bg-[#1a1a2e] overflow-hidden">
+                    <div
+                      className="h-full transition-all duration-500"
+                      style={{ width: `${barPct}%`, background: color, boxShadow: `0 0 4px ${color}88` }}
+                    />
+                  </div>
+                </div>
+              )
+            })()}
             <div className="flex gap-3">
               <button
                 onClick={submit}
@@ -316,9 +345,10 @@ export default function DiscoverSection() {
   const [mobileSubmitting, setMobileSubmitting] = useState(false)
   const [mobileDone,       setMobileDone]       = useState<Set<string>>(new Set())
 
-  const activeId    = activeItem ? `${activeItem.mediaType}-${activeItem.id}` : null
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const tabItemsRef = useRef<SeerSearchResult[]>([])
+  const activeId       = activeItem ? `${activeItem.mediaType}-${activeItem.id}` : null
+  const debounceRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const tabItemsRef    = useRef<SeerSearchResult[]>([])
+  const listHoveredRef = useRef(false)
 
   useEffect(() => {
     tabItemsRef.current = tab === 'movie' ? movies : tvShows
@@ -463,7 +493,11 @@ export default function DiscoverSection() {
         <div className="hidden md:grid grid-cols-[1fr_500px] gap-4" style={{ height: 580 }}>
 
           {/* left: tabbed list */}
-          <div className="flex flex-col border border-[#1a1a2e] overflow-hidden">
+          <div
+            className="flex flex-col border border-[#1a1a2e] overflow-hidden"
+            onMouseEnter={() => { listHoveredRef.current = true }}
+            onMouseLeave={() => { listHoveredRef.current = false }}
+          >
             <div className="flex shrink-0 border-b border-[#1a1a2e]">
               {(['movie', 'tv'] as const).map(t => (
                 <button
@@ -484,6 +518,7 @@ export default function DiscoverSection() {
                 loading={moviesLoading}
                 activeId={activeId}
                 onActivate={activate}
+                onHoverActivate={(item) => { if (listHoveredRef.current) activate(item) }}
                 onLoadMore={() => loadMore('movie')}
                 loadingMore={moviesMore}
               />
@@ -494,6 +529,7 @@ export default function DiscoverSection() {
                 loading={tvLoading}
                 activeId={activeId}
                 onActivate={activate}
+                onHoverActivate={(item) => { if (listHoveredRef.current) activate(item) }}
                 onLoadMore={() => loadMore('tv')}
                 loadingMore={tvMore}
               />
