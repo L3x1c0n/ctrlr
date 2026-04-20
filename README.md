@@ -57,7 +57,9 @@ npm install
 
 ### Configure
 
-Copy the example env file and fill in your service URLs and API keys:
+All service URLs and API keys can be configured via the **Settings page in the UI** — you don't need to edit the env file manually after first run. The minimum you need in `.env.local` to get started is the auth block at the bottom; everything else can be filled in through the browser.
+
+If you prefer to configure everything upfront, copy the example env file:
 
 ```bash
 cp .env.local.example .env.local
