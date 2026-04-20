@@ -29,6 +29,8 @@ Every tool in the *arr stack has its own UI. Switching between them constantly t
 
 There is a native SwiftUI companion app in `CTRLr/` targeting iPadOS/iOS 16+. It talks to the same media stack and covers most of the same ground as the web dashboard — sometimes more, sometimes less.
 
+Since the web dashboard and app were built independently, they don't have full feature parity — each has capabilities the other lacks. Active work was underway to close that gap, but has been paused in favour of the more fundamental question: merging them into a proper frontend/backend architecture where the web dashboard serves as the API layer for the app. That work takes priority over parity patches that would need to be redone anyway once the backend unification lands.
+
 **What it has that the web doesn't:**
 - Live Activities and lock screen widgets (WidgetKit) for active downloads
 - Real-time push updates via ntfy WebSocket — Sonarr/Radarr/Plex refresh on event rather than polling
