@@ -10,6 +10,7 @@ import SeerSection from '@/components/SeerSection'
 import PlexSection from '@/components/PlexSection'
 import TautulliSection from '@/components/TautulliSection'
 import { SECTION_ORDER_KEY, DEFAULT_ORDER, loadSectionOrder, type SectionKey } from '@/components/SectionOrderPicker'
+import AlertStrip from '@/components/AlertStrip'
 
 const ARR_TABS = [
   { key: 'sonarr', label: 'S0n4rr', color: '#fde047' },
@@ -148,6 +149,7 @@ export default function Home() {
   return (
     <>
       <TopBar />
+      <AlertStrip />
       <main className="pt-4 md:pt-8 px-3 md:px-6 pb-12 max-w-7xl mx-auto space-y-10">
         <QBittorrentSection onTransferUpdate={handleTransferUpdate} />
         {sectionOrder.map(key => (
