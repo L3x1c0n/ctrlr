@@ -2,7 +2,11 @@
 
 **One place for your entire media stack. Built out of frustration with jumping between Sonarr, Radarr, Plex, qBittorrent, and five other tabs just to see what's going on.**
 
-![Terminal mono aesthetic with neon accents](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/apple-touch-icon.png)
+![qBittorrent and Trakt calendar](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/01-qb-trakt.png)
+![Sonarr and Radarr](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/02-arr.png)
+![Plex recently added](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/03-plex.png)
+![Seer requests](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/04-seer.png)
+![Discover](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/05-discover.png)
 
 ## What it does
 
