@@ -126,7 +126,7 @@ function MetaRow({ label, value, lines = 1 }: { label: string; value: string; li
 
 // ── preview pane ───────────────────────────────────────────────────────────────
 
-type ReqState = 'idle' | 'submitting' | 'done'
+type ReqState = 'idle' | 'picking' | 'submitting' | 'done'
 
 function fmtSize(bytes: number): string {
   if (bytes >= 1024 ** 4) return `${(bytes / 1024 ** 4).toFixed(2)} TB`
@@ -142,12 +142,16 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
   folders: RootFolder[]
   plexFileInfo: PlexFileInfo | null
 }) {
-  const [reqState,   setReqState]   = useState<ReqState>('idle')
-  const [profileId,  setProfileId]  = useState<number | null>(null)
-  const [rootFolder, setRootFolder] = useState<string | null>(null)
+  const [reqState,      setReqState]      = useState<ReqState>('idle')
+  const [profileId,     setProfileId]     = useState<number | null>(null)
+  const [rootFolder,    setRootFolder]    = useState<string | null>(null)
+  const [selectedSeasons, setSelectedSeasons] = useState<Set<number>>(new Set())
 
   // Reset request state when item changes
-  useEffect(() => { setReqState('idle') }, [item?.id, item?.mediaType])
+  useEffect(() => {
+    setReqState('idle')
+    setSelectedSeasons(new Set())
+  }, [item?.id, item?.mediaType])
 
   // Set defaults when profiles/folders arrive
   useEffect(() => {
@@ -182,13 +186,50 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
   const isRequested = status != null && status >= 2 && status <= 4
   const canRequest  = !inPlex && !isRequested && reqState !== 'done'
 
-  async function submit() {
+  const totalSeasons = item?.mediaType === 'tv' ? (detail?.numberOfSeasons ?? 0) : 0
+
+  function handleRequestClick() {
+    if (!item) return
+    if (item.mediaType === 'tv' && totalSeasons > 0) {
+      // Pre-select all seasons
+      setSelectedSeasons(new Set(Array.from({ length: totalSeasons }, (_, i) => i + 1)))
+      setReqState('picking')
+    } else {
+      submit([])
+    }
+  }
+
+  function toggleSeason(n: number) {
+    setSelectedSeasons(prev => {
+      const next = new Set(prev)
+      if (next.has(n)) next.delete(n); else next.add(n)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (selectedSeasons.size === totalSeasons) {
+      setSelectedSeasons(new Set())
+    } else {
+      setSelectedSeasons(new Set(Array.from({ length: totalSeasons }, (_, i) => i + 1)))
+    }
+  }
+
+  async function submit(seasonsArg?: number[]) {
     if (!item) return
     setReqState('submitting')
+    const seasonsToSend = seasonsArg ?? Array.from(selectedSeasons).sort((a, b) => a - b)
     await fetch('/api/seer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'submit', mediaType: item.mediaType, mediaId: item.id, profileId, rootFolder }),
+      body: JSON.stringify({
+        action: 'submit',
+        mediaType: item.mediaType,
+        mediaId: item.id,
+        profileId,
+        rootFolder,
+        ...(item.mediaType === 'tv' && seasonsToSend.length > 0 ? { seasons: seasonsToSend } : {}),
+      }),
     })
     setReqState('done')
   }
@@ -302,58 +343,110 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
         )}
         {canRequest && (
           <div className="space-y-2">
-            {profiles.length > 0 && folders.length > 0 ? (
-              <div className="flex gap-2">
-                <select
-                  value={profileId ?? ''}
-                  onChange={e => setProfileId(Number(e.target.value))}
-                  className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
-                >
-                  {profiles.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}{isUltraHD(p.name) ? ' ✦' : ''}</option>
-                  ))}
-                </select>
-                <select
-                  value={rootFolder ?? ''}
-                  onChange={e => setRootFolder(e.target.value)}
-                  className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
-                >
-                  {folders.map(f => (
-                    <option key={f.path} value={f.path}>{f.path}</option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <span className="text-[#555] text-xs">// loading options...</span>
-            )}
-            {(() => {
-              const sel = folders.find(f => f.path === rootFolder)
-              if (!sel) return null
-              const color = diskColor(sel.freeSpace)
-              const barPct = Math.min((sel.freeSpace / (4 * 1024 ** 3)) * 100, 100)
-              return (
-                <div>
-                  <div className="flex justify-between font-mono text-xs mb-0.5">
-                    <span className="text-[#555] truncate">{sel.path}</span>
-                    <span style={{ color }}>{fmtFree(sel.freeSpace)} free</span>
-                  </div>
-                  <div className="h-1 bg-[#1a1a2e] overflow-hidden">
-                    <div
-                      className="h-full transition-all duration-500"
-                      style={{ width: `${barPct}%`, background: color, boxShadow: `0 0 4px ${color}88` }}
-                    />
-                  </div>
+            {/* season picker */}
+            {reqState === 'picking' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#6a9a7a] text-xs font-mono">// select seasons</span>
+                  <button onClick={toggleAll} className="btn-xs text-[#888]">
+                    {selectedSeasons.size === totalSeasons ? '--none' : '--all'}
+                  </button>
                 </div>
-              )
-            })()}
+                <div className="flex flex-wrap gap-1">
+                  {Array.from({ length: totalSeasons }, (_, i) => i + 1).map(n => (
+                    <button
+                      key={n}
+                      onClick={() => toggleSeason(n)}
+                      className="font-mono text-xs px-2 py-0.5 border transition-colors"
+                      style={{
+                        borderColor: selectedSeasons.has(n) ? '#4a4a7a' : '#1a1a2e',
+                        color:       selectedSeasons.has(n) ? '#fff'    : '#555',
+                        background:  selectedSeasons.has(n) ? '#0d0d1a' : 'transparent',
+                      }}
+                    >
+                      S{String(n).padStart(2, '0')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* profile + folder dropdowns */}
+            {reqState !== 'picking' && (
+              <>
+                {profiles.length > 0 && folders.length > 0 ? (
+                  <div className="flex gap-2">
+                    <select
+                      value={profileId ?? ''}
+                      onChange={e => setProfileId(Number(e.target.value))}
+                      className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
+                    >
+                      {profiles.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}{isUltraHD(p.name) ? ' ✦' : ''}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={rootFolder ?? ''}
+                      onChange={e => setRootFolder(e.target.value)}
+                      className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
+                    >
+                      {folders.map(f => (
+                        <option key={f.path} value={f.path}>{f.path}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <span className="text-[#555] text-xs">// loading options...</span>
+                )}
+                {(() => {
+                  const sel = folders.find(f => f.path === rootFolder)
+                  if (!sel) return null
+                  const color = diskColor(sel.freeSpace)
+                  const barPct = Math.min((sel.freeSpace / (4 * 1024 ** 3)) * 100, 100)
+                  return (
+                    <div>
+                      <div className="flex justify-between font-mono text-xs mb-0.5">
+                        <span className="text-[#555] truncate">{sel.path}</span>
+                        <span style={{ color }}>{fmtFree(sel.freeSpace)} free</span>
+                      </div>
+                      <div className="h-1 bg-[#1a1a2e] overflow-hidden">
+                        <div
+                          className="h-full transition-all duration-500"
+                          style={{ width: `${barPct}%`, background: color, boxShadow: `0 0 4px ${color}88` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })()}
+              </>
+            )}
+
             <div className="flex gap-3">
-              <button
-                onClick={submit}
-                disabled={reqState === 'submitting' || profiles.length === 0}
-                className="btn-xs text-blue-400 disabled:opacity-40"
-              >
-                {reqState === 'submitting' ? '...' : '--request'}
-              </button>
+              {reqState === 'picking' ? (
+                <>
+                  <button
+                    onClick={() => submit()}
+                    disabled={selectedSeasons.size === 0}
+                    className="btn-xs text-blue-400 disabled:opacity-40"
+                  >
+                    {`--confirm (${selectedSeasons.size})`}
+                  </button>
+                  <button
+                    onClick={() => setReqState('idle')}
+                    className="btn-xs text-[#555]"
+                  >
+                    --cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleRequestClick}
+                  disabled={reqState === 'submitting' || profiles.length === 0}
+                  className="btn-xs text-blue-400 disabled:opacity-40"
+                >
+                  {reqState === 'submitting' ? '...' : '--request'}
+                </button>
+              )}
             </div>
           </div>
         )}
