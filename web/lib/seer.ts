@@ -85,10 +85,16 @@ export async function getRootFolders(mediaType: string): Promise<RootFolder[]> {
 
 export async function getSeerProfiles(mediaType = 'movie'): Promise<{ id: number; name: string }[]> {
   try {
-    const service = mediaType === 'tv' ? 'sonarr' : 'radarr'
-    const res = await fetch(`${BASE}/api/v1/settings/${service}/0/profiles`, { headers, cache: 'no-store' })
+    const isMovie = mediaType === 'movie'
+    const base = isMovie ? process.env.RADARR_URL : process.env.SONARR_URL
+    const key  = isMovie ? process.env.RADARR_API_KEY : process.env.SONARR_API_KEY
+    const res  = await fetch(`${base}/api/v3/qualityprofile`, {
+      headers: { 'X-Api-Key': key!, 'Content-Type': 'application/json' },
+      cache: 'no-store',
+    })
     if (!res.ok) return []
-    return res.json()
+    const data: { id: number; name: string }[] = await res.json()
+    return data.map(p => ({ id: p.id, name: p.name }))
   } catch { return [] }
 }
 
