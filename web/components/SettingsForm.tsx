@@ -8,11 +8,13 @@ const FIELDS = [
   { section: 'Sonarr', keys: ['SONARR_URL', 'SONARR_API_KEY'] },
   { section: 'Seer', keys: ['SEER_URL', 'SEER_API_KEY'] },
   { section: 'Plex', keys: ['PLEX_URL', 'PLEX_TOKEN'] },
-  { section: 'Tautulli', keys: ['TAUTULLI_URL', 'TAUTULLI_API_KEY'] },
-  { section: 'Trakt', keys: ['TRAKT_CLIENT_ID', 'TRAKT_CLIENT_SECRET'] },
+  { section: 'Tautulli',  keys: ['TAUTULLI_URL', 'TAUTULLI_API_KEY'] },
+  { section: 'Prowlarr', keys: ['PROWLARR_URL', 'PROWLARR_API_KEY'] },
+  { section: 'autobrr',  keys: ['AUTOBRR_URL'] },
+  { section: 'Trakt',    keys: ['TRAKT_CLIENT_ID', 'TRAKT_CLIENT_SECRET'] },
 ]
 
-const SECRET_KEYS = new Set(['RADARR_API_KEY', 'SONARR_API_KEY', 'SEER_API_KEY', 'PLEX_TOKEN', 'TAUTULLI_API_KEY', 'TRAKT_CLIENT_SECRET'])
+const SECRET_KEYS = new Set(['RADARR_API_KEY', 'SONARR_API_KEY', 'SEER_API_KEY', 'PLEX_TOKEN', 'TAUTULLI_API_KEY', 'PROWLARR_API_KEY', 'TRAKT_CLIENT_SECRET'])
 
 type TraktState = 'idle' | 'waiting' | 'done' | 'error'
 
