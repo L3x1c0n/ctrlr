@@ -21,11 +21,13 @@ Single-page dashboard that surfaces everything you care about across your media 
 
 Every tool in the *arr stack has its own UI. Switching between them constantly to check on downloads, approve requests, or see what's airing this week gets old. CTRLr puts it all in one place with a consistent aesthetic and a single login.
 
-## Built entirely with Claude Code
+## How this was built
 
-This project was written from scratch and is maintained entirely using [Claude Code](https://claude.com/claude-code) — Anthropic's AI coding CLI. Not a line was written manually. This is an experiment in what it looks like to build and maintain a real, running web application through AI-driven development.
+I'm a hobbyist with no programming background. I had a specific problem — too many tabs, too much context-switching — and none of the existing tools solved it quite the way I wanted. So I used [Claude Code](https://claude.com/claude-code) to build it.
 
-Critique, suggestions, and contributions are genuinely welcome — especially if you think something could be done better. Open an issue or a PR.
+Every line of code was written by AI. I contributed the ideas, the frustration, and the taste. What came out is a real working application running on my home server every day.
+
+I put this out there because I think we're at the beginning of something — where people who know what they want but couldn't previously build it now can. If CTRLr is useful to you, or if you're a developer who can see how to do it better, that's exactly the point. Issues, PRs, and critique all welcome.
 
 ## Stack
 
