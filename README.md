@@ -55,7 +55,7 @@ Single-page dashboard that surfaces everything you care about across your media 
 
 - **Sonarr + Radarr** — active queue, download progress, upcoming calendar, health alerts, per-item search/grab
 - **qBittorrent** — torrent list, speed, ratio, pause/resume/delete
-- **Plex** — recently added (movies + shows), library search, delete from library
+- **Plex** — recently added (movies + shows), library search, delete from library, edit metadata and artwork, fix incorrect matches
 - **Tautulli** — active streams with progress, transcode decision, synopsis
 - **Seer** (Overseerr/Jellyseerr) — request list, search with full metadata preview before requesting, approve/decline, sync
 - **Trakt** — watchlist with release lookup and one-click grab via Sonarr/Radarr
