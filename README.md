@@ -82,6 +82,8 @@ A torrent stalls or fails. You delete it from qBittorrent, trigger a new search 
 **Discover → request → done:**
 You find something trending on TMDB. Full metadata preview, one-click request via Seer, confirmation in the same view.
 
+![Discover request flow](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/discover-drawer.png)
+
 The cross-service orchestration is the point. CTRLr doesn't just surface information from each tool — it connects them into workflows you can act on from a single place.
 
 ## Why it exists
