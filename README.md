@@ -247,7 +247,7 @@ WantedBy=multi-user.target
 ## Customisation
 
 **Web dashboard**
-Eleven themes selectable from the TopBar — all drawn from familiar developer colour schemes: Catppuccin Mocha, Dracula, Nord, Gruvbox Dark, Night Owl, Cobalt2, Atomic, Tokyo Night, One Dark, Monochrome, and Gh05t (the original). Each theme recolours the entire TopBar with matching neon accents throughout.
+Eleven themes selectable from the TopBar — all drawn from familiar developer colour schemes: Catppuccin Mocha, Dracula, Nord, Gruvbox Dark, Night Owl, Cobalt2, Atomic, Tokyo Night, One Dark, and Monochrome. Each theme recolours the entire TopBar with matching neon accents throughout.
 
 Section order is configurable via drag-and-drop — put what you care about most at the top.
 
