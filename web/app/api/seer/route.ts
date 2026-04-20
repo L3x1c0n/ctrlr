@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { search, getRequests, submitRequest, approveRequest, deleteRequest, getMediaDetail, getSeerProfiles, updateSeerRequest, getRootFolders, getTrending } from '@/lib/seer'
+import { search, getRequests, submitRequest, approveRequest, deleteRequest, getMediaDetail, getSeerProfiles, updateSeerRequest, getRootFolders, getTrending, resolveDefaults, runSyncJobs } from '@/lib/seer'
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,11 +21,16 @@ export async function GET(req: NextRequest) {
     if (mediaId && mediaType) {
       const [detail, profiles, rootFolders] = await Promise.all([
         getMediaDetail(mediaType, parseInt(mediaId)),
-        getSeerProfiles(),
+        getSeerProfiles(mediaType),
         getRootFolders(mediaType),
       ])
-      const serviceId = (detail as any)?.mediaInfo?.serviceId ?? null
+      const rawServiceId = (detail as any)?.mediaInfo?.externalServiceId
+      const serviceId = (rawServiceId != null && rawServiceId > 0) ? rawServiceId : null
       return NextResponse.json({ detail, profiles, rootFolders, serviceId })
+    }
+    if (searchParams.get('action') === 'defaults' && mediaType) {
+      const defaults = await resolveDefaults(mediaType)
+      return NextResponse.json(defaults)
     }
     const requests = await getRequests()
     return NextResponse.json(requests)
@@ -37,10 +42,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { action, id, mediaType, mediaId, seasons, profileId, rootFolder } = await req.json()
-    if (action === 'submit') await submitRequest(mediaType, mediaId, seasons)
+    if (action === 'submit') await submitRequest(mediaType, mediaId, seasons, profileId, rootFolder)
     else if (action === 'approve') await approveRequest(id)
     else if (action === 'delete') await deleteRequest(id)
     else if (action === 'update') await updateSeerRequest(id, profileId, rootFolder)
+    else if (action === 'sync') await runSyncJobs()
     else return NextResponse.json({ error: 'unknown action' }, { status: 400 })
     return NextResponse.json({ ok: true })
   } catch (e) {

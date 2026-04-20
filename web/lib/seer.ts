@@ -35,9 +35,17 @@ export async function getRequests(): Promise<{ results: SeerRequest[]; pageInfo:
   return data
 }
 
-export async function submitRequest(mediaType: string, mediaId: number, seasons?: number[]): Promise<void> {
-  const body: Record<string, unknown> = { mediaType, mediaId }
-  if (seasons) body.seasons = seasons
+export async function submitRequest(
+  mediaType: string,
+  mediaId: number,
+  seasons?: number[],
+  profileId?: number,
+  rootFolder?: string,
+): Promise<void> {
+  const body: Record<string, unknown> = { mediaType, mediaId, serverId: 0 }
+  if (seasons)    body.seasons    = seasons
+  if (profileId)  body.profileId  = profileId
+  if (rootFolder) body.rootFolder = rootFolder
   await fetch(`${BASE}/api/v1/request`, {
     method: 'POST',
     headers,
@@ -75,12 +83,31 @@ export async function getRootFolders(mediaType: string): Promise<RootFolder[]> {
   } catch { return [] }
 }
 
-export async function getSeerProfiles(): Promise<{ id: number; name: string }[]> {
+export async function getSeerProfiles(mediaType = 'movie'): Promise<{ id: number; name: string }[]> {
   try {
-    const res = await fetch(`${BASE}/api/v1/settings/radarr/0/profiles`, { headers, cache: 'no-store' })
+    const service = mediaType === 'tv' ? 'sonarr' : 'radarr'
+    const res = await fetch(`${BASE}/api/v1/settings/${service}/0/profiles`, { headers, cache: 'no-store' })
     if (!res.ok) return []
     return res.json()
   } catch { return [] }
+}
+
+function isUltraHD(name: string): boolean {
+  const n = name.toLowerCase()
+  return n.includes('ultra') || n.includes('2160') || n.includes('4k') || n.includes('uhd')
+}
+
+export async function resolveDefaults(mediaType: string): Promise<{ profileId?: number; rootFolder?: string }> {
+  const [profiles, rootFolders] = await Promise.all([
+    getSeerProfiles(mediaType),
+    getRootFolders(mediaType),
+  ])
+  const profile = profiles.find(p => isUltraHD(p.name)) ?? profiles[0]
+  const folder = rootFolders.sort((a, b) => b.freeSpace - a.freeSpace)[0]
+  return {
+    profileId: profile?.id,
+    rootFolder: folder?.path,
+  }
 }
 
 export async function updateSeerRequest(id: number, profileId: number, rootFolder: string): Promise<void> {
@@ -118,6 +145,13 @@ export async function deleteRequest(id: number): Promise<void> {
     headers,
     cache: 'no-store',
   })
+}
+
+export async function runSyncJobs(): Promise<void> {
+  await Promise.all([
+    fetch(`${BASE}/api/v1/settings/jobs/radarr-scan/run`, { method: 'POST', headers, cache: 'no-store' }),
+    fetch(`${BASE}/api/v1/settings/jobs/sonarr-scan/run`, { method: 'POST', headers, cache: 'no-store' }),
+  ])
 }
 
 export async function getTrending(mediaType: 'movie' | 'tv', page = 1): Promise<SeerSearchResult[]> {

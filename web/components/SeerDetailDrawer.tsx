@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { SeerRequest } from '@/types'
 import Spinner from '@/components/Spinner'
+import ReleaseSearchResults, { Release } from '@/components/ReleaseSearchResults'
+import { SonarrEpisode } from '@/lib/sonarr'
 
 function fmtBytes(b: number): string {
   if (b >= 1024 ** 4) return `${(b / 1024 ** 4).toFixed(1)} TB`
@@ -26,6 +28,11 @@ const statusColor: Record<number, string> = {
   5: 'text-purple-400',
 }
 
+interface ReleaseDate {
+  type: number        // 3=theatrical 4=digital 5=physical
+  release_date: string
+}
+
 interface SeerMediaDetail {
   title?: string
   name?: string
@@ -38,6 +45,26 @@ interface SeerMediaDetail {
   genres?: { id: number; name: string }[]
   runtime?: number
   numberOfSeasons?: number
+  releases?: {
+    results: { iso_3166_1: string; release_dates: ReleaseDate[] }[]
+  }
+}
+
+function findDigitalRelease(detail: SeerMediaDetail): string | null {
+  const results = detail.releases?.results ?? []
+  // Prefer GB, then US, then first available country with a digital release
+  const order = ['GB', 'US']
+  const byCountry = (iso: string) =>
+    results.find(r => r.iso_3166_1 === iso)?.release_dates.find(d => d.type === 4)?.release_date ?? null
+  for (const iso of order) {
+    const d = byCountry(iso)
+    if (d) return d
+  }
+  for (const r of results) {
+    const d = r.release_dates.find(d => d.type === 4)?.release_date ?? null
+    if (d) return d
+  }
+  return null
 }
 
 interface SeerProfile {
@@ -51,17 +78,6 @@ interface Props {
   onRefresh: () => void
 }
 
-interface Release {
-  guid: string
-  indexerId: number
-  indexer: string
-  title: string
-  size: number
-  quality: { quality: { name: string } }
-  seeders?: number
-  rejected: boolean
-  rejections: string[]
-}
 
 export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props) {
   const [detail, setDetail] = useState<SeerMediaDetail | null>(null)
@@ -72,14 +88,21 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
   const [profileId, setProfileId] = useState<number>(0)
   const [rootFolder, setRootFolder] = useState<string>('')
   const [serviceId, setServiceId] = useState<number | null>(null)
-  const [releases, setReleases] = useState<Release[] | null>(null)
-  const [relLoading, setRelLoading] = useState(false)
+  const [releases,          setReleases]          = useState<Release[] | null>(null)
+  const [relLoading,        setRelLoading]        = useState(false)
+  const [relError,          setRelError]          = useState<string | null>(null)
+  const [episodes,          setEpisodes]          = useState<SonarrEpisode[] | null>(null)
+  const [selectedEpisodeId, setSelectedEpisodeId] = useState<number | null>(null)
 
   useEffect(() => {
-    if (!request) { setDetail(null); setProfiles([]); setRootFolders([]); setServiceId(null); setReleases(null); return }
+    if (!request) {
+      setDetail(null); setProfiles([]); setRootFolders([]); setServiceId(null)
+      setReleases(null); setRelError(null); setEpisodes(null); setSelectedEpisodeId(null)
+      return
+    }
     setProfileId(request.profileId ?? 0)
     setRootFolder(request.rootFolder ?? '')
-    setReleases(null)
+    setReleases(null); setRelError(null); setEpisodes(null); setSelectedEpisodeId(null)
     setLoading(true)
     fetch(`/api/seer?mediaId=${request.media.tmdbId}&mediaType=${request.media.mediaType}`)
       .then(r => r.json())
@@ -87,7 +110,29 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
         setDetail(d.detail ?? null)
         setProfiles(d.profiles ?? [])
         setRootFolders(d.rootFolders ?? [])
-        setServiceId(d.serviceId ?? null)
+        const sid = d.serviceId ?? null
+        setServiceId(sid)
+        // For TV, fetch episode list for the picker
+        if (sid && request.media.mediaType === 'tv') {
+          fetch(`/api/sonarr?episodes=${sid}`)
+            .then(r => r.json())
+            .then((eps: SonarrEpisode[]) => {
+              setEpisodes(eps)
+              const now = Date.now()
+              const next = eps
+                .filter(e => e.monitored && !e.hasFile && e.airDateUtc && new Date(e.airDateUtc).getTime() > now)
+                .sort((a, b) => new Date(a.airDateUtc!).getTime() - new Date(b.airDateUtc!).getTime())
+              if (next[0]) {
+                setSelectedEpisodeId(next[0].id)
+              } else {
+                const aired = eps
+                  .filter(e => e.seasonNumber > 0 && e.airDateUtc && new Date(e.airDateUtc).getTime() <= now)
+                  .sort((a, b) => new Date(b.airDateUtc!).getTime() - new Date(a.airDateUtc!).getTime())
+                setSelectedEpisodeId(aired[0]?.id ?? null)
+              }
+            })
+            .catch(() => setEpisodes([]))
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -108,6 +153,7 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
       setActing(null)
     }
   }
+
 
   async function saveConfig() {
     if (!request) return
@@ -178,9 +224,37 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
                   {detail?.genres && detail.genres.length > 0 && (
                     <p className="text-[#888]">{detail.genres.slice(0, 3).map(g => g.name).join(', ')}</p>
                   )}
-                  {detail?.voteAverage && detail.voteAverage > 0 && (
+                  {detail?.voteAverage != null && detail.voteAverage > 0 && (
                     <p className="text-[#999]">★ {detail.voteAverage.toFixed(1)}</p>
                   )}
+                  {request.media.mediaType === 'movie' && detail?.releaseDate && (
+                    <p className="text-[#bbb]">
+                      {new Date(detail.releaseDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <span className="text-[#888] ml-1">(theatrical)</span>
+                    </p>
+                  )}
+                  {request.media.mediaType === 'movie' && detail && (() => {
+                    const d = findDigitalRelease(detail)
+                    if (!d) return null
+                    return (
+                      <p className="text-[#bbb]">
+                        {new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        <span className="text-[#888] ml-1">(digital)</span>
+                      </p>
+                    )
+                  })()}
+                  {request.media.mediaType === 'tv' && episodes && (() => {
+                    const next = episodes
+                      .filter(e => e.monitored && !e.hasFile && e.airDateUtc && new Date(e.airDateUtc).getTime() > Date.now())
+                      .sort((a, b) => new Date(a.airDateUtc!).getTime() - new Date(b.airDateUtc!).getTime())[0]
+                    if (!next?.airDateUtc) return null
+                    return (
+                      <p className="text-[#bbb]">
+                        {new Date(next.airDateUtc).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        <span className="text-[#888] ml-1">(next ep)</span>
+                      </p>
+                    )
+                  })()}
                   {detail?.runtime && <p className="text-[#bbb]">{detail.runtime}m</p>}
                   {detail?.numberOfSeasons && (
                     <p className="text-[#bbb]">{detail.numberOfSeasons} season{detail.numberOfSeasons !== 1 ? 's' : ''}</p>
@@ -283,94 +357,112 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
                 </div>
               )}
 
-              {/* search */}
-              {serviceId && (
+              {/* episode picker for TV */}
+              {request.media.mediaType === 'tv' && serviceId != null && episodes !== null && (
                 <div className="mb-6">
-                  <p className="text-[#7070a8] text-xs mb-2">{`/* search */`}</p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      disabled={!!acting}
-                      onClick={async () => {
-                        const svc = request.media.mediaType === 'movie' ? 'radarr' : 'sonarr'
-                        const action = request.media.mediaType === 'movie' ? 'searchMovie' : 'searchEpisode'
-                        const idKey  = request.media.mediaType === 'movie' ? 'movieId' : 'episodeId'
-                        setActing('auto')
-                        // For sonarr, get next episode id first
-                        let targetId: number = serviceId
-                        if (request.media.mediaType !== 'movie') {
-                          const ep = await fetch(`/api/sonarr?nextEpisode=${serviceId}`).then(r => r.json())
-                          targetId = ep.episodeId ?? serviceId
-                        }
-                        await fetch(`/api/${svc}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, [idKey]: targetId }) })
-                        setActing(null)
-                      }}
-                      className="btn-xs text-violet-400"
-                    >
-                      {acting === 'auto' ? '...' : 'grep'}
-                    </button>
-                    <button
-                      disabled={relLoading}
-                      onClick={async () => {
-                        setRelLoading(true)
-                        setReleases(null)
-                        const svc = request.media.mediaType === 'movie' ? 'radarr' : 'sonarr'
-                        let searchId: number = serviceId
-                        if (request.media.mediaType !== 'movie') {
-                          const ep = await fetch(`/api/sonarr?nextEpisode=${serviceId}`).then(r => r.json())
-                          searchId = ep.episodeId ?? serviceId
-                        }
-                        const res = await fetch(`/api/${svc}?releasesFor=${searchId}`)
-                        setReleases(await res.json())
-                        setRelLoading(false)
-                      }}
-                      className="btn-xs text-violet-400"
-                    >
-                      {relLoading ? '...' : 'grep -i'}
-                    </button>
-                  </div>
+                  <p className="text-[#7070a8] text-xs mb-2">{`/* episode */`}</p>
+                  {episodes.length === 0
+                    ? <p className="text-[#888] text-xs">no episodes found</p>
+                    : <select
+                        value={selectedEpisodeId ?? ''}
+                        onChange={e => setSelectedEpisodeId(Number(e.target.value))}
+                        className="bg-[#0f0f1a] border border-[#1a1a2e] text-white text-xs font-mono px-2 py-1 w-full focus:outline-none focus:border-[#888]"
+                      >
+                        {Array.from(new Set(
+                          episodes.filter(e => e.seasonNumber > 0 && e.monitored).map(e => e.seasonNumber)
+                        )).sort((a, b) => a - b).map(season => (
+                          <optgroup key={season} label={`Season ${season}`}>
+                            {episodes
+                              .filter(e => e.seasonNumber === season && e.monitored)
+                              .sort((a, b) => a.episodeNumber - b.episodeNumber)
+                              .map(e => (
+                                <option key={e.id} value={e.id}>
+                                  {`S${String(e.seasonNumber).padStart(2, '0')}E${String(e.episodeNumber).padStart(2, '0')} — ${e.title}${e.hasFile ? ' [dl]' : ''}`}
+                                </option>
+                              ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                  }
                 </div>
               )}
 
-              {relLoading && <Spinner />}
-              {releases !== null && (
-                <div className="mb-6">
-                  <p className="text-[#7070a8] text-xs mb-2">{`/* releases (${releases.length}) */`}</p>
-                  {releases.length === 0 && <p className="text-[#888] text-xs">no results</p>}
-                  <div className="space-y-1 max-h-80 overflow-y-auto">
-                    {releases.map((r, i) => {
-                      const svc = request.media.mediaType === 'movie' ? 'radarr' : 'sonarr'
-                      return (
-                        <div key={i} className={`border border-[#1a1a2e] p-2 text-xs font-mono ${r.rejected ? 'opacity-40' : ''}`}>
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <span className="text-white leading-snug flex-1 break-all">{r.title}</span>
-                            <button
-                              onClick={async () => {
-                                setActing(`grab-${i}`)
-                                await fetch(`/api/${svc}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'grab', guid: r.guid, indexerId: r.indexerId }) })
-                                setReleases(null)
-                                setActing(null)
-                              }}
-                              disabled={!!acting || r.rejected}
-                              className="btn-xs text-green-400 shrink-0"
-                            >
-                              {acting === `grab-${i}` ? '...' : '--grab'}
-                            </button>
-                          </div>
-                          <div className="flex gap-3 text-[#888] text-xs">
-                            <span>{r.quality.quality.name}</span>
-                            <span>{fmtBytes(r.size)}</span>
-                            {r.seeders !== undefined && <span className="text-green-600">{r.seeders}S</span>}
-                            <span className="truncate">{r.indexer}</span>
-                          </div>
-                          {r.rejected && r.rejections.length > 0 && (
-                            <p className="text-red-600 text-xs mt-0.5">{r.rejections[0]}</p>
-                          )}
-                        </div>
-                      )
-                    })}
+              {/* search */}
+              {serviceId != null && (() => {
+                const svc     = request.media.mediaType === 'movie' ? 'radarr' : 'sonarr'
+                const searchId = request.media.mediaType === 'movie' ? serviceId : (selectedEpisodeId ?? undefined)
+                return (
+                  <div className="mb-6">
+                    <p className="text-[#7070a8] text-xs mb-2">{`/* search */`}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        disabled={!!acting}
+                        onClick={async () => {
+                          setActing('auto')
+                          await fetch(`/api/${svc}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(
+                              request.media.mediaType === 'movie'
+                                ? { action: 'searchMovie', movieId: serviceId }
+                                : { action: 'searchEpisode', episodeId: selectedEpisodeId ?? serviceId }
+                            ),
+                          })
+                          setActing(null)
+                        }}
+                        className="btn-xs text-violet-400"
+                      >
+                        {acting === 'auto' ? '...' : 'grep'}
+                      </button>
+                      {searchId != null && (
+                        <button
+                          disabled={relLoading}
+                          onClick={async () => {
+                            setRelLoading(true)
+                            setReleases(null)
+                            setRelError(null)
+                            try {
+                              const res = await fetch(`/api/${svc}?releasesFor=${searchId}`)
+                              const data = await res.json()
+                              if (!res.ok || data?.error) {
+                                setRelError(data?.error ?? `HTTP ${res.status}`)
+                              } else {
+                                setReleases(data)
+                              }
+                            } catch (e: unknown) {
+                              setRelError(e instanceof Error ? e.message : 'fetch failed')
+                            } finally {
+                              setRelLoading(false)
+                            }
+                          }}
+                          className="btn-xs text-violet-400"
+                        >
+                          {relLoading ? '...' : 'grep -i'}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )
+              })()}
+
+              <ReleaseSearchResults
+                releases={releases}
+                loading={relLoading}
+                error={relError}
+                acting={acting}
+                onGrab={async (guid, indexerId, key) => {
+                  const svc = request.media.mediaType === 'movie' ? 'radarr' : 'sonarr'
+                  setActing(key)
+                  await fetch(`/api/${svc}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'grab', guid, indexerId }),
+                  })
+                  setReleases(null)
+                  onRefresh()
+                  setActing(null)
+                }}
+              />
 
               {/* actions */}
               <div>
