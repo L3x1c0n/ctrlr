@@ -244,9 +244,19 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
+## Customisation
+
+**Web dashboard**
+Eleven themes selectable from the TopBar — all drawn from familiar developer colour schemes: Catppuccin Mocha, Dracula, Nord, Gruvbox Dark, Night Owl, Cobalt2, Atomic, Tokyo Night, One Dark, Monochrome, and Gh05t (the original). Each theme recolours the entire TopBar with matching neon accents throughout.
+
+Section order is configurable via drag-and-drop — put what you care about most at the top.
+
+**iPadOS / iOS app**
+Appearance follows the system automatically — light during the day, dark at night. You can also override it manually and lock to either mode regardless of system setting. Section order is configurable here too.
+
 ## Features
 
-- Terminal/mono aesthetic with neon accents and per-theme TopBar (10 themes)
+- Terminal/mono aesthetic with neon accents and per-theme TopBar (11 themes)
 - Mobile-optimised — Sonarr/Radarr and Plex tabs on narrow screens, full grid on desktop
 - Section reordering via drag-and-drop
 - Single-cookie auth — no database, no user management
