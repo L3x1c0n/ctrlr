@@ -4,11 +4,11 @@
 
 ## How this was built
 
-I'm a hobbyist with no programming background. I had a specific problem — too many tabs, too much context-switching — and none of the existing tools solved it quite the way I wanted. So I used [Claude Code](https://claude.com/claude-code) to build it.
+I know AI vibe-coded projects have a reputation right now — slop shipped fast, no understanding of what's underneath, security holes left open because nobody thought to ask. I want to be upfront about what this is and isn't.
 
-Every line of code was written by AI. I contributed the ideas, the frustration, and the taste. What came out is a real working application running on my home server every day.
+I'm a hobbyist with no programming background. I used [Claude Code](https://claude.com/claude-code) to build CTRLr — every line of code came from AI. What I contributed was the problem, the taste, and the persistence to keep pushing until it worked the way I wanted. The result is a real application running on my home server every day.
 
-I put this out there because I think we're at the beginning of something — where people who know what they want but couldn't previously build it now can. If CTRLr is useful to you, or if you're a developer who can see how to do it better, that's exactly the point. Issues, PRs, and critique all welcome.
+I'm not pretending otherwise, and I'm not pretending it's been security-audited or architecturally reviewed by a senior engineer. The security section below is honest about what's in place and what isn't. If you're a developer who can see how to do it better — that's exactly the point of putting it out here. Issues, PRs, and critique are welcome.
 
 ## Security
 
