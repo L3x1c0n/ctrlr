@@ -21,6 +21,26 @@ Single-page dashboard that surfaces everything you care about across your media 
 - **Discover** — trending movies and TV via TMDB with request flow
 - **System status** — service health dots (Sonarr, Radarr, Plex, Tautulli, qBit, Prowlarr, autobrr), RAM/swap/CPU/disk bars, per-process memory
 
+## What makes it different
+
+Most media stack dashboards show you what's happening. CTRLr lets you do something about it without leaving the page.
+
+Every item in CTRLr is actionable end-to-end. A few examples of what that looks like in practice:
+
+**Trakt → grab:**
+You see something on your watchlist. One click opens the detail drawer — metadata, release search, available qualities. You grab it directly into Sonarr or Radarr. Done.
+
+**Seer → approve → track:**
+A request comes in. You approve it from the Seer panel. It lands in Sonarr's queue. You watch it download in qBittorrent. All without switching tabs.
+
+**Failed download → re-grab:**
+A torrent stalls or fails. You delete it from qBittorrent, trigger a new search in the Arr detail drawer, and grab a different release — without ever opening Sonarr or qBittorrent directly.
+
+**Discover → request → done:**
+You find something trending on TMDB. Full metadata preview, one-click request via Seer, confirmation in the same view.
+
+The cross-service orchestration is the point. CTRLr doesn't just surface information from each tool — it connects them into workflows you can act on from a single place.
+
 ## Why it exists
 
 Every tool in the *arr stack has its own UI. Switching between them constantly to check on downloads, approve requests, or see what's airing this week gets old. CTRLr puts it all in one place with a consistent aesthetic and a single login.
