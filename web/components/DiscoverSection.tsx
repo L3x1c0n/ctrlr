@@ -1,50 +1,38 @@
 'use client'
 
-
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { SeerSearchResult, DiscoverDetail } from '@/types'
 import Spinner from '@/components/Spinner'
 import DiscoverDetailDrawer from '@/components/DiscoverDetailDrawer'
 import MarqueeText from '@/components/MarqueeText'
-import RequestModal from '@/components/RequestModal'
 
 const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${path}`
-
-// ── status helpers ─────────────────────────────────────────────────────────────
-
 const PLEX_ORANGE = '#E5A00D'
 
+interface Profile    { id: number; name: string }
+interface RootFolder { path: string; freeSpace: number }
 
-function AddButton({ item, onRequest }: { item: SeerSearchResult; onRequest: (item: SeerSearchResult) => void }) {
-  const status = item.mediaInfo?.status
-
-  if (status === 5)                                  return <span className="font-mono text-xs shrink-0" style={{ color: PLEX_ORANGE }}>// plex</span>
-  if (status != null && status >= 2 && status <= 4)  return <span className="font-mono text-xs shrink-0 text-blue-400">// req&apos;d</span>
-
-  return (
-    <button
-      onClick={(e) => { e.stopPropagation(); onRequest(item) }}
-      className="btn-xs text-blue-400 shrink-0"
-    >
-      --add
-    </button>
-  )
+function fmtFree(bytes: number): string {
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(0)}GB`
+  return `${(bytes / 1024 ** 2).toFixed(0)}MB`
 }
 
-// ── left list row ──────────────────────────────────────────────────────────────
+function isUltraHD(name: string): boolean {
+  const n = name.toLowerCase()
+  return n.includes('ultra') || n.includes('2160') || n.includes('4k') || n.includes('uhd')
+}
 
-function ListRow({
-  item, index, isActive, onHover, onClick, onRequest,
-}: {
+// ── list row (desktop) ─────────────────────────────────────────────────────────
+
+function ListRow({ item, index, isActive, onHover, onClick }: {
   item: SeerSearchResult
   index: number
   isActive: boolean
   onHover: () => void
   onClick: () => void
-  onRequest: (item: SeerSearchResult) => void
 }) {
-  const title  = item.title ?? item.name ?? '—'
-  const year   = (item.releaseDate ?? item.firstAirDate)?.slice(0, 4)
+  const title = item.title ?? item.name ?? '—'
+  const year  = (item.releaseDate ?? item.firstAirDate)?.slice(0, 4)
 
   return (
     <div
@@ -59,23 +47,18 @@ function ListRow({
       <span className="text-[#666] w-4 tabular-nums text-right shrink-0">{index + 1}</span>
       <span className="flex-1 truncate">{title}</span>
       {year && <span className="text-[#888] shrink-0">{year}</span>}
-      <AddButton item={item} onRequest={onRequest} />
     </div>
   )
 }
 
-// ── left list panel ────────────────────────────────────────────────────────────
+// ── list panel (desktop) ───────────────────────────────────────────────────────
 
-function ListPanel({
-  label, mediaType, items, loading, activeId, onActivate, onRequest, onLoadMore, loadingMore,
-}: {
+function ListPanel({ label, items, loading, activeId, onActivate, onLoadMore, loadingMore }: {
   label: string
-  mediaType: 'movie' | 'tv'
   items: SeerSearchResult[]
   loading: boolean
   activeId: string | null
   onActivate: (item: SeerSearchResult) => void
-  onRequest: (item: SeerSearchResult) => void
   onLoadMore: () => void
   loadingMore: boolean
 }) {
@@ -95,7 +78,6 @@ function ListPanel({
               isActive={activeId === `${item.mediaType}-${item.id}`}
               onHover={() => onActivate(item)}
               onClick={() => onActivate(item)}
-              onRequest={onRequest}
             />
           ))
         }
@@ -113,15 +95,42 @@ function ListPanel({
   )
 }
 
+// ── meta row ───────────────────────────────────────────────────────────────────
+
+function MetaRow({ label, value, lines = 1 }: { label: string; value: string; lines?: 1 | 2 }) {
+  return (
+    <p className="flex gap-2 overflow-hidden">
+      <span className="text-[#6a9a7a] shrink-0 whitespace-nowrap w-[72px]">// {label}</span>
+      <span className={`text-[#ccc] min-w-0 ${lines === 2 ? 'line-clamp-2' : 'truncate'}`}>{value}</span>
+    </p>
+  )
+}
+
 // ── preview pane ───────────────────────────────────────────────────────────────
 
-function PreviewPane({
-  item, detail, detailLoading,
-}: {
+type ReqState = 'idle' | 'form' | 'submitting' | 'done'
+
+function PreviewPane({ item, detail, detailLoading, profiles, folders }: {
   item: SeerSearchResult | null
   detail: DiscoverDetail | null
   detailLoading: boolean
+  profiles: Profile[]
+  folders: RootFolder[]
 }) {
+  const [reqState,   setReqState]   = useState<ReqState>('idle')
+  const [profileId,  setProfileId]  = useState<number | null>(null)
+  const [rootFolder, setRootFolder] = useState<string | null>(null)
+
+  // Reset request state when item changes
+  useEffect(() => { setReqState('idle') }, [item?.id, item?.mediaType])
+
+  // Set defaults when profiles/folders arrive
+  useEffect(() => {
+    const def = profiles.find(p => isUltraHD(p.name)) ?? profiles[0]
+    setProfileId(def?.id ?? null)
+    setRootFolder(folders[0]?.path ?? null)
+  }, [profiles, folders])
+
   if (!item) {
     return (
       <div className="flex items-center justify-center h-full border border-[#1a1a2e] font-mono text-xs text-[#333]">
@@ -144,6 +153,21 @@ function PreviewPane({
   const studio   = (detail?.productionCompanies ?? detail?.networks)?.map(c => c.name).slice(0, 2).join(', ')
   const status   = detail?.mediaInfo?.status ?? item.mediaInfo?.status
 
+  const inPlex      = status === 5
+  const isRequested = status != null && status >= 2 && status <= 4
+  const canRequest  = !inPlex && !isRequested && reqState !== 'done'
+
+  async function submit() {
+    if (!item) return
+    setReqState('submitting')
+    await fetch('/api/seer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'submit', mediaType: item.mediaType, mediaId: item.id, profileId, rootFolder }),
+    })
+    setReqState('done')
+  }
+
   return (
     <div className="flex flex-col h-full border border-[#1a1a2e] overflow-hidden">
 
@@ -153,11 +177,9 @@ function PreviewPane({
           ? <img src={TMDB_W(780, backdrop)} alt="" className="w-full h-full object-cover" style={{ filter: 'blur(2px) brightness(0.8)' }} />
           : <div className="w-full h-full bg-[#080810]" />
         }
-        {/* frosted glass overlay + bottom fade */}
         <div className="absolute inset-0 bg-[#0A0A0F]/30" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/20 to-transparent" />
 
-        {/* inset poster — full height of artwork area */}
         {poster && (
           <img
             src={TMDB_W(185, poster)}
@@ -172,19 +194,16 @@ function PreviewPane({
           />
         )}
 
-        {/* right-side block: title + meta, aligned to poster top, same height */}
         <div
           className="absolute flex flex-col overflow-hidden"
           style={{ bottom: 0, left: poster ? 137 : 12, right: 8, height: 188, paddingTop: 4 }}
         >
           <p className="text-white text-sm font-mono font-medium leading-tight line-clamp-2 shrink-0">{title}</p>
           <div className="flex flex-wrap items-center gap-x-2 mt-0.5 mb-1.5 font-mono text-xs text-[#888] shrink-0">
-            {year && <span>{year}</span>}
+            {year    && <span>{year}</span>}
             {runtime && <span>{runtime}m</span>}
             {seasons && <span>{seasons} seasons</span>}
             {rating != null && rating > 0 && <span>★ {rating.toFixed(1)}</span>}
-            {status === 5 && <span style={{ color: PLEX_ORANGE }}>plex</span>}
-            {status != null && status >= 2 && status <= 4 && <span className="text-blue-400">req&apos;d</span>}
           </div>
           {detailLoading && !detail ? (
             <span className="text-[#555] font-mono text-xs">// loading...</span>
@@ -212,16 +231,62 @@ function PreviewPane({
         )}
       </div>
 
+      {/* status / request area */}
+      <div className="shrink-0 border-t border-[#1a1a2e] px-3 py-2.5 font-mono text-xs">
+        {inPlex && (
+          <span
+            className="inline-block px-2.5 py-1 text-xs font-mono"
+            style={{ color: PLEX_ORANGE, background: 'rgba(229,160,13,0.12)', border: `1px solid rgba(229,160,13,0.35)` }}
+          >
+            ✦ in plex
+          </span>
+        )}
+        {(isRequested || reqState === 'done') && (
+          <span
+            className="inline-block px-2.5 py-1 text-xs font-mono text-blue-400"
+            style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)' }}
+          >
+            ✦ requested
+          </span>
+        )}
+        {canRequest && reqState === 'idle' && (
+          <button onClick={() => setReqState('form')} className="btn-xs text-blue-400">
+            --request
+          </button>
+        )}
+        {canRequest && reqState === 'form' && (
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <select
+                value={profileId ?? ''}
+                onChange={e => setProfileId(Number(e.target.value))}
+                className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
+              >
+                {profiles.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}{isUltraHD(p.name) ? ' ✦' : ''}</option>
+                ))}
+              </select>
+              <select
+                value={rootFolder ?? ''}
+                onChange={e => setRootFolder(e.target.value)}
+                className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
+              >
+                {folders.map(f => (
+                  <option key={f.path} value={f.path}>{f.path} ({fmtFree(f.freeSpace)} free)</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={submit} className="btn-xs text-blue-400">--confirm</button>
+              <button onClick={() => setReqState('idle')} className="btn-xs text-[#555]">--cancel</button>
+            </div>
+          </div>
+        )}
+        {canRequest && reqState === 'submitting' && (
+          <span className="text-[#555] text-xs">// submitting...</span>
+        )}
+      </div>
     </div>
-  )
-}
-
-function MetaRow({ label, value, lines = 1 }: { label: string; value: string; lines?: 1 | 2 }) {
-  return (
-    <p className="flex gap-2 overflow-hidden">
-      <span className="text-[#6a9a7a] shrink-0 whitespace-nowrap w-[72px]">// {label}</span>
-      <span className={`text-[#ccc] min-w-0 ${lines === 2 ? 'line-clamp-2' : 'truncate'}`}>{value}</span>
-    </p>
   )
 }
 
@@ -241,14 +306,19 @@ export default function DiscoverSection() {
   const [activeItem,    setActiveItem]    = useState<SeerSearchResult | null>(null)
   const [detail,        setDetail]        = useState<DiscoverDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [profiles,      setProfiles]      = useState<Profile[]>([])
+  const [folders,       setFolders]       = useState<RootFolder[]>([])
   const [drawerItem,    setDrawerItem]    = useState<SeerSearchResult | null>(null)
-  const [requestItem,   setRequestItem]   = useState<SeerSearchResult | null>(null)
 
-  const activeId     = activeItem ? `${activeItem.mediaType}-${activeItem.id}` : null
-  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const tabItemsRef  = useRef<SeerSearchResult[]>([])
+  // Mobile: quick-request state
+  const [mobileReqItem,    setMobileReqItem]    = useState<SeerSearchResult | null>(null)
+  const [mobileSubmitting, setMobileSubmitting] = useState(false)
+  const [mobileDone,       setMobileDone]       = useState<Set<string>>(new Set())
 
-  // Keep a stable ref to current tab's items for keyboard navigation
+  const activeId    = activeItem ? `${activeItem.mediaType}-${activeItem.id}` : null
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const tabItemsRef = useRef<SeerSearchResult[]>([])
+
   useEffect(() => {
     tabItemsRef.current = tab === 'movie' ? movies : tvShows
   }, [tab, movies, tvShows])
@@ -266,12 +336,11 @@ export default function DiscoverSection() {
       .finally(() => setTvLoading(false))
   }, [])
 
-  // Pre-select first item once data loads
   useEffect(() => {
     if (!activeItem && movies.length > 0) setActiveItem(movies[0])
   }, [movies, activeItem])
 
-  // ── detail fetch (debounced) ─────────────────────────────────────────────────
+  // ── detail fetch (debounced) — also captures profiles + folders ──────────────
 
   const fetchDetail = useCallback((item: SeerSearchResult) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -279,7 +348,12 @@ export default function DiscoverSection() {
       setDetailLoading(true)
       fetch(`/api/seer?mediaId=${item.id}&mediaType=${item.mediaType}`)
         .then(r => r.json())
-        .then(d => setDetail((d.detail as DiscoverDetail) ?? null))
+        .then(d => {
+          setDetail((d.detail as DiscoverDetail) ?? null)
+          const sortedFolders = [...(d.rootFolders ?? [])].sort((a: RootFolder, b: RootFolder) => b.freeSpace - a.freeSpace)
+          setProfiles(d.profiles ?? [])
+          setFolders(sortedFolders)
+        })
         .catch(() => setDetail(null))
         .finally(() => setDetailLoading(false))
     }, 150)
@@ -289,6 +363,8 @@ export default function DiscoverSection() {
     setActiveItem(item)
     if (!detail || activeItem?.id !== item.id || activeItem?.mediaType !== item.mediaType) {
       setDetail(null)
+      setProfiles([])
+      setFolders([])
       fetchDetail(item)
     }
   }
@@ -318,7 +394,7 @@ export default function DiscoverSection() {
       if (items.length === 0) return
       e.preventDefault()
       const currentId = activeItem ? `${activeItem.mediaType}-${activeItem.id}` : null
-      const idx = items.findIndex(i => `${i.mediaType}-${i.id}` === currentId)
+      const idx  = items.findIndex(i => `${i.mediaType}-${i.id}` === currentId)
       const next = e.key === 'ArrowDown'
         ? Math.min(idx + 1, items.length - 1)
         : Math.max(idx - 1, 0)
@@ -346,18 +422,47 @@ export default function DiscoverSection() {
     }
   }
 
+  // ── mobile quick-request ─────────────────────────────────────────────────────
+
+  async function mobileRequest(item: SeerSearchResult) {
+    setMobileReqItem(item)
+    setMobileSubmitting(true)
+    try {
+      const res = await fetch(`/api/seer?mediaId=${item.id}&mediaType=${item.mediaType}`)
+      const d   = await res.json()
+      const sortedFolders: RootFolder[] = [...(d.rootFolders ?? [])].sort((a, b) => b.freeSpace - a.freeSpace)
+      const profs: Profile[] = d.profiles ?? []
+      const defaultProfile = profs.find(p => isUltraHD(p.name)) ?? profs[0]
+      await fetch('/api/seer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'submit',
+          mediaType: item.mediaType,
+          mediaId: item.id,
+          profileId: defaultProfile?.id ?? null,
+          rootFolder: sortedFolders[0]?.path ?? null,
+        }),
+      })
+      setMobileDone(prev => new Set([...prev, `${item.mediaType}-${item.id}`]))
+    } finally {
+      setMobileSubmitting(false)
+      setMobileReqItem(null)
+    }
+  }
+
   return (
     <>
       <div className="mt-6 pt-4 border-t border-[#1a1a2e]">
         <div className="font-mono text-xs text-[#6a9a7a] mb-3">
-          const <span className="text-white text-sm font-medium uppercase tracking-widest">D1sc0ver</span> = {'{'}</div>
+          const <span className="text-white text-sm font-medium uppercase tracking-widest">D1sc0ver</span> = {'{'}
+        </div>
 
-        {/* split pane — hidden below md */}
+        {/* desktop split pane */}
         <div className="hidden md:grid grid-cols-[1fr_500px] gap-4" style={{ height: 580 }}>
 
           {/* left: tabbed list */}
           <div className="flex flex-col border border-[#1a1a2e] overflow-hidden">
-            {/* tab bar */}
             <div className="flex shrink-0 border-b border-[#1a1a2e]">
               {(['movie', 'tv'] as const).map(t => (
                 <button
@@ -374,24 +479,20 @@ export default function DiscoverSection() {
             {tab === 'movie' ? (
               <ListPanel
                 label="trending :: movies"
-                mediaType="movie"
                 items={movies}
                 loading={moviesLoading}
                 activeId={activeId}
                 onActivate={activate}
-                onRequest={setRequestItem}
                 onLoadMore={() => loadMore('movie')}
                 loadingMore={moviesMore}
               />
             ) : (
               <ListPanel
                 label="trending :: tv"
-                mediaType="tv"
                 items={tvShows}
                 loading={tvLoading}
                 activeId={activeId}
                 onActivate={activate}
-                onRequest={setRequestItem}
                 onLoadMore={() => loadMore('tv')}
                 loadingMore={tvMore}
               />
@@ -403,6 +504,8 @@ export default function DiscoverSection() {
             item={activeItem}
             detail={detail}
             detailLoading={detailLoading}
+            profiles={profiles}
+            folders={folders}
           />
         </div>
 
@@ -411,7 +514,6 @@ export default function DiscoverSection() {
 
           {/* left: tabbed list */}
           <div className="flex flex-col border border-[#1a1a2e] overflow-hidden">
-            {/* tab bar */}
             <div className="flex shrink-0 border-b border-[#1a1a2e]">
               {(['movie', 'tv'] as const).map(t => (
                 <button
@@ -426,7 +528,7 @@ export default function DiscoverSection() {
               ))}
             </div>
             <div className="overflow-y-auto flex-1">
-              {((tab === 'movie' ? moviesLoading : tvLoading)) ? (
+              {(tab === 'movie' ? moviesLoading : tvLoading) ? (
                 <div className="p-3"><Spinner /></div>
               ) : (tab === 'movie' ? movies : tvShows).map((item) => (
                 <div
@@ -444,15 +546,13 @@ export default function DiscoverSection() {
                       {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
                     </span>
                   )}
-                  <AddButton item={item} onRequest={setRequestItem} />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* right: poster + director + synopsis */}
+          {/* right: poster + meta + request */}
           <div className="flex flex-col border border-[#1a1a2e] overflow-hidden">
-            {/* poster area: blurred fill + sharp centered poster */}
             <div className="relative w-full shrink-0 overflow-hidden bg-[#080810]" style={{ aspectRatio: '2/3' }}>
               {activeItem?.posterPath && (
                 <img
@@ -473,7 +573,7 @@ export default function DiscoverSection() {
                 <div className="absolute inset-0" />
               )}
             </div>
-            <div className="flex-1 overflow-y-auto px-1 pt-0 pb-1 font-mono text-xs space-y-1.5">
+            <div className="flex-1 overflow-y-auto px-1 pt-1 pb-1 font-mono text-xs space-y-1.5">
               {detail?.credits?.crew?.find(c => c.job === 'Director') && (
                 <p>
                   <span className="text-[#6a9a7a]">// dir</span>
@@ -485,6 +585,25 @@ export default function DiscoverSection() {
                 <p className="text-[#999] leading-relaxed">{detail?.overview ?? activeItem?.overview}</p>
               )}
             </div>
+            {/* mobile request button */}
+            {activeItem && (() => {
+              const st  = detail?.mediaInfo?.status ?? activeItem.mediaInfo?.status
+              const key = `${activeItem.mediaType}-${activeItem.id}`
+              if (st === 5)                          return <div className="px-2 py-2 border-t border-[#1a1a2e]"><span className="font-mono text-xs" style={{ color: PLEX_ORANGE }}>✦ plex</span></div>
+              if ((st != null && st >= 2) || mobileDone.has(key)) return <div className="px-2 py-2 border-t border-[#1a1a2e]"><span className="font-mono text-xs text-blue-400">✦ req&apos;d</span></div>
+              const isThisReq = mobileReqItem?.id === activeItem.id && mobileReqItem?.mediaType === activeItem.mediaType
+              return (
+                <div className="px-2 py-2 border-t border-[#1a1a2e]">
+                  <button
+                    onClick={() => mobileRequest(activeItem)}
+                    disabled={mobileSubmitting}
+                    className="btn-xs text-blue-400 disabled:opacity-40"
+                  >
+                    {isThisReq && mobileSubmitting ? '...' : '--req'}
+                  </button>
+                </div>
+              )
+            })()}
           </div>
         </div>
 
@@ -496,14 +615,6 @@ export default function DiscoverSection() {
         onClose={() => setDrawerItem(null)}
         onRequested={() => setDrawerItem(null)}
       />
-
-      {requestItem && (
-        <RequestModal
-          item={requestItem}
-          onClose={() => setRequestItem(null)}
-          onDone={() => setRequestItem(null)}
-        />
-      )}
     </>
   )
 }
