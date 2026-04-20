@@ -25,6 +25,26 @@ Single-page dashboard that surfaces everything you care about across your media 
 
 Every tool in the *arr stack has its own UI. Switching between them constantly to check on downloads, approve requests, or see what's airing this week gets old. CTRLr puts it all in one place with a consistent aesthetic and a single login.
 
+## Who this is for
+
+**CTRLr fits well if you:**
+- Run a personal media server at home for yourself (and maybe family)
+- Already have some version of the *arr stack running — Sonarr, Radarr, qBittorrent, Plex
+- Are tired of having six browser tabs open just to see what's downloading, what's airing, and what's been requested
+- Want something that looks good on a phone without a separate app
+
+**It probably won't work for you if you:**
+- Are managing a serious multi-user media server with dozens of accounts — there's no user management, one login, no per-user permissions
+- Need enterprise-grade security or audit logging — this wasn't built for that and makes no pretense of it
+- Want a plug-and-play setup with no configuration — you'll need to know your service URLs and API keys and be comfortable editing a config file or settings form
+- Run Jellyfin or Emby instead of Plex — Plex is the only media server supported right now
+- Need Docker container management — CTRLr monitors services but can't start, stop, or restart containers
+
+**The sweet spot:**
+One person (or one household) running a home media server on a NAS or spare PC, who knows their stack well enough to have set it up but doesn't want to babysit six different UIs every time they want to check on something.
+
+---
+
 ## iPadOS / iOS companion app
 
 There is a native SwiftUI companion app in `CTRLr/` targeting iPadOS/iOS 16+. It talks to the same media stack and covers most of the same ground as the web dashboard — sometimes more, sometimes less.
