@@ -69,7 +69,7 @@ Most media stack dashboards show you what's happening. CTRLr lets you do somethi
 Every item in CTRLr is actionable end-to-end. A few examples of what that looks like in practice:
 
 **Trakt → grab → download → library:**
-You see something on your watchlist. One click opens the detail drawer — metadata, release search, available qualities. You grab it directly into Sonarr or Radarr. From there you watch it appear in the queue, track the torrent downloading in qBittorrent, and see it land in Plex once it's imported — all from the same dashboard without switching tabs.
+You see something on your watchlist. One click opens the detail drawer — metadata, release search, available qualities. You can filter and sort releases the same way you would natively in Sonarr or Radarr, then grab directly into either. From there you watch it appear in the queue, track the torrent downloading in qBittorrent, and see it land in Plex once it's imported — all from the same dashboard without switching tabs.
 
 ![Trakt detail drawer](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/trakt-drawer.png)
 
