@@ -108,7 +108,7 @@ function MetaRow({ label, value, lines = 1 }: { label: string; value: string; li
 
 // ── preview pane ───────────────────────────────────────────────────────────────
 
-type ReqState = 'idle' | 'form' | 'submitting' | 'done'
+type ReqState = 'idle' | 'submitting' | 'done'
 
 function PreviewPane({ item, detail, detailLoading, profiles, folders }: {
   item: SeerSearchResult | null
@@ -249,41 +249,42 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders }: {
             ✦ requested
           </span>
         )}
-        {canRequest && reqState === 'idle' && (
-          <button onClick={() => setReqState('form')} className="btn-xs text-blue-400">
-            --request
-          </button>
-        )}
-        {canRequest && reqState === 'form' && (
+        {canRequest && (
           <div className="space-y-2">
-            <div className="flex gap-2">
-              <select
-                value={profileId ?? ''}
-                onChange={e => setProfileId(Number(e.target.value))}
-                className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
-              >
-                {profiles.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}{isUltraHD(p.name) ? ' ✦' : ''}</option>
-                ))}
-              </select>
-              <select
-                value={rootFolder ?? ''}
-                onChange={e => setRootFolder(e.target.value)}
-                className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
-              >
-                {folders.map(f => (
-                  <option key={f.path} value={f.path}>{f.path} ({fmtFree(f.freeSpace)} free)</option>
-                ))}
-              </select>
-            </div>
+            {profiles.length > 0 && folders.length > 0 ? (
+              <div className="flex gap-2">
+                <select
+                  value={profileId ?? ''}
+                  onChange={e => setProfileId(Number(e.target.value))}
+                  className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
+                >
+                  {profiles.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}{isUltraHD(p.name) ? ' ✦' : ''}</option>
+                  ))}
+                </select>
+                <select
+                  value={rootFolder ?? ''}
+                  onChange={e => setRootFolder(e.target.value)}
+                  className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
+                >
+                  {folders.map(f => (
+                    <option key={f.path} value={f.path}>{f.path} ({fmtFree(f.freeSpace)} free)</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <span className="text-[#555] text-xs">// loading options...</span>
+            )}
             <div className="flex gap-3">
-              <button onClick={submit} className="btn-xs text-blue-400">--confirm</button>
-              <button onClick={() => setReqState('idle')} className="btn-xs text-[#555]">--cancel</button>
+              <button
+                onClick={submit}
+                disabled={reqState === 'submitting' || profiles.length === 0}
+                className="btn-xs text-blue-400 disabled:opacity-40"
+              >
+                {reqState === 'submitting' ? '...' : '--request'}
+              </button>
             </div>
           </div>
-        )}
-        {canRequest && reqState === 'submitting' && (
-          <span className="text-[#555] text-xs">// submitting...</span>
         )}
       </div>
     </div>
