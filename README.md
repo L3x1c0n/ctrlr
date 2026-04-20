@@ -2,11 +2,46 @@
 
 **One place for your entire media stack. Built out of frustration with jumping between Sonarr, Radarr, Plex, qBittorrent, and five other tabs just to see what's going on.**
 
+## How this was built
+
+I'm a hobbyist with no programming background. I had a specific problem — too many tabs, too much context-switching — and none of the existing tools solved it quite the way I wanted. So I used [Claude Code](https://claude.com/claude-code) to build it.
+
+Every line of code was written by AI. I contributed the ideas, the frustration, and the taste. What came out is a real working application running on my home server every day.
+
+I put this out there because I think we're at the beginning of something — where people who know what they want but couldn't previously build it now can. If CTRLr is useful to you, or if you're a developer who can see how to do it better, that's exactly the point. Issues, PRs, and critique all welcome.
+
+## Security
+
+This project was built by a non-developer using AI. That warrants transparency about what has and hasn't been hardened.
+
+**What is in place:**
+- All API routes are protected by middleware — no endpoint is reachable without a valid session cookie
+- All calls to external services (Sonarr, Radarr, Plex, etc.) are server-side only — API keys are never sent to the browser
+- `.env.local` is gitignored and will never be committed
+- No database, no user table, no third-party auth dependencies — smaller attack surface by simplicity
+
+**What is not in place:**
+- No rate limiting on the login endpoint — brute force is possible
+- No CSRF protection
+- No Content Security Policy headers
+- Auth is a single shared secret (one user, no sessions with expiry)
+- The Settings page writes to `.env.local` — if auth were bypassed, credentials could be overwritten
+- No independent security audit has been performed
+
+**Intended deployment:**
+CTRLr is designed to run **behind a reverse proxy with HTTPS** (Caddy, nginx) and ideally behind a VPN. It is **not designed to be exposed directly on port 3000** to the internet. Running it without a reverse proxy or on an open port is not a supported or recommended configuration.
+
+If you find a security issue, open an issue or email directly. Given this is AI-generated code, scrutiny is welcome and expected.
+
+---
+
 ![qBittorrent and Trakt calendar](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/01-qb-trakt.png)
 ![Sonarr and Radarr](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/02-arr.png)
 ![Plex recently added](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/03-plex.png)
 ![Seer requests](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/04-seer.png)
 ![Discover](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/05-discover.png)
+
+---
 
 ## What it does
 
@@ -44,37 +79,6 @@ The cross-service orchestration is the point. CTRLr doesn't just surface informa
 ## Why it exists
 
 Every tool in the *arr stack has its own UI. Switching between them constantly to check on downloads, approve requests, or see what's airing this week gets old. CTRLr puts it all in one place with a consistent aesthetic and a single login.
-
-## How this was built
-
-I'm a hobbyist with no programming background. I had a specific problem — too many tabs, too much context-switching — and none of the existing tools solved it quite the way I wanted. So I used [Claude Code](https://claude.com/claude-code) to build it.
-
-Every line of code was written by AI. I contributed the ideas, the frustration, and the taste. What came out is a real working application running on my home server every day.
-
-I put this out there because I think we're at the beginning of something — where people who know what they want but couldn't previously build it now can. If CTRLr is useful to you, or if you're a developer who can see how to do it better, that's exactly the point. Issues, PRs, and critique all welcome.
-
-## Security
-
-This project was built by a non-developer using AI. That warrants transparency about what has and hasn't been hardened.
-
-**What is in place:**
-- All API routes are protected by middleware — no endpoint is reachable without a valid session cookie
-- All calls to external services (Sonarr, Radarr, Plex, etc.) are server-side only — API keys are never sent to the browser
-- `.env.local` is gitignored and will never be committed
-- No database, no user table, no third-party auth dependencies — smaller attack surface by simplicity
-
-**What is not in place:**
-- No rate limiting on the login endpoint — brute force is possible
-- No CSRF protection
-- No Content Security Policy headers
-- Auth is a single shared secret (one user, no sessions with expiry)
-- The Settings page writes to `.env.local` — if auth were bypassed, credentials could be overwritten
-- No independent security audit has been performed
-
-**Intended deployment:**
-CTRLr is designed to run **behind a reverse proxy with HTTPS** (Caddy, nginx) and ideally behind a VPN. It is **not designed to be exposed directly on port 3000** to the internet. Running it without a reverse proxy or on an open port is not a supported or recommended configuration.
-
-If you find a security issue, open an issue or email directly. Given this is AI-generated code, scrutiny is welcome and expected.
 
 ## Who this is for
 
