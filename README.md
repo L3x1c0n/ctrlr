@@ -25,6 +25,14 @@ Single-page dashboard that surfaces everything you care about across your media 
 
 Every tool in the *arr stack has its own UI. Switching between them constantly to check on downloads, approve requests, or see what's airing this week gets old. CTRLr puts it all in one place with a consistent aesthetic and a single login.
 
+## How this was built
+
+I'm a hobbyist with no programming background. I had a specific problem — too many tabs, too much context-switching — and none of the existing tools solved it quite the way I wanted. So I used [Claude Code](https://claude.com/claude-code) to build it.
+
+Every line of code was written by AI. I contributed the ideas, the frustration, and the taste. What came out is a real working application running on my home server every day.
+
+I put this out there because I think we're at the beginning of something — where people who know what they want but couldn't previously build it now can. If CTRLr is useful to you, or if you're a developer who can see how to do it better, that's exactly the point. Issues, PRs, and critique all welcome.
+
 ## Who this is for
 
 **CTRLr fits well if you:**
@@ -63,16 +71,6 @@ Since the web dashboard and app were built independently, they don't have full f
 - Sonarr episode picker
 
 The app is a local build only — not on the App Store or TestFlight. The source is in this repo if you want to build it yourself in Xcode. Credentials are stored in Keychain; the app currently talks directly to each service, but the longer-term direction is to route everything through the web dashboard as a backend — one authenticated endpoint, one set of credentials, and services that don't need to be individually internet-exposed. That work is in progress.
-
----
-
-## How this was built
-
-I'm a hobbyist with no programming background. I had a specific problem — too many tabs, too much context-switching — and none of the existing tools solved it quite the way I wanted. So I used [Claude Code](https://claude.com/claude-code) to build it.
-
-Every line of code was written by AI. I contributed the ideas, the frustration, and the taste. What came out is a real working application running on my home server every day.
-
-I put this out there because I think we're at the beginning of something — where people who know what they want but couldn't previously build it now can. If CTRLr is useful to you, or if you're a developer who can see how to do it better, that's exactly the point. Issues, PRs, and critique all welcome.
 
 ## Stack
 
@@ -183,22 +181,6 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-## Features
-
-- Terminal/mono aesthetic with neon accents and per-theme TopBar (10 themes)
-- Mobile-optimised — Sonarr/Radarr and Plex tabs on narrow screens, full grid on desktop
-- Section reordering via drag-and-drop
-- Single-cookie auth — no database, no user management
-- All API calls are server-side — only one port needs to be internet-exposed
-
-## Limitations / known gaps
-
-- Single-user only
-- No push notifications
-- No Docker container management
-- Services must be reachable from the machine running CTRLr (localhost or LAN)
-- Not yet one-command deployable (working on it)
-
 ## Security
 
 This project was built by a non-developer using AI. That warrants transparency about what has and hasn't been hardened.
@@ -221,6 +203,22 @@ This project was built by a non-developer using AI. That warrants transparency a
 CTRLr is designed to run **behind a reverse proxy with HTTPS** (Caddy, nginx) and ideally behind a VPN. It is **not designed to be exposed directly on port 3000** to the internet. Running it without a reverse proxy or on an open port is not a supported or recommended configuration.
 
 If you find a security issue, open an issue or email directly. Given this is AI-generated code, scrutiny is welcome and expected.
+
+## Features
+
+- Terminal/mono aesthetic with neon accents and per-theme TopBar (10 themes)
+- Mobile-optimised — Sonarr/Radarr and Plex tabs on narrow screens, full grid on desktop
+- Section reordering via drag-and-drop
+- Single-cookie auth — no database, no user management
+- All API calls are server-side — only one port needs to be internet-exposed
+
+## Limitations / known gaps
+
+- Single-user only
+- No push notifications
+- No Docker container management
+- Services must be reachable from the machine running CTRLr (localhost or LAN)
+- Not yet one-command deployable (working on it)
 
 ## Contributing
 
