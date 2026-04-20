@@ -78,6 +78,8 @@ One person (or one household) running a home media server on a NAS or spare PC, 
 
 ## iPadOS / iOS companion app
 
+![iPadOS companion app](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/ipad-app-01.png)
+
 The web dashboard is deliberately terminal-flavoured — monospace type, neon on dark, function over form. The iPadOS app is a different thing entirely. It's built to feel native to the device: fluid animations, translucent materials, the design language of a screen you pick up from the couch. But beyond aesthetics, it goes deeper into the platform than a web app can. Downloads surface on your lock screen as Live Activities. Sonarr and Radarr push updates in real time over WebSocket rather than polling. Siri and Shortcuts can reach into your media stack. The app is ambient in a way the dashboard isn't — it integrates with how you actually use an iPhone or iPad rather than asking you to open a tab.
 
 Same data. Different relationship with it.
