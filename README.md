@@ -31,7 +31,11 @@ This project was built by a non-developer using AI. That warrants transparency a
 **Intended deployment:**
 CTRLr is designed to run **behind a reverse proxy with HTTPS** (Caddy, nginx) and ideally behind a VPN. It is **not designed to be exposed directly on port 3000** to the internet. Running it without a reverse proxy or on an open port is not a supported or recommended configuration.
 
-If you find a security issue, open an issue or email directly. Given this is AI-generated code, scrutiny is welcome and expected.
+For context on how I run it: single household, behind Caddy with HTTPS, on a home network. That's the threat model this was designed for.
+
+The gaps above are real and worth fixing. The goal is to get CTRLr to a security standard that matches or exceeds the tools it sits in front of — if you can help close any of them, that's exactly the kind of contribution that matters most.
+
+If you find a security issue, open an issue or email directly.
 
 ---
 
