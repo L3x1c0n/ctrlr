@@ -182,6 +182,52 @@ export async function applyMatch(ratingKey: string, guid: string, name: string, 
   await fetch(url, { method: 'PUT', headers, cache: 'no-store' })
 }
 
+// ── file info by title ────────────────────────────────────────────────────────
+
+export interface PlexFileInfo {
+  file: string
+  size: number
+  videoResolution?: string
+  videoCodec?: string
+  audioCodec?: string
+  bitrate?: number
+  container?: string
+}
+
+export async function getFileInfoByTitle(title: string, year?: number): Promise<PlexFileInfo | null> {
+  try {
+    const url  = `${PLEX_URL}/hubs/search?query=${encodeURIComponent(title)}&limit=10&includeExtras=0`
+    const res  = await fetch(url, { headers, cache: 'no-store' })
+    if (!res.ok) return null
+    const data = await res.json()
+    const hubs = data?.MediaContainer?.Hub ?? []
+    for (const hub of hubs) {
+      if (!['movie', 'show'].includes(hub.type)) continue
+      for (const item of (hub.Metadata ?? [])) {
+        if (year && item.year && Math.abs(item.year - year) > 1) continue
+        const ratingKey = item.ratingKey
+        if (!ratingKey) continue
+        const detail = await getMediaDetail(ratingKey)
+        const media  = detail?.Media?.[0]
+        if (!media) continue
+        const part = media.Part?.[0]
+        return {
+          file:            part?.file ?? '',
+          size:            part?.size ?? 0,
+          videoResolution: media.videoResolution,
+          videoCodec:      media.videoCodec,
+          audioCodec:      media.audioCodec,
+          bitrate:         media.bitrate,
+          container:       media.container,
+        }
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 // ── library search ────────────────────────────────────────────────────────────
 
 export async function searchLibrary(query: string): Promise<PlexMedia[]> {

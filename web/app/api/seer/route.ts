@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { search, getRequests, submitRequest, approveRequest, deleteRequest, getMediaDetail, getSeerProfiles, updateSeerRequest, getRootFolders, getTrending, resolveDefaults, runSyncJobs } from '@/lib/seer'
+import { getFileInfoByTitle } from '@/lib/plex'
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,7 +27,14 @@ export async function GET(req: NextRequest) {
       ])
       const rawServiceId = (detail as any)?.mediaInfo?.externalServiceId
       const serviceId = (rawServiceId != null && rawServiceId > 0) ? rawServiceId : null
-      return NextResponse.json({ detail, profiles, rootFolders, serviceId })
+      const inPlex = (detail as any)?.mediaInfo?.status === 5
+      let plexFileInfo = null
+      if (inPlex) {
+        const title = (detail as any)?.title ?? (detail as any)?.name
+        const year  = (detail as any)?.releaseDate?.slice(0, 4) ?? (detail as any)?.firstAirDate?.slice(0, 4)
+        plexFileInfo = await getFileInfoByTitle(title, year ? parseInt(year) : undefined)
+      }
+      return NextResponse.json({ detail, profiles, rootFolders, serviceId, plexFileInfo })
     }
     if (searchParams.get('action') === 'defaults' && mediaType) {
       const defaults = await resolveDefaults(mediaType)

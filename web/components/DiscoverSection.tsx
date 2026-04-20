@@ -11,6 +11,15 @@ const PLEX_ORANGE = '#E5A00D'
 
 interface Profile    { id: number; name: string }
 interface RootFolder { path: string; freeSpace: number }
+interface PlexFileInfo {
+  file: string
+  size: number
+  videoResolution?: string
+  videoCodec?: string
+  audioCodec?: string
+  bitrate?: number
+  container?: string
+}
 
 function fmtFree(bytes: number): string {
   if (bytes >= 1024 ** 4) return `${(bytes / 1024 ** 4).toFixed(1)} TB`
@@ -119,12 +128,19 @@ function MetaRow({ label, value, lines = 1 }: { label: string; value: string; li
 
 type ReqState = 'idle' | 'submitting' | 'done'
 
-function PreviewPane({ item, detail, detailLoading, profiles, folders }: {
+function fmtSize(bytes: number): string {
+  if (bytes >= 1024 ** 4) return `${(bytes / 1024 ** 4).toFixed(2)} TB`
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`
+  return `${(bytes / 1024 ** 2).toFixed(0)} MB`
+}
+
+function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileInfo }: {
   item: SeerSearchResult | null
   detail: DiscoverDetail | null
   detailLoading: boolean
   profiles: Profile[]
   folders: RootFolder[]
+  plexFileInfo: PlexFileInfo | null
 }) {
   const [reqState,   setReqState]   = useState<ReqState>('idle')
   const [profileId,  setProfileId]  = useState<number | null>(null)
@@ -178,7 +194,7 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders }: {
   }
 
   return (
-    <div className="flex flex-col h-full border border-[#1a1a2e] overflow-hidden">
+    <div className="flex flex-col border border-[#1a1a2e] overflow-hidden md:h-full md:overflow-hidden overflow-y-auto">
 
       {/* backdrop */}
       <div className="relative shrink-0 w-full" style={{ aspectRatio: '16/9' }}>
@@ -228,7 +244,7 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders }: {
       </div>
 
       {/* overview */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 font-mono text-xs">
+      <div className="md:flex-1 md:overflow-y-auto px-3 py-2 font-mono text-xs">
         {overview ? (
           <>
             <p className="text-[#6a9a7a] mb-1">{'/*'}</p>
@@ -243,12 +259,38 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders }: {
       {/* status / request area */}
       <div className="shrink-0 border-t border-[#1a1a2e] px-3 py-2.5 font-mono text-xs">
         {inPlex && (
-          <span
-            className="inline-block px-2.5 py-1 text-xs font-mono"
-            style={{ color: PLEX_ORANGE, background: 'rgba(229,160,13,0.12)', border: `1px solid rgba(229,160,13,0.35)` }}
-          >
-            ✦ in plex
-          </span>
+          <div className="space-y-1.5">
+            <span
+              className="inline-block px-2.5 py-1 text-xs font-mono"
+              style={{ color: PLEX_ORANGE, background: 'rgba(229,160,13,0.12)', border: `1px solid rgba(229,160,13,0.35)` }}
+            >
+              ✦ in plex
+            </span>
+            {plexFileInfo && (
+              <div className="space-y-0.5 font-mono text-xs">
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                  {plexFileInfo.videoResolution && (
+                    <span style={{ color: PLEX_ORANGE }}>{plexFileInfo.videoResolution.toUpperCase()}</span>
+                  )}
+                  {plexFileInfo.videoCodec && (
+                    <span className="text-[#888]">{plexFileInfo.videoCodec.toUpperCase()}</span>
+                  )}
+                  {plexFileInfo.audioCodec && (
+                    <span className="text-[#888]">{plexFileInfo.audioCodec.toUpperCase()}</span>
+                  )}
+                  {plexFileInfo.container && (
+                    <span className="text-[#666]">.{plexFileInfo.container}</span>
+                  )}
+                  {plexFileInfo.size > 0 && (
+                    <span className="text-[#888]">{fmtSize(plexFileInfo.size)}</span>
+                  )}
+                </div>
+                {plexFileInfo.file && (
+                  <p className="text-[#555] truncate" title={plexFileInfo.file}>{plexFileInfo.file}</p>
+                )}
+              </div>
+            )}
+          </div>
         )}
         {(isRequested || reqState === 'done') && (
           <span
@@ -338,6 +380,7 @@ export default function DiscoverSection() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [profiles,      setProfiles]      = useState<Profile[]>([])
   const [folders,       setFolders]       = useState<RootFolder[]>([])
+  const [plexFileInfo,  setPlexFileInfo]  = useState<PlexFileInfo | null>(null)
   const [drawerItem,    setDrawerItem]    = useState<SeerSearchResult | null>(null)
 
   // Mobile: quick-request state
@@ -384,6 +427,7 @@ export default function DiscoverSection() {
           const sortedFolders = [...(d.rootFolders ?? [])].sort((a: RootFolder, b: RootFolder) => b.freeSpace - a.freeSpace)
           setProfiles(d.profiles ?? [])
           setFolders(sortedFolders)
+          setPlexFileInfo(d.plexFileInfo ?? null)
         })
         .catch(() => setDetail(null))
         .finally(() => setDetailLoading(false))
@@ -396,6 +440,7 @@ export default function DiscoverSection() {
       setDetail(null)
       setProfiles([])
       setFolders([])
+      setPlexFileInfo(null)
       fetchDetail(item)
     }
   }
@@ -543,14 +588,15 @@ export default function DiscoverSection() {
             detailLoading={detailLoading}
             profiles={profiles}
             folders={folders}
+            plexFileInfo={plexFileInfo}
           />
         </div>
 
-        {/* mobile layout */}
-        <div className="md:hidden grid gap-2" style={{ gridTemplateColumns: '1fr 140px', height: 540 }}>
+        {/* mobile layout: list on top, preview below */}
+        <div className="md:hidden flex flex-col gap-2">
 
-          {/* left: tabbed list */}
-          <div className="flex flex-col border border-[#1a1a2e] overflow-hidden">
+          {/* list */}
+          <div className="flex flex-col border border-[#1a1a2e] overflow-hidden" style={{ height: 220 }}>
             <div className="flex shrink-0 border-b border-[#1a1a2e]">
               {(['movie', 'tv'] as const).map(t => (
                 <button
@@ -567,81 +613,47 @@ export default function DiscoverSection() {
             <div className="overflow-y-auto flex-1">
               {(tab === 'movie' ? moviesLoading : tvLoading) ? (
                 <div className="p-3"><Spinner /></div>
-              ) : (tab === 'movie' ? movies : tvShows).map((item) => (
-                <div
-                  key={`${item.mediaType}-${item.id}`}
-                  onClick={() => activate(item)}
-                  className={`flex items-center gap-1.5 px-2 py-1.5 cursor-default select-none border-l-2 font-mono text-xs transition-colors ${
-                    activeId === `${item.mediaType}-${item.id}`
-                      ? 'border-[#4a4a7a] bg-[#0d0d1a] text-white'
-                      : 'border-transparent text-[#bbb]'
-                  }`}
-                >
-                  <MarqueeText className="flex-1 min-w-0">{item.title ?? item.name}</MarqueeText>
-                  {(item.releaseDate ?? item.firstAirDate) && (
-                    <span className="text-[#888] shrink-0 text-xs">
-                      {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
-                    </span>
-                  )}
-                </div>
-              ))}
+              ) : (
+                <>
+                  {(tab === 'movie' ? movies : tvShows).map((item) => (
+                    <div
+                      key={`${item.mediaType}-${item.id}`}
+                      onClick={() => activate(item)}
+                      className={`flex items-center gap-1.5 px-2 py-1.5 cursor-default select-none border-l-2 font-mono text-xs transition-colors ${
+                        activeId === `${item.mediaType}-${item.id}`
+                          ? 'border-[#4a4a7a] bg-[#0d0d1a] text-white'
+                          : 'border-transparent text-[#bbb]'
+                      }`}
+                    >
+                      <span className="flex-1 truncate">{item.title ?? item.name}</span>
+                      {(item.releaseDate ?? item.firstAirDate) && (
+                        <span className="text-[#888] shrink-0 text-xs">
+                          {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => loadMore(tab)}
+                    disabled={tab === 'movie' ? moviesMore : tvMore}
+                    className="w-full text-center font-mono text-xs text-[#555] hover:text-[#888] py-2 border-t border-[#0f0f1a] disabled:opacity-40"
+                  >
+                    {(tab === 'movie' ? moviesMore : tvMore) ? '...' : '--more'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
-          {/* right: poster + meta + request */}
-          <div className="flex flex-col border border-[#1a1a2e] overflow-hidden">
-            <div className="relative w-full shrink-0 overflow-hidden bg-[#080810]" style={{ aspectRatio: '2/3' }}>
-              {activeItem?.posterPath && (
-                <img
-                  src={TMDB_W(185, activeItem.posterPath)}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover"
-                  style={{ filter: 'blur(10px) brightness(0.35)', transform: 'scale(1.15)' }}
-                />
-              )}
-              {activeItem?.posterPath ? (
-                <img
-                  src={TMDB_W(185, activeItem.posterPath)}
-                  alt=""
-                  className="absolute top-0 left-1/2 -translate-x-1/2"
-                  style={{ width: 90, height: 135, objectFit: 'cover', outline: '1px solid rgba(255,255,255,0.1)', outlineOffset: '-1px' }}
-                />
-              ) : (
-                <div className="absolute inset-0" />
-              )}
-            </div>
-            <div className="flex-1 overflow-y-auto px-1 pt-1 pb-1 font-mono text-xs space-y-1.5">
-              {detail?.credits?.crew?.find(c => c.job === 'Director') && (
-                <p>
-                  <span className="text-[#6a9a7a]">// dir</span>
-                  <br />
-                  <span className="text-[#ccc]">{detail.credits!.crew!.find(c => c.job === 'Director')!.name}</span>
-                </p>
-              )}
-              {(detail?.overview ?? activeItem?.overview) && (
-                <p className="text-[#999] leading-relaxed">{detail?.overview ?? activeItem?.overview}</p>
-              )}
-            </div>
-            {/* mobile request button */}
-            {activeItem && (() => {
-              const st  = detail?.mediaInfo?.status ?? activeItem.mediaInfo?.status
-              const key = `${activeItem.mediaType}-${activeItem.id}`
-              if (st === 5)                          return <div className="px-2 py-2 border-t border-[#1a1a2e]"><span className="font-mono text-xs" style={{ color: PLEX_ORANGE }}>✦ plex</span></div>
-              if ((st != null && st >= 2) || mobileDone.has(key)) return <div className="px-2 py-2 border-t border-[#1a1a2e]"><span className="font-mono text-xs text-blue-400">✦ req&apos;d</span></div>
-              const isThisReq = mobileReqItem?.id === activeItem.id && mobileReqItem?.mediaType === activeItem.mediaType
-              return (
-                <div className="px-2 py-2 border-t border-[#1a1a2e]">
-                  <button
-                    onClick={() => mobileRequest(activeItem)}
-                    disabled={mobileSubmitting}
-                    className="btn-xs text-blue-400 disabled:opacity-40"
-                  >
-                    {isThisReq && mobileSubmitting ? '...' : '--req'}
-                  </button>
-                </div>
-              )
-            })()}
-          </div>
+          {/* preview pane — same component as desktop */}
+          <PreviewPane
+            item={activeItem}
+            detail={detail}
+            detailLoading={detailLoading}
+            profiles={profiles}
+            folders={folders}
+            plexFileInfo={plexFileInfo}
+          />
         </div>
 
         <div className="font-mono text-xs text-[#6a9a7a] mt-3">{'}'}</div>
