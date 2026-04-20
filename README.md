@@ -76,11 +76,11 @@ You see something on your watchlist. One click opens the detail drawer — metad
 **Seer → approve → download → library:**
 A request comes in from someone on your server. You approve it from the Seer panel — it lands straight in Sonarr or Radarr's queue, gets picked up by qBittorrent, and you can watch the download progress in real time. Once it's done, it imports automatically and shows up in Plex. The whole chain, visible from one place, without touching any of the individual tools.
 
-**Failed download → re-grab:**
-A torrent stalls or fails. You delete it from qBittorrent, trigger a new search in the Arr detail drawer, and grab a different release — without ever opening Sonarr or qBittorrent directly.
+**Failed download → re-grab → back on track:**
+A torrent stalls or fails. You delete it from qBittorrent, open the detail drawer in the Arr panel, trigger a new release search, and grab a different one — it drops back into the queue and starts downloading. No need to open Sonarr, qBittorrent, or anything else directly.
 
-**Discover → request → done:**
-You find something trending on TMDB. Full metadata preview, one-click request via Seer, confirmation in the same view.
+**Discover → request → download → library:**
+You find something trending on TMDB. Full metadata preview right in the drawer — cast, synopsis, ratings. One-click request via Seer, which hands it off to Sonarr or Radarr. From there it follows the same path: queue, torrent, download, import, Plex. You triggered the whole thing without leaving the dashboard.
 
 ![Discover request flow](https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/screenshots/discover-drawer.png)
 
