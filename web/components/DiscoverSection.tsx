@@ -6,6 +6,7 @@ import { SeerSearchResult, DiscoverDetail } from '@/types'
 import Spinner from '@/components/Spinner'
 import DiscoverDetailDrawer from '@/components/DiscoverDetailDrawer'
 import MarqueeText from '@/components/MarqueeText'
+import RequestModal from '@/components/RequestModal'
 
 const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${path}`
 
@@ -14,33 +15,18 @@ const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${p
 const PLEX_ORANGE = '#E5A00D'
 
 
-function AddButton({ item, onAdded }: { item: SeerSearchResult; onAdded: () => void }) {
-  const [adding, setAdding] = useState(false)
-  const [done, setDone]     = useState(false)
+function AddButton({ item, onRequest }: { item: SeerSearchResult; onRequest: (item: SeerSearchResult) => void }) {
   const status = item.mediaInfo?.status
 
-  if (status === 5)                              return <span className="font-mono text-xs shrink-0" style={{ color: PLEX_ORANGE }}>// plex</span>
-  if (status != null && status >= 2 && status <= 4) return <span className="font-mono text-xs shrink-0 text-blue-400">// req&apos;d</span>
-  if (done) return <span className="font-mono text-xs text-blue-400 shrink-0">// queued</span>
+  if (status === 5)                                  return <span className="font-mono text-xs shrink-0" style={{ color: PLEX_ORANGE }}>// plex</span>
+  if (status != null && status >= 2 && status <= 4)  return <span className="font-mono text-xs shrink-0 text-blue-400">// req&apos;d</span>
 
   return (
     <button
-      disabled={adding}
-      onClick={async (e) => {
-        e.stopPropagation()
-        setAdding(true)
-        await fetch('/api/seer', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'submit', mediaType: item.mediaType, mediaId: item.id }),
-        })
-        setAdding(false)
-        setDone(true)
-        onAdded()
-      }}
-      className="btn-xs text-blue-400 shrink-0 disabled:opacity-40"
+      onClick={(e) => { e.stopPropagation(); onRequest(item) }}
+      className="btn-xs text-blue-400 shrink-0"
     >
-      {adding ? '...' : '--add'}
+      --add
     </button>
   )
 }
@@ -48,14 +34,14 @@ function AddButton({ item, onAdded }: { item: SeerSearchResult; onAdded: () => v
 // ── left list row ──────────────────────────────────────────────────────────────
 
 function ListRow({
-  item, index, isActive, onHover, onClick, onAdded,
+  item, index, isActive, onHover, onClick, onRequest,
 }: {
   item: SeerSearchResult
   index: number
   isActive: boolean
   onHover: () => void
   onClick: () => void
-  onAdded: () => void
+  onRequest: (item: SeerSearchResult) => void
 }) {
   const title  = item.title ?? item.name ?? '—'
   const year   = (item.releaseDate ?? item.firstAirDate)?.slice(0, 4)
@@ -73,7 +59,7 @@ function ListRow({
       <span className="text-[#666] w-4 tabular-nums text-right shrink-0">{index + 1}</span>
       <span className="flex-1 truncate">{title}</span>
       {year && <span className="text-[#888] shrink-0">{year}</span>}
-      <AddButton item={item} onAdded={onAdded} />
+      <AddButton item={item} onRequest={onRequest} />
     </div>
   )
 }
@@ -81,7 +67,7 @@ function ListRow({
 // ── left list panel ────────────────────────────────────────────────────────────
 
 function ListPanel({
-  label, mediaType, items, loading, activeId, onActivate, onAdded, onLoadMore, loadingMore,
+  label, mediaType, items, loading, activeId, onActivate, onRequest, onLoadMore, loadingMore,
 }: {
   label: string
   mediaType: 'movie' | 'tv'
@@ -89,7 +75,7 @@ function ListPanel({
   loading: boolean
   activeId: string | null
   onActivate: (item: SeerSearchResult) => void
-  onAdded: () => void
+  onRequest: (item: SeerSearchResult) => void
   onLoadMore: () => void
   loadingMore: boolean
 }) {
@@ -109,7 +95,7 @@ function ListPanel({
               isActive={activeId === `${item.mediaType}-${item.id}`}
               onHover={() => onActivate(item)}
               onClick={() => onActivate(item)}
-              onAdded={onAdded}
+              onRequest={onRequest}
             />
           ))
         }
@@ -256,6 +242,7 @@ export default function DiscoverSection() {
   const [detail,        setDetail]        = useState<DiscoverDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [drawerItem,    setDrawerItem]    = useState<SeerSearchResult | null>(null)
+  const [requestItem,   setRequestItem]   = useState<SeerSearchResult | null>(null)
 
   const activeId     = activeItem ? `${activeItem.mediaType}-${activeItem.id}` : null
   const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -392,7 +379,7 @@ export default function DiscoverSection() {
                 loading={moviesLoading}
                 activeId={activeId}
                 onActivate={activate}
-                onAdded={() => {}}
+                onRequest={setRequestItem}
                 onLoadMore={() => loadMore('movie')}
                 loadingMore={moviesMore}
               />
@@ -404,7 +391,7 @@ export default function DiscoverSection() {
                 loading={tvLoading}
                 activeId={activeId}
                 onActivate={activate}
-                onAdded={() => {}}
+                onRequest={setRequestItem}
                 onLoadMore={() => loadMore('tv')}
                 loadingMore={tvMore}
               />
@@ -457,7 +444,7 @@ export default function DiscoverSection() {
                       {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
                     </span>
                   )}
-                  <AddButton item={item} onAdded={() => {}} />
+                  <AddButton item={item} onRequest={setRequestItem} />
                 </div>
               ))}
             </div>
@@ -509,6 +496,14 @@ export default function DiscoverSection() {
         onClose={() => setDrawerItem(null)}
         onRequested={() => setDrawerItem(null)}
       />
+
+      {requestItem && (
+        <RequestModal
+          item={requestItem}
+          onClose={() => setRequestItem(null)}
+          onDone={() => setRequestItem(null)}
+        />
+      )}
     </>
   )
 }
