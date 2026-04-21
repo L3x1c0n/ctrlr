@@ -4,6 +4,39 @@ import { resolve } from 'path'
 
 const ENV_PATH = process.env.CTRLR_ENV_PATH ?? resolve(process.cwd(), '.env.local')
 
+// ── rate limiting ─────────────────────────────────────────────────────────────
+
+const ATTEMPTS_MAX    = 5
+const LOCKOUT_MS      = 15 * 60 * 1000 // 15 minutes
+const attempts = new Map<string, { count: number; lockedUntil: number }>()
+
+function getIp(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+}
+
+function checkRateLimit(ip: string): { blocked: boolean; retryAfter?: number } {
+  const now = Date.now()
+  const record = attempts.get(ip) ?? { count: 0, lockedUntil: 0 }
+  if (record.lockedUntil > now) {
+    return { blocked: true, retryAfter: Math.ceil((record.lockedUntil - now) / 1000) }
+  }
+  return { blocked: false }
+}
+
+function recordFailure(ip: string) {
+  const now = Date.now()
+  const record = attempts.get(ip) ?? { count: 0, lockedUntil: 0 }
+  const count = record.count + 1
+  attempts.set(ip, {
+    count,
+    lockedUntil: count >= ATTEMPTS_MAX ? now + LOCKOUT_MS : 0,
+  })
+}
+
+function clearAttempts(ip: string) {
+  attempts.delete(ip)
+}
+
 function updateEnvFile(key: string, value: string) {
   let lines: string[] = []
   try { lines = readFileSync(ENV_PATH, 'utf-8').split('\n') } catch { /* new file */ }
@@ -14,6 +47,15 @@ function updateEnvFile(key: string, value: string) {
 }
 
 export async function POST(req: Request) {
+  const ip = getIp(req)
+  const { blocked, retryAfter } = checkRateLimit(ip)
+  if (blocked) {
+    return NextResponse.json(
+      { error: `Too many attempts. Try again in ${retryAfter}s.` },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    )
+  }
+
   const { username, password } = await req.json()
 
   if (
@@ -21,8 +63,11 @@ export async function POST(req: Request) {
     username !== process.env.AUTH_USERNAME ||
     password !== process.env.AUTH_PASSWORD
   ) {
+    recordFailure(ip)
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
   }
+
+  clearAttempts(ip)
 
   const res = NextResponse.json({ ok: true })
   res.cookies.set('ctrlr-session', process.env.AUTH_SECRET!, {
@@ -30,6 +75,7 @@ export async function POST(req: Request) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     path: '/',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
   })
   return res
 }
