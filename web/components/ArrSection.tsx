@@ -16,10 +16,13 @@ function fmtRelDate(dateStr: string): string {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
-interface Health   { source: string; type: string; message: string }
-interface MonMovie { id: number; title: string; year: number; hasFile: boolean; status: string; inCinemas?: string; physicalRelease?: string; digitalRelease?: string }
-interface MonSerie { id: number; title: string; nextAiring?: string }
+interface Health     { source: string; type: string; message: string }
+interface MonMovie   { id: number; title: string; year: number; hasFile: boolean; status: string; inCinemas?: string; physicalRelease?: string; digitalRelease?: string }
+interface MonSerie   { id: number; title: string; nextAiring?: string }
 type Monitored = MonMovie | MonSerie
+
+interface RecentMovie   { id: number; title: string; year: number; dateAdded: string }
+interface RecentEpisode { seriesId: number; seriesTitle: string; seasonNumber: number; episodeNumber: number; title: string; dateAdded: string }
 
 function upcomingMovieDate(m: MonMovie): string | null {
   const now = Date.now()
@@ -122,15 +125,16 @@ interface Props {
 }
 
 export default function ArrSection({ service, label }: Props) {
-  const [queue,     setQueue]     = useState<ArrQueueItem[]>([])
-  const [health,    setHealth]    = useState<Health[]>([])
-  const [monitored, setMonitored] = useState<Monitored[]>([])
-  const [calendar,  setCalendar]  = useState<ArrCalendarItem[]>([])
-  const [retained,  setRetained]  = useState<RetainedRow[]>(() => [])
-  const [error,     setError]     = useState<string | null>(null)
-  const [loading,   setLoading]   = useState(true)
-  const [selected,  setSelected]  = useState<ArrQueueItem | null>(null)
-  const [dismissed, setDismissed] = useState<Set<string>>(() => new Set())
+  const [queue,          setQueue]          = useState<ArrQueueItem[]>([])
+  const [health,         setHealth]         = useState<Health[]>([])
+  const [monitored,      setMonitored]      = useState<Monitored[]>([])
+  const [calendar,       setCalendar]       = useState<ArrCalendarItem[]>([])
+  const [recentlyAdded,  setRecentlyAdded]  = useState<(RecentMovie | RecentEpisode)[]>([])
+  const [retained,       setRetained]       = useState<RetainedRow[]>(() => [])
+  const [error,          setError]          = useState<string | null>(null)
+  const [loading,        setLoading]        = useState(true)
+  const [selected,       setSelected]       = useState<ArrQueueItem | null>(null)
+  const [dismissed,      setDismissed]      = useState<Set<string>>(() => new Set())
 
   // Track previous live row states to detect disappearances
   const prevRows = useRef<Map<string, { state: RowState; title: string; calendarId?: number; seriesId?: number }>>(new Map())
@@ -144,6 +148,7 @@ export default function ArrSection({ service, label }: Props) {
       setHealth(data.health ?? [])
       setMonitored(data.monitored ?? [])
       setCalendar(data.calendar ?? [])
+      setRecentlyAdded(data.recentlyAdded ?? [])
       setError(null)
     } catch (e) {
       setError(String(e))
@@ -293,7 +298,10 @@ export default function ArrSection({ service, label }: Props) {
   }, [rows, service])
 
   const failedCount = rows.filter(r => r.state === 'failed').length
-  const [showAllUpcoming, setShowAllUpcoming] = useState(false)
+  const [showAllUpcoming,      setShowAllUpcoming]      = useState(false)
+  const [showAllRecentlyAdded, setShowAllRecentlyAdded] = useState(false)
+  const UPCOMING_CAP      = 5
+  const RECENT_CAP        = 5
 
   return (
     <>
@@ -394,22 +402,63 @@ export default function ArrSection({ service, label }: Props) {
           </div>
         )}
 
+        {/* recently added */}
+        {recentlyAdded.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center gap-3 mb-1">
+              <p className="text-[#7070a8] text-xs">{`/* recently added */`}</p>
+              {recentlyAdded.length > RECENT_CAP && (
+                <button onClick={() => setShowAllRecentlyAdded(v => !v)} className="btn-xs text-[#888]">
+                  {showAllRecentlyAdded ? '--less' : `-- ${recentlyAdded.length - RECENT_CAP} more`}
+                </button>
+              )}
+            </div>
+            <div className="space-y-px">
+              {(showAllRecentlyAdded ? recentlyAdded : recentlyAdded.slice(0, RECENT_CAP)).map((r, i) => {
+                const isEp = 'seriesTitle' in r
+                const ep   = isEp ? r as RecentEpisode : null
+                const mv   = isEp ? null : r as RecentMovie
+                const ago  = fmtRelDate(isEp ? ep!.dateAdded : mv!.dateAdded)
+                return (
+                  <div key={i} className="flex items-center gap-2 font-mono text-xs py-0.5 border-b border-[#0a0a14]">
+                    <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0">{i + 1}</span>
+                    {isEp ? (
+                      <>
+                        <button onClick={() => setSelected({ seriesId: ep!.seriesId, title: ep!.seriesTitle } as ArrQueueItem)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                        <span className="flex-1 text-white truncate">{ep!.seriesTitle}</span>
+                        <span className="text-[#888] shrink-0 tabular-nums">S{String(ep!.seasonNumber).padStart(2,'0')}E{String(ep!.episodeNumber).padStart(2,'0')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => setSelected({ movieId: mv!.id, title: mv!.title } as ArrQueueItem)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                        <span className="flex-1 text-white truncate">{mv!.title}</span>
+                        <span className="text-[#888] shrink-0">{mv!.year}</span>
+                      </>
+                    )}
+                    <span className="text-[#6a9a7a] shrink-0 tabular-nums">{ago}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* upcoming releases */}
         {monitored.length > 0 && (
           <div className="mb-2">
             <div className="flex items-center gap-3 mb-1">
               <p className="text-[#7070a8] text-xs">{`/* upcoming */`}</p>
-              {monitored.length > 10 && (
+              {monitored.length > UPCOMING_CAP && (
                 <button
                   onClick={() => setShowAllUpcoming(v => !v)}
                   className="btn-xs text-[#888]"
                 >
-                  {showAllUpcoming ? '--less' : `-- ${monitored.length - 10} more`}
+                  {showAllUpcoming ? '--less' : `-- ${monitored.length - UPCOMING_CAP} more`}
                 </button>
               )}
             </div>
             <div className="space-y-px">
-              {(showAllUpcoming ? monitored : monitored.slice(0, 10)).map((m, i) => {
+              {(showAllUpcoming ? monitored : monitored.slice(0, UPCOMING_CAP)).map((m, i) => {
                 if (service === 'sonarr') {
                   const s = m as MonSerie
                   return (
@@ -452,7 +501,7 @@ export default function ArrSection({ service, label }: Props) {
             if (pendingCount)  parts.push(`${pendingCount} pending`)
             if (importedCount) parts.push(`${importedCount} imported`)
             if (missingCount)  parts.push(`${missingCount} missing`)
-            if (monitored.length > 10 && !showAllUpcoming) parts.push(`upcoming.slice(0,10) // ${monitored.length} total`)
+            if (monitored.length > UPCOMING_CAP && !showAllUpcoming) parts.push(`upcoming.slice(0,${UPCOMING_CAP}) // ${monitored.length} total`)
             else if (monitored.length) parts.push(`${monitored.length} upcoming`)
             return `] // ${parts.join(', ') || 'empty'}`
           })()}

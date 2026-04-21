@@ -109,6 +109,24 @@ export async function getMovieFileStatus(tmdbIds: number[]): Promise<{ downloade
   return { downloaded, inArr }
 }
 
+export interface RecentMovie {
+  id: number
+  title: string
+  year: number
+  dateAdded: string
+}
+
+export async function getRecentlyAdded(limit = 7): Promise<RecentMovie[]> {
+  const res = await fetch(`${BASE}/api/v3/movie`, { headers, cache: 'no-store' })
+  if (!res.ok) return []
+  const all: Array<{ id: number; title: string; year: number; hasFile: boolean; movieFile?: { dateAdded: string } }> = await res.json()
+  return all
+    .filter(m => m.hasFile && m.movieFile?.dateAdded)
+    .sort((a, b) => new Date(b.movieFile!.dateAdded).getTime() - new Date(a.movieFile!.dateAdded).getTime())
+    .slice(0, limit)
+    .map(m => ({ id: m.id, title: m.title, year: m.year, dateAdded: m.movieFile!.dateAdded }))
+}
+
 export async function getMonitored(): Promise<MonitoredMovie[]> {
   const res = await fetch(`${BASE}/api/v3/movie?monitored=true`, { headers, cache: 'no-store' })
   if (!res.ok) return []

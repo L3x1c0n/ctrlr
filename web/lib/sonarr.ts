@@ -211,6 +211,37 @@ export async function getEpisodeFileStatus(tvdbIds: number[]): Promise<{ downloa
   return { downloaded, inArr }
 }
 
+export interface RecentEpisode {
+  seriesId: number
+  seriesTitle: string
+  seasonNumber: number
+  episodeNumber: number
+  title: string
+  dateAdded: string
+}
+
+export async function getRecentlyAdded(limit = 7): Promise<RecentEpisode[]> {
+  const res = await fetch(`${BASE}/api/v3/history?pageSize=${limit}&eventType=3&sortKey=date&sortDirection=descending`, { headers, cache: 'no-store' })
+  if (!res.ok) return []
+  const data = await res.json()
+  const seen = new Set<string>()
+  const results: RecentEpisode[] = []
+  for (const r of (data.records ?? [])) {
+    const key = `${r.seriesId}-${r.episode?.seasonNumber}-${r.episode?.episodeNumber}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    results.push({
+      seriesId:      r.seriesId,
+      seriesTitle:   r.series?.title ?? '',
+      seasonNumber:  r.episode?.seasonNumber ?? 0,
+      episodeNumber: r.episode?.episodeNumber ?? 0,
+      title:         r.episode?.title ?? r.sourceTitle ?? '',
+      dateAdded:     r.date,
+    })
+  }
+  return results
+}
+
 export async function getMonitored(): Promise<MonitoredSeries[]> {
   const res = await fetch(`${BASE}/api/v3/series`, { headers, cache: 'no-store' })
   if (!res.ok) return []

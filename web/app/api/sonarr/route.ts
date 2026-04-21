@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getQueue, deleteQueueItem, triggerSearch, getSeriesDetail, getQualityProfiles, updateSeries, getHealth, getMonitored, getCalendarToday, searchReleases, grabRelease, findByTvdb, findEpisodeId, searchEpisode, getNextEpisodeId, getEpisodes } from '@/lib/sonarr'
+import { getQueue, deleteQueueItem, triggerSearch, getSeriesDetail, getQualityProfiles, updateSeries, getHealth, getMonitored, getCalendarToday, searchReleases, grabRelease, findByTvdb, findEpisodeId, searchEpisode, getNextEpisodeId, getEpisodes, getRecentlyAdded } from '@/lib/sonarr'
 
 export async function GET(req: NextRequest) {
   try {
@@ -33,8 +33,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ seriesId, episodeId })
     }
     if (panel === 'overview') {
-      const [queue, health, monitored, calendar] = await Promise.all([getQueue(), getHealth(), getMonitored(), getCalendarToday()])
-      return NextResponse.json({ records: queue.records, health, monitored, calendar })
+      const [queue, health, monitored, calendar, recentlyAdded] = await Promise.all([getQueue(), getHealth(), getMonitored(), getCalendarToday(), getRecentlyAdded()])
+      return NextResponse.json({ records: queue.records, health, monitored, calendar, recentlyAdded })
     }
     return NextResponse.json(await getQueue())
   } catch (e) {
