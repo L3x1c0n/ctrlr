@@ -293,6 +293,7 @@ export default function ArrSection({ service, label }: Props) {
   }, [rows, service])
 
   const failedCount = rows.filter(r => r.state === 'failed').length
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false)
 
   return (
     <>
@@ -327,7 +328,7 @@ export default function ArrSection({ service, label }: Props) {
           <p className="text-[#999] text-sm font-mono mb-4">queue empty</p>
         )}
         {rows.length > 0 && (
-          <div className="mb-4 overflow-x-auto">
+          <div className="mb-4 overflow-x-auto max-h-[300px] overflow-y-auto scrollbar-thin">
             <table className="w-full text-sm font-mono table-fixed md:table-auto">
               <thead>
                 <tr className="text-[#999] text-xs uppercase border-b border-[#1a1a2e]">
@@ -396,9 +397,19 @@ export default function ArrSection({ service, label }: Props) {
         {/* upcoming releases */}
         {monitored.length > 0 && (
           <div className="mb-2">
-            <p className="text-[#7070a8] text-xs mb-1">{`/* upcoming */`}</p>
+            <div className="flex items-center gap-3 mb-1">
+              <p className="text-[#7070a8] text-xs">{`/* upcoming */`}</p>
+              {monitored.length > 10 && (
+                <button
+                  onClick={() => setShowAllUpcoming(v => !v)}
+                  className="btn-xs text-[#888]"
+                >
+                  {showAllUpcoming ? '--less' : `-- ${monitored.length - 10} more`}
+                </button>
+              )}
+            </div>
             <div className="space-y-px">
-              {monitored.slice(0, 10).map((m, i) => {
+              {(showAllUpcoming ? monitored : monitored.slice(0, 10)).map((m, i) => {
                 if (service === 'sonarr') {
                   const s = m as MonSerie
                   return (
@@ -441,7 +452,7 @@ export default function ArrSection({ service, label }: Props) {
             if (pendingCount)  parts.push(`${pendingCount} pending`)
             if (importedCount) parts.push(`${importedCount} imported`)
             if (missingCount)  parts.push(`${missingCount} missing`)
-            if (monitored.length > 10) parts.push(`upcoming.slice(0,10) // ${monitored.length} total`)
+            if (monitored.length > 10 && !showAllUpcoming) parts.push(`upcoming.slice(0,10) // ${monitored.length} total`)
             else if (monitored.length) parts.push(`${monitored.length} upcoming`)
             return `] // ${parts.join(', ') || 'empty'}`
           })()}
