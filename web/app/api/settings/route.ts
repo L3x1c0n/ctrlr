@@ -25,6 +25,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Only session-authenticated browsers may write settings — not API token clients
+  const session = req.cookies.get('ctrlr-session')?.value
+  const secret  = process.env.AUTH_SECRET
+  if (!secret || session !== secret) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   try {
     const body: Record<string, string> = await req.json()
     // Read existing file to preserve any keys not in KEYS (like TRAKT_ACCESS_TOKEN written by auth flow)
