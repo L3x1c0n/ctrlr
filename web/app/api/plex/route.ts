@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   getRecentlyAdded, deleteMedia, resolveThumb, getMediaDetail,
   getPosters, getArts, selectPhoto, refreshMetadata,
-  searchMatches, applyMatch, searchLibrary,
+  searchMatches, applyMatch, searchLibrary, getChildren,
 } from '@/lib/plex'
 
 export async function GET(req: NextRequest) {
@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     const matchQuery   = searchParams.get('matchQuery')
     const matchType    = searchParams.get('matchType') ?? 'movie'
     const searchQuery  = searchParams.get('search')
+    const childrenKey  = searchParams.get('children')
 
     if (thumb) {
       const imgRes = await fetch(resolveThumb(thumb), { cache: 'no-store' })
@@ -23,11 +24,12 @@ export async function GET(req: NextRequest) {
         headers: { 'Content-Type': imgRes.headers.get('Content-Type') ?? 'image/jpeg' },
       })
     }
-    if (posters)    return NextResponse.json({ photos: await getPosters(posters) })
-    if (arts)       return NextResponse.json({ photos: await getArts(arts) })
+    if (posters)     return NextResponse.json({ photos: await getPosters(posters) })
+    if (arts)        return NextResponse.json({ photos: await getArts(arts) })
     if (searchQuery) return NextResponse.json({ results: await searchLibrary(searchQuery) })
     if (matchQuery)  return NextResponse.json({ results: await searchMatches(matchQuery, matchType) })
-    if (ratingKey)  return NextResponse.json({ detail: await getMediaDetail(ratingKey) })
+    if (childrenKey) return NextResponse.json({ children: await getChildren(childrenKey) })
+    if (ratingKey)   return NextResponse.json({ detail: await getMediaDetail(ratingKey) })
 
     return NextResponse.json(await getRecentlyAdded())
   } catch (e) {

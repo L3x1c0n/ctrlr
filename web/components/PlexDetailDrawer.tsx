@@ -26,12 +26,22 @@ interface PlexDetail {
   art?: string
   viewCount?: number
   grandparentTitle?: string
+  grandparentRatingKey?: string
   parentIndex?: number
   index?: number
   Genre?: { tag: string }[]
   Director?: { tag: string }[]
   Writer?: { tag: string }[]
   Role?: { tag: string; role?: string }[]
+}
+
+interface PlexChild {
+  ratingKey: string
+  title: string
+  index: number
+  leafCount?: number
+  duration?: number
+  thumb?: string
 }
 
 interface Photo { key: string; selected: boolean; thumb: string }
@@ -41,6 +51,96 @@ interface Props {
   item: PlexMedia | null
   onClose: () => void
   onRefresh: () => void
+}
+
+// ── series browser ────────────────────────────────────────────────────────────
+
+function SeriesBrowser({
+  showKey, onSelectEpisode,
+}: {
+  showKey: string
+  onSelectEpisode: (ratingKey: string) => void
+}) {
+  const [seasons,       setSeasons]       = useState<PlexChild[]>([])
+  const [loading,       setLoading]       = useState(true)
+  const [openSeason,    setOpenSeason]    = useState<string | null>(null)
+  const [episodes,      setEpisodes]      = useState<Record<string, PlexChild[]>>({})
+  const [loadingSeason, setLoadingSeason] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/plex?children=${showKey}`)
+      .then(r => r.json())
+      .then(d => setSeasons(d.children ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [showKey])
+
+  async function toggleSeason(seasonKey: string) {
+    if (openSeason === seasonKey) { setOpenSeason(null); return }
+    setOpenSeason(seasonKey)
+    if (episodes[seasonKey]) return
+    setLoadingSeason(seasonKey)
+    try {
+      const res  = await fetch(`/api/plex?children=${seasonKey}`)
+      const data = await res.json()
+      setEpisodes(prev => ({ ...prev, [seasonKey]: data.children ?? [] }))
+    } finally {
+      setLoadingSeason(null)
+    }
+  }
+
+  if (loading) return <Spinner />
+  if (seasons.length === 0) return <p className="text-[#999] text-xs font-mono">// no seasons found</p>
+
+  return (
+    <div className="space-y-0.5">
+      {seasons.map(season => (
+        <div key={season.ratingKey}>
+          <button
+            onClick={() => toggleSeason(season.ratingKey)}
+            className="w-full flex items-center justify-between py-1.5 px-2 hover:bg-[#1a1a2e] text-left rounded-sm"
+          >
+            <span className="text-[#ccc] text-xs font-mono">
+              S{String(season.index).padStart(2, '0')} — {season.title}
+            </span>
+            <span className="text-[#888] text-xs font-mono flex items-center gap-2">
+              {season.leafCount != null && <span>{season.leafCount}ep</span>}
+              <span>{openSeason === season.ratingKey ? '▲' : '▼'}</span>
+            </span>
+          </button>
+
+          {openSeason === season.ratingKey && (
+            <div className="ml-3 border-l border-[#2a2a4a] pl-2 pb-1">
+              {loadingSeason === season.ratingKey ? (
+                <div className="py-2"><Spinner /></div>
+              ) : (
+                <div className="space-y-0.5 pt-0.5">
+                  {(episodes[season.ratingKey] ?? []).map(ep => (
+                    <button
+                      key={ep.ratingKey}
+                      onClick={() => onSelectEpisode(ep.ratingKey)}
+                      className="w-full text-left py-1 px-1.5 hover:bg-[#1a1a2e] flex items-center gap-2 rounded-sm group"
+                    >
+                      <span className="text-[#7070a8] text-xs font-mono w-7 shrink-0 tabular-nums">
+                        E{String(ep.index).padStart(2, '0')}
+                      </span>
+                      <span className="text-[#bbb] text-xs truncate flex-1 group-hover:text-white transition-colors">{ep.title}</span>
+                      {ep.duration != null && (
+                        <span className="text-[#666] text-xs font-mono shrink-0">
+                          {fmtDuration(ep.duration)}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 // ── artwork grid ──────────────────────────────────────────────────────────────
@@ -209,31 +309,44 @@ function MatchPanel({
 // ── main drawer ───────────────────────────────────────────────────────────────
 
 export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
+  const [currentKey,   setCurrentKey]   = useState<string | null>(null)
   const [detail,       setDetail]       = useState<PlexDetail | null>(null)
   const [loading,      setLoading]      = useState(false)
   const [acting,       setActing]       = useState<string | null>(null)
   const [showPosters,  setShowPosters]  = useState(false)
   const [showArt,      setShowArt]      = useState(false)
   const [showMatch,    setShowMatch]    = useState(false)
+  const [showSeries,   setShowSeries]   = useState(false)
 
+  // Reset panel state when the source item changes
   useEffect(() => {
-    if (!item) { setDetail(null); setShowPosters(false); setShowArt(false); setShowMatch(false); return }
+    setCurrentKey(item?.ratingKey ?? null)
+    setShowPosters(false)
+    setShowArt(false)
+    setShowMatch(false)
+    setShowSeries(false)
+  }, [item])
+
+  // Fetch detail whenever the active key changes
+  useEffect(() => {
+    if (!currentKey) { setDetail(null); return }
     setLoading(true)
-    fetch(`/api/plex?ratingKey=${item.ratingKey}`)
+    setDetail(null)
+    fetch(`/api/plex?ratingKey=${currentKey}`)
       .then(r => r.json())
       .then(data => setDetail(data.detail ?? null))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [item])
+  }, [currentKey])
 
   async function doAction(action: string, extra: object = {}) {
-    if (!item) return
+    if (!currentKey) return
     setActing(action)
     try {
       await fetch('/api/plex', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ratingKey: item.ratingKey, ...extra }),
+        body: JSON.stringify({ action, ratingKey: currentKey, ...extra }),
       })
       if (action === 'delete') { onRefresh(); onClose() }
       else onRefresh()
@@ -242,17 +355,17 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
     }
   }
 
-  async function selectPoster(photoKey: string) {
-    await doAction('setPoster', { photoKey })
-  }
-  async function selectArt(photoKey: string) {
-    await doAction('setArt', { photoKey })
-  }
+  async function selectPoster(photoKey: string) { await doAction('setPoster', { photoKey }) }
+  async function selectArt(photoKey: string)    { await doAction('setArt',    { photoKey }) }
 
-  const mediaType   = detail?.type === 'episode' ? 'show' : 'movie'
+  const isEpisode  = detail?.type === 'episode'
+  const mediaType  = isEpisode ? 'show' : 'movie'
   const posterThumb = detail?.thumb ?? item?.thumb
   const posterUrl   = posterThumb ? `/api/plex?thumb=${encodeURIComponent(posterThumb)}` : null
   const isOpen      = !!item
+
+  // Show key: prefer from fetched detail (so it stays correct after episode navigation)
+  const showKey = detail?.grandparentRatingKey ?? item?.grandparentRatingKey ?? null
 
   return (
     <>
@@ -274,7 +387,7 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
 
           {loading && <Spinner />}
 
-          {!loading && detail && item && (
+          {!loading && detail && currentKey && (
             <>
               {/* header */}
               <div className="flex gap-4 mb-6 items-start">
@@ -282,9 +395,15 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                   <img src={posterUrl} alt={detail.title} className="w-36 aspect-[2/3] flex-shrink-0 object-cover border border-[#2a2a4a]" />
                 )}
                 <div className="flex-1 min-w-0 space-y-1.5 text-xs">
-                  {detail.grandparentTitle ? (
+                  {isEpisode ? (
                     <>
-                      <p className="text-white text-sm font-medium leading-snug">{detail.grandparentTitle}</p>
+                      {/* show title — clickable to toggle series browser */}
+                      <button
+                        onClick={() => setShowSeries(v => !v)}
+                        className={`text-white text-sm font-medium leading-snug text-left hover:text-[#a0a0d8] transition-colors ${showSeries ? 'text-[#a0a0d8]' : ''}`}
+                      >
+                        {detail.grandparentTitle}
+                      </button>
                       <p className="text-[#999]">S{String(detail.parentIndex ?? 0).padStart(2, '0')}E{String(detail.index ?? 0).padStart(2, '0')} — {detail.title}</p>
                     </>
                   ) : (
@@ -321,6 +440,27 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                 </div>
               </div>
 
+              {/* series browser — episodes only, below header */}
+              {isEpisode && showKey && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <p className="text-[#7070a8] text-xs">{`/* series */`}</p>
+                    <button
+                      onClick={() => setShowSeries(v => !v)}
+                      className={`btn-xs ${showSeries ? 'text-white' : 'text-[#999]'}`}
+                    >
+                      {showSeries ? '--collapse' : '--browse'}
+                    </button>
+                  </div>
+                  {showSeries && (
+                    <SeriesBrowser
+                      showKey={showKey}
+                      onSelectEpisode={key => { setCurrentKey(key); setShowPosters(false); setShowArt(false); setShowMatch(false) }}
+                    />
+                  )}
+                </div>
+              )}
+
               {/* overview */}
               {detail.summary && (
                 <div className="mb-6">
@@ -347,10 +487,10 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                   </button>
                 </div>
                 {showPosters && (
-                  <ArtGrid ratingKey={item.ratingKey} kind="posters" onSelect={selectPoster} />
+                  <ArtGrid ratingKey={currentKey} kind="posters" onSelect={selectPoster} />
                 )}
                 {showArt && (
-                  <ArtGrid ratingKey={item.ratingKey} kind="arts" onSelect={selectArt} />
+                  <ArtGrid ratingKey={currentKey} kind="arts" onSelect={selectArt} />
                 )}
               </div>
 
@@ -367,7 +507,7 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                 </div>
                 {showMatch && (
                   <MatchPanel
-                    ratingKey={item.ratingKey}
+                    ratingKey={currentKey}
                     mediaType={mediaType}
                     onDone={() => { setShowMatch(false); onRefresh() }}
                   />

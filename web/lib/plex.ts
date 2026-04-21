@@ -228,6 +228,35 @@ export async function getFileInfoByTitle(title: string, year?: number): Promise<
   }
 }
 
+// ── children (seasons / episodes) ────────────────────────────────────────────
+
+export interface PlexChild {
+  ratingKey: string
+  title: string
+  index: number
+  leafCount?: number   // seasons: episode count
+  duration?: number    // episodes: duration in ms
+  thumb?: string
+}
+
+export async function getChildren(ratingKey: string): Promise<PlexChild[]> {
+  try {
+    const res  = await fetch(`${PLEX_URL}/library/metadata/${ratingKey}/children`, { headers, cache: 'no-store' })
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data?.MediaContainer?.Metadata ?? []).map((m: Record<string, unknown>) => ({
+      ratingKey: String(m.ratingKey ?? ''),
+      title:     String(m.title ?? ''),
+      index:     Number(m.index ?? 0),
+      leafCount: m.leafCount !== undefined ? Number(m.leafCount) : undefined,
+      duration:  m.duration  !== undefined ? Number(m.duration)  : undefined,
+      thumb:     m.thumb ? String(m.thumb) : undefined,
+    }))
+  } catch {
+    return []
+  }
+}
+
 // ── library search ────────────────────────────────────────────────────────────
 
 export async function searchLibrary(query: string): Promise<PlexMedia[]> {
