@@ -1,4 +1,7 @@
-# CTRLr
+<div align="center">
+  <img src="https://raw.githubusercontent.com/L3x1c0n/ctrlr/main/web/public/icon.png" width="120" alt="CTRLr" />
+  <h1>CTRLr</h1>
+</div>
 
 **One place for your entire media stack. Built out of frustration with jumping between Sonarr, Radarr, Plex, qBittorrent, and five other tabs just to see what's going on.**
 
