@@ -45,7 +45,16 @@ export function middleware(request: NextRequest) {
     return withSecurityHeaders(NextResponse.next())
   }
 
-  // CSRF check for all mutating requests
+  // API token auth — bypasses CSRF and session checks (for app clients)
+  if (pathname.startsWith('/api/')) {
+    const apiToken    = request.headers.get('x-ctrlr-token')
+    const apiSecret   = process.env.CTRLR_API_TOKEN
+    if (apiSecret && apiToken === apiSecret) {
+      return withSecurityHeaders(NextResponse.next())
+    }
+  }
+
+  // CSRF check for all mutating requests (browser clients only — token auth bypassed above)
   if (!csrfOk(request)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
