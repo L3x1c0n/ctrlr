@@ -75,7 +75,7 @@ export default function AlertStrip() {
   if (alerts.length === 0) return null
 
   return (
-    <div className="sticky top-4 md:top-[22px] z-40 mx-3 md:mx-6 mb-[-24px] md:mb-[-28px]">
+    <div className="sticky top-4 md:top-[22px] z-40 mx-3 md:mx-6 mb-[-24px] md:mb-[-28px] flex justify-end">
       <div
         className="flex items-center gap-1.5 flex-wrap px-3 py-1.5 font-mono text-xs border"
         style={{ background: '#08080f', borderColor: '#1a1a2e' }}

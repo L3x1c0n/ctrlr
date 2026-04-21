@@ -117,14 +117,22 @@ export interface RecentMovie {
 }
 
 export async function getRecentlyAdded(limit = 7): Promise<RecentMovie[]> {
-  const res = await fetch(`${BASE}/api/v3/movie`, { headers, cache: 'no-store' })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 15000)
+  let res: Response
+  try {
+    res = await fetch(`${BASE}/api/v3/history?pageSize=${limit}&eventType=3&sortKey=date&sortDirection=descending&includeMovie=true`, { headers, cache: 'no-store', signal: controller.signal })
+  } catch { return [] } finally { clearTimeout(timeout) }
   if (!res.ok) return []
-  const all: Array<{ id: number; title: string; year: number; hasFile: boolean; movieFile?: { dateAdded: string } }> = await res.json()
-  return all
-    .filter(m => m.hasFile && m.movieFile?.dateAdded)
-    .sort((a, b) => new Date(b.movieFile!.dateAdded).getTime() - new Date(a.movieFile!.dateAdded).getTime())
-    .slice(0, limit)
-    .map(m => ({ id: m.id, title: m.title, year: m.year, dateAdded: m.movieFile!.dateAdded }))
+  const data = await res.json()
+  const seen = new Set<number>()
+  const results: RecentMovie[] = []
+  for (const r of (data.records ?? [])) {
+    if (!r.movie || seen.has(r.movieId)) continue
+    seen.add(r.movieId)
+    results.push({ id: r.movieId, title: r.movie.title, year: r.movie.year, dateAdded: r.date })
+  }
+  return results
 }
 
 export async function getMonitored(): Promise<MonitoredMovie[]> {

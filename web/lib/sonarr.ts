@@ -221,7 +221,12 @@ export interface RecentEpisode {
 }
 
 export async function getRecentlyAdded(limit = 7): Promise<RecentEpisode[]> {
-  const res = await fetch(`${BASE}/api/v3/history?pageSize=${limit}&eventType=3&sortKey=date&sortDirection=descending`, { headers, cache: 'no-store' })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 5000)
+  let res: Response
+  try {
+    res = await fetch(`${BASE}/api/v3/history?pageSize=${limit}&eventType=3&sortKey=date&sortDirection=descending&includeSeries=true&includeEpisode=true`, { headers, cache: 'no-store', signal: controller.signal })
+  } catch { return [] } finally { clearTimeout(timeout) }
   if (!res.ok) return []
   const data = await res.json()
   const seen = new Set<string>()
