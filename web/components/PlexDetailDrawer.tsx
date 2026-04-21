@@ -400,9 +400,10 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                       {/* show title — clickable to toggle series browser */}
                       <button
                         onClick={() => setShowSeries(v => !v)}
-                        className={`text-white text-sm font-medium leading-snug text-left hover:text-[#a0a0d8] transition-colors ${showSeries ? 'text-[#a0a0d8]' : ''}`}
+                        className="text-white text-sm font-medium leading-snug text-left hover:text-white group transition-colors"
                       >
                         {detail.grandparentTitle}
+                        <span className="ml-1 text-[#555] group-hover:text-[#aaa] transition-colors">›</span>
                       </button>
                       <p className="text-[#999]">S{String(detail.parentIndex ?? 0).padStart(2, '0')}E{String(detail.index ?? 0).padStart(2, '0')} — {detail.title}</p>
                     </>
