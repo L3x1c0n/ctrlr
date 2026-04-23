@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { search, getRequests, submitRequest, approveRequest, deleteRequest, getMediaDetail, getSeerProfiles, updateSeerRequest, getRootFolders, getTrending, resolveDefaults, runSyncJobs } from '@/lib/seer'
 import { getFileInfoByTitle } from '@/lib/plex'
+import { getSeriesDetail, updateSeries } from '@/lib/sonarr'
+import { getMovieDetail, updateMovie } from '@/lib/radarr'
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,7 +36,17 @@ export async function GET(req: NextRequest) {
         const year  = (detail as any)?.releaseDate?.slice(0, 4) ?? (detail as any)?.firstAirDate?.slice(0, 4)
         plexFileInfo = await getFileInfoByTitle(title, year ? parseInt(year) : undefined)
       }
-      return NextResponse.json({ detail, profiles, rootFolders, serviceId, plexFileInfo })
+      // Fetch current quality profile directly from the arr service — source of truth
+      let currentQualityProfileId: number | null = null
+      if (serviceId != null) {
+        try {
+          const arrDetail = mediaType === 'tv'
+            ? await getSeriesDetail(serviceId)
+            : await getMovieDetail(serviceId)
+          currentQualityProfileId = arrDetail?.qualityProfileId ?? null
+        } catch { /* non-fatal */ }
+      }
+      return NextResponse.json({ detail, profiles, rootFolders, serviceId, plexFileInfo, currentQualityProfileId })
     }
     if (searchParams.get('action') === 'defaults' && mediaType) {
       const defaults = await resolveDefaults(mediaType)
@@ -49,11 +61,21 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { action, id, mediaType, mediaId, seasons, profileId, rootFolder } = await req.json()
+    const { action, id, mediaType, mediaId, seasons, profileId, rootFolder, serviceId } = await req.json()
     if (action === 'submit') await submitRequest(mediaType, mediaId, seasons, profileId, rootFolder)
     else if (action === 'approve') await approveRequest(id)
     else if (action === 'delete') await deleteRequest(id)
-    else if (action === 'update') await updateSeerRequest(id, profileId, rootFolder)
+    else if (action === 'update') {
+      // Push to Seer and directly to the arr service — most recent write wins
+      await updateSeerRequest(id, profileId, rootFolder)
+      if (serviceId != null && profileId) {
+        if (mediaType === 'tv') {
+          await updateSeries(serviceId, { qualityProfileId: profileId })
+        } else {
+          await updateMovie(serviceId, { qualityProfileId: profileId })
+        }
+      }
+    }
     else if (action === 'sync') await runSyncJobs()
     else return NextResponse.json({ error: 'unknown action' }, { status: 400 })
     return NextResponse.json({ ok: true })

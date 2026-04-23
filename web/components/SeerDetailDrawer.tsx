@@ -98,9 +98,9 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
     if (!request) {
       setDetail(null); setProfiles([]); setRootFolders([]); setServiceId(null)
       setReleases(null); setRelError(null); setEpisodes(null); setSelectedEpisodeId(null)
+      setProfileId(0)
       return
     }
-    setProfileId(request.profileId ?? 0)
     setRootFolder(request.rootFolder ?? '')
     setReleases(null); setRelError(null); setEpisodes(null); setSelectedEpisodeId(null)
     setLoading(true)
@@ -112,6 +112,8 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
         setRootFolders(d.rootFolders ?? [])
         const sid = d.serviceId ?? null
         setServiceId(sid)
+        // Source of truth: arr service profile > Seer request profile
+        setProfileId(d.currentQualityProfileId ?? request.profileId ?? 0)
         // For TV, fetch episode list for the picker
         if (sid && request.media.mediaType === 'tv') {
           fetch(`/api/sonarr?episodes=${sid}`)
@@ -162,7 +164,14 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
       await fetch('/api/seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update', id: request.id, profileId, rootFolder }),
+        body: JSON.stringify({
+          action: 'update',
+          id: request.id,
+          profileId,
+          rootFolder,
+          serviceId,
+          mediaType: request.media.mediaType,
+        }),
       })
       onRefresh()
     } finally {
