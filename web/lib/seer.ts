@@ -98,9 +98,14 @@ export async function getSeerProfiles(mediaType = 'movie'): Promise<{ id: number
   } catch { return [] }
 }
 
-function isUltraHD(name: string): boolean {
+function is4K(name: string): boolean {
   const n = name.toLowerCase()
   return n.includes('ultra') || n.includes('2160') || n.includes('4k') || n.includes('uhd')
+}
+
+function is1080p(name: string): boolean {
+  const n = name.toLowerCase()
+  return n.includes('1080') || n.includes('hd') || n.includes('bluray')
 }
 
 export async function resolveDefaults(mediaType: string): Promise<{ profileId?: number; rootFolder?: string }> {
@@ -108,7 +113,10 @@ export async function resolveDefaults(mediaType: string): Promise<{ profileId?: 
     getSeerProfiles(mediaType),
     getRootFolders(mediaType),
   ])
-  const profile = profiles.find(p => isUltraHD(p.name)) ?? profiles[0]
+  // Movies → 4K profile; TV → 1080p profile; fallback to first available
+  const profile = mediaType === 'movie'
+    ? (profiles.find(p => is4K(p.name)) ?? profiles[0])
+    : (profiles.find(p => is1080p(p.name) && !is4K(p.name)) ?? profiles.find(p => is1080p(p.name)) ?? profiles[0])
   const folder = rootFolders.sort((a, b) => b.freeSpace - a.freeSpace)[0]
   return {
     profileId: profile?.id,
