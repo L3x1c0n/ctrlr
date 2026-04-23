@@ -14,16 +14,25 @@ function readEnv(): Record<string, string> {
   return result
 }
 
-function writeToken(token: string) {
+function writeTokens(data: { access_token: string; refresh_token: string; expires_in: number }) {
   const path = process.env.CTRLR_ENV_PATH ?? ''
-  const lines = readFileSync(path, 'utf-8').split('\n')
-  const updated = lines.map((l) =>
-    l.startsWith('TRAKT_ACCESS_TOKEN=') ? `TRAKT_ACCESS_TOKEN=${token}` : l
-  )
-  if (!updated.some((l) => l.startsWith('TRAKT_ACCESS_TOKEN='))) {
-    updated.push(`TRAKT_ACCESS_TOKEN=${token}`)
+  const expiresAt = Math.floor(Date.now() / 1000) + data.expires_in
+  const updates: Record<string, string> = {
+    TRAKT_ACCESS_TOKEN: data.access_token,
+    TRAKT_REFRESH_TOKEN: data.refresh_token,
+    TRAKT_TOKEN_EXPIRES_AT: String(expiresAt),
   }
-  writeFileSync(path, updated.join('\n'), 'utf-8')
+  const lines = readFileSync(path, 'utf-8').split('\n')
+  for (const [key, value] of Object.entries(updates)) {
+    const idx = lines.findIndex((l) => l.startsWith(`${key}=`))
+    if (idx >= 0) {
+      lines[idx] = `${key}=${value}`
+    } else {
+      lines.push(`${key}=${value}`)
+    }
+    process.env[key] = value
+  }
+  writeFileSync(path, lines.join('\n'), 'utf-8')
 }
 
 export async function POST(req: NextRequest) {
@@ -63,7 +72,7 @@ export async function POST(req: NextRequest) {
     })
     if (res.status === 200) {
       const data = await res.json()
-      writeToken(data.access_token)
+      writeTokens(data)
       return NextResponse.json({ ok: true })
     }
     return NextResponse.json({ pending: true, status: res.status })
