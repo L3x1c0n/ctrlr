@@ -35,11 +35,11 @@ export default function SeerSection() {
   const [requestItem, setRequestItem] = useState<SeerSearchResult | null>(null)
   const [syncing, setSyncing] = useState(false)
 
-  const loadRequests = useCallback(async () => {
+  const loadRequests = useCallback(async (): Promise<SeerRequest[] | null> => {
     try {
       const res = await fetch('/api/seer')
       const data = await res.json()
-      if (data.error) { setError(data.error); return }
+      if (data.error) { setError(data.error); return null }
       const seen = new Set<number>()
       const deduped = (data.results ?? []).filter((r: import('@/types').SeerRequest) => {
         if (seen.has(r.media.tmdbId)) return false
@@ -47,12 +47,22 @@ export default function SeerSection() {
         return true
       })
       setRequests(deduped)
+      return deduped
     } catch (e) {
       setError(String(e))
+      return null
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const handleDrawerRefresh = useCallback(async () => {
+    const fresh = await loadRequests()
+    if (fresh && selected) {
+      const updated = fresh.find(r => r.id === selected.id)
+      if (updated) setSelected(updated)
+    }
+  }, [loadRequests, selected])
 
   useEffect(() => {
     loadRequests()
@@ -200,7 +210,7 @@ export default function SeerSection() {
       <SeerDetailDrawer
         request={selected}
         onClose={() => setSelected(null)}
-        onRefresh={loadRequests}
+        onRefresh={handleDrawerRefresh}
       />
 
       {requestItem && (

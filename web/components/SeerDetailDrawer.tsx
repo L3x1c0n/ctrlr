@@ -93,6 +93,8 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
   const [relError,          setRelError]          = useState<string | null>(null)
   const [episodes,          setEpisodes]          = useState<SonarrEpisode[] | null>(null)
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<number | null>(null)
+  const [saveStatus,        setSaveStatus]        = useState<null | 'ok' | 'error'>(null)
+  const [saveError,         setSaveError]         = useState<string | null>(null)
 
   useEffect(() => {
     if (!request) {
@@ -160,8 +162,10 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
   async function saveConfig() {
     if (!request) return
     setActing('update')
+    setSaveStatus(null)
+    setSaveError(null)
     try {
-      await fetch('/api/seer', {
+      const res = await fetch('/api/seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -173,7 +177,18 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
           mediaType: request.media.mediaType,
         }),
       })
-      onRefresh()
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || data?.error) {
+        setSaveStatus('error')
+        setSaveError(data?.error ?? `HTTP ${res.status}`)
+      } else {
+        setSaveStatus('ok')
+        setTimeout(() => setSaveStatus(null), 2500)
+        onRefresh()
+      }
+    } catch (e) {
+      setSaveStatus('error')
+      setSaveError(e instanceof Error ? e.message : 'save failed')
     } finally {
       setActing(null)
     }
@@ -344,15 +359,19 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
                       />
                     )}
                   </div>
-                  {configChanged && (
-                    <div className="pt-1">
-                      <button
-                        onClick={saveConfig}
-                        disabled={!!acting}
-                        className="btn-xs text-blue-400"
-                      >
-                        {acting === 'update' ? '...' : '--save'}
-                      </button>
+                  {(configChanged || saveStatus) && (
+                    <div className="pt-1 flex items-center gap-2">
+                      {configChanged && (
+                        <button
+                          onClick={saveConfig}
+                          disabled={!!acting}
+                          className="btn-xs text-blue-400"
+                        >
+                          {acting === 'update' ? '...' : '--save'}
+                        </button>
+                      )}
+                      {saveStatus === 'ok' && <span className="text-green-400 text-xs">saved</span>}
+                      {saveStatus === 'error' && <span className="text-red-400 text-xs">{saveError ?? 'error'}</span>}
                     </div>
                   )}
                 </div>

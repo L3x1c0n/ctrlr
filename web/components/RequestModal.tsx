@@ -41,8 +41,10 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
   const [folders,    setFolders]    = useState<RootFolder[]>([])
   const [profileId,  setProfileId]  = useState<number | null>(null)
   const [rootFolder, setRootFolder] = useState<string | null>(null)
-  const [loading,    setLoading]    = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [loading,     setLoading]     = useState(false)
+  const [submitting,  setSubmitting]  = useState(false)
+  const [submitted,   setSubmitted]   = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!item) return
@@ -52,6 +54,8 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
     setFolders([])
     setProfileId(null)
     setRootFolder(null)
+    setSubmitted(false)
+    setSubmitError(null)
     fetch(`/api/seer?mediaId=${item.id}&mediaType=${item.mediaType}`)
       .then(r => r.json())
       .then(({ detail: d, profiles: p, rootFolders: f }: { detail: DiscoverDetail; profiles: Profile[]; rootFolders: RootFolder[] }) => {
@@ -70,19 +74,31 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
   async function submit() {
     if (!item) return
     setSubmitting(true)
-    await fetch('/api/seer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'submit',
-        mediaType: item.mediaType,
-        mediaId: item.id,
-        profileId,
-        rootFolder,
-      }),
-    })
-    setSubmitting(false)
-    onDone()
+    setSubmitError(null)
+    try {
+      const res = await fetch('/api/seer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'submit',
+          mediaType: item.mediaType,
+          mediaId: item.id,
+          profileId,
+          rootFolder,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || data?.error) {
+        setSubmitError(data?.error ?? `HTTP ${res.status}`)
+        return
+      }
+      setSubmitted(true)
+      setTimeout(() => onDone(), 1500)
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : 'request failed')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const title    = detail?.title    ?? detail?.name    ?? item?.title ?? item?.name ?? '—'
@@ -215,15 +231,24 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                     </select>
                   </div>
 
-                  <div className="flex gap-3 pt-1">
-                    <button
-                      onClick={submit}
-                      disabled={submitting}
-                      className="btn-xs text-blue-400 disabled:opacity-40"
-                    >
-                      {submitting ? '...' : '--request'}
-                    </button>
-                    <button onClick={onClose} className="btn-xs text-[#555]">--cancel</button>
+                  {submitError && (
+                    <p className="text-red-400 text-xs">{`2> ${submitError}`}</p>
+                  )}
+                  <div className="flex gap-3 pt-1 items-center">
+                    {submitted ? (
+                      <span className="text-green-400 text-xs">// requested</span>
+                    ) : (
+                      <>
+                        <button
+                          onClick={submit}
+                          disabled={submitting}
+                          className="btn-xs text-blue-400 disabled:opacity-40"
+                        >
+                          {submitting ? '...' : '--request'}
+                        </button>
+                        <button onClick={onClose} className="btn-xs text-[#555]">--cancel</button>
+                      </>
+                    )}
                   </div>
                 </>
               )}
