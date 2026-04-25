@@ -39,6 +39,18 @@ function isUltraHD(name: string): boolean {
   return n.includes('ultra') || n.includes('2160') || n.includes('4k') || n.includes('uhd')
 }
 
+// ── status dot ────────────────────────────────────────────────────────────────
+
+function StatusDot({ status }: { status?: number }) {
+  if (status === 5) return (
+    <span className="shrink-0 text-[8px] leading-none" style={{ color: PLEX_ORANGE }} title="in plex">●</span>
+  )
+  if (status != null && status >= 2 && status <= 4) return (
+    <span className="text-blue-400 shrink-0 text-[8px] leading-none" title="requested">●</span>
+  )
+  return null
+}
+
 // ── list row (desktop) ─────────────────────────────────────────────────────────
 
 function ListRow({ item, index, isActive, onHover, onClick }: {
@@ -63,6 +75,7 @@ function ListRow({ item, index, isActive, onHover, onClick }: {
     >
       <span className="text-[#666] w-4 tabular-nums text-right shrink-0">{index + 1}</span>
       <span className="flex-1 truncate">{title}</span>
+      <StatusDot status={item.mediaInfo?.status} />
       {year && <span className="text-[#888] shrink-0">{year}</span>}
     </div>
   )
@@ -719,6 +732,7 @@ export default function DiscoverSection() {
                       }`}
                     >
                       <span className="flex-1 truncate">{item.title ?? item.name}</span>
+                      <StatusDot status={item.mediaInfo?.status} />
                       {(item.releaseDate ?? item.firstAirDate) && (
                         <span className="text-[#888] shrink-0 text-xs">
                           {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
