@@ -17,6 +17,30 @@ export async function GET(req: NextRequest) {
       const results = await getTrending(mt, page)
       return NextResponse.json(results)
     }
+    if (action === 'providers') {
+      const mt     = (mediaType ?? 'movie')
+      const idsRaw = searchParams.get('ids') ?? ''
+      const ids    = idsRaw.split(',').map(Number).filter(Boolean)
+      const results = await Promise.all(ids.map(async (id) => {
+        try {
+          const detail = await getMediaDetail(mt, id) as Record<string, unknown>
+          let provider: string | null = null
+          // TV shows: prefer the network name (e.g. "Prime Video", "Netflix")
+          const networks = detail?.networks as { name: string }[] | undefined
+          if (mt === 'tv' && networks && networks.length > 0) {
+            provider = networks[0].name ?? null
+          }
+          // Fallback: flatrate watch provider for GB, then US
+          if (!provider) {
+            const wps = (detail?.watchProviders ?? []) as { iso_3166_1: string; flatrate?: { name: string }[] }[]
+            const region = wps.find(p => p.iso_3166_1 === 'GB') ?? wps.find(p => p.iso_3166_1 === 'US')
+            provider = region?.flatrate?.[0]?.name ?? null
+          }
+          return { id, provider }
+        } catch { return { id, provider: null } }
+      }))
+      return NextResponse.json(results)
+    }
     if (query) {
       const results = await search(query)
       return NextResponse.json(results)

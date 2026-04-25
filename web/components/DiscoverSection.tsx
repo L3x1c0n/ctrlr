@@ -9,6 +9,32 @@ import MarqueeText from '@/components/MarqueeText'
 const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${path}`
 const PLEX_ORANGE = '#E5A00D'
 
+const PROVIDER_MAP: Record<string, { abbr: string; color: string }> = {
+  'netflix':             { abbr: 'NF', color: '#E50914' },
+  'prime video':         { abbr: 'PV', color: '#00A8E0' },
+  'amazon prime video':  { abbr: 'PV', color: '#00A8E0' },
+  'disney plus':         { abbr: 'D+', color: '#113CCF' },
+  'disney+':             { abbr: 'D+', color: '#113CCF' },
+  'hulu':                { abbr: 'HU', color: '#1CE783' },
+  'max':                 { abbr: 'MX', color: '#002BE7' },
+  'hbo max':             { abbr: 'MX', color: '#002BE7' },
+  'apple tv+':           { abbr: 'AT', color: '#888888' },
+  'apple tv plus':       { abbr: 'AT', color: '#888888' },
+  'peacock':             { abbr: 'PC', color: '#0066FF' },
+  'paramount+':          { abbr: 'P+', color: '#0064FF' },
+  'paramount plus':      { abbr: 'P+', color: '#0064FF' },
+  'crunchyroll':         { abbr: 'CR', color: '#F47521' },
+  'funimation':          { abbr: 'FN', color: '#410099' },
+}
+
+function providerInfo(name: string): { abbr: string; color: string } {
+  return PROVIDER_MAP[name.toLowerCase()] ?? { abbr: name.slice(0, 2).toUpperCase(), color: '#666688' }
+}
+
+function tracked(item: SeerSearchResult): boolean {
+  return item.mediaInfo != null && item.mediaInfo.status >= 2
+}
+
 interface Profile    { id: number; name: string }
 interface RootFolder { path: string; freeSpace: number }
 interface PlexFileInfo {
@@ -39,29 +65,19 @@ function isUltraHD(name: string): boolean {
   return n.includes('ultra') || n.includes('2160') || n.includes('4k') || n.includes('uhd')
 }
 
-// ── status dot ────────────────────────────────────────────────────────────────
-
-function StatusDot({ status }: { status?: number }) {
-  if (status === 5) return (
-    <span className="shrink-0 text-[8px] leading-none" style={{ color: PLEX_ORANGE }} title="in plex">●</span>
-  )
-  if (status != null && status >= 2 && status <= 4) return (
-    <span className="text-blue-400 shrink-0 text-[8px] leading-none" title="requested">●</span>
-  )
-  return null
-}
-
 // ── list row (desktop) ─────────────────────────────────────────────────────────
 
-function ListRow({ item, index, isActive, onHover, onClick }: {
+function ListRow({ item, index, isActive, onHover, onClick, provider }: {
   item: SeerSearchResult
   index: number
   isActive: boolean
   onHover: () => void
   onClick: () => void
+  provider?: string
 }) {
   const title = item.title ?? item.name ?? '—'
   const year  = (item.releaseDate ?? item.firstAirDate)?.slice(0, 4)
+  const pInfo = provider ? providerInfo(provider) : null
 
   return (
     <div
@@ -75,7 +91,7 @@ function ListRow({ item, index, isActive, onHover, onClick }: {
     >
       <span className="text-[#666] w-4 tabular-nums text-right shrink-0">{index + 1}</span>
       <span className="flex-1 truncate">{title}</span>
-      <StatusDot status={item.mediaInfo?.status} />
+      {pInfo && <span className="shrink-0 font-mono text-[10px]" style={{ color: pInfo.color }}>[{pInfo.abbr}]</span>}
       {year && <span className="text-[#888] shrink-0">{year}</span>}
     </div>
   )
@@ -83,7 +99,7 @@ function ListRow({ item, index, isActive, onHover, onClick }: {
 
 // ── list panel (desktop) ───────────────────────────────────────────────────────
 
-function ListPanel({ label, items, loading, activeId, onActivate, onHoverActivate, onLoadMore, loadingMore }: {
+function ListPanel({ label, items, loading, activeId, onActivate, onHoverActivate, onLoadMore, loadingMore, providerMap }: {
   label: string
   items: SeerSearchResult[]
   loading: boolean
@@ -92,6 +108,7 @@ function ListPanel({ label, items, loading, activeId, onActivate, onHoverActivat
   onHoverActivate: (item: SeerSearchResult) => void
   onLoadMore: () => void
   loadingMore: boolean
+  providerMap: Record<string, string>
 }) {
   return (
     <div className="flex flex-col min-h-0">
@@ -109,6 +126,7 @@ function ListPanel({ label, items, loading, activeId, onActivate, onHoverActivat
               isActive={activeId === `${item.mediaType}-${item.id}`}
               onHover={() => onHoverActivate(item)}
               onClick={() => onActivate(item)}
+              provider={providerMap[String(item.id)]}
             />
           ))
         }
@@ -479,6 +497,8 @@ export default function DiscoverSection() {
   const [tvLoading,     setTvLoading]     = useState(true)
   const [moviesMore,  setMoviesMore]  = useState(false)
   const [tvMore,      setTvMore]      = useState(false)
+  const [providerMap, setProviderMap] = useState<Record<string, string>>({})
+  const fetchedProviderIds = useRef<Set<string>>(new Set())
 
   const [tab,           setTab]           = useState<'movie' | 'tv'>('movie')
   const [activeItem,    setActiveItem]    = useState<SeerSearchResult | null>(null)
@@ -508,13 +528,48 @@ export default function DiscoverSection() {
   useEffect(() => {
     fetch('/api/seer?action=discover&mediaType=movie&page=1')
       .then(r => r.json())
-      .then(d => { if (Array.isArray(d)) setMovies(d) })
+      .then(d => { if (Array.isArray(d)) setMovies(d.filter((i: SeerSearchResult) => !tracked(i))) })
       .finally(() => setMoviesLoading(false))
     fetch('/api/seer?action=discover&mediaType=tv&page=1')
       .then(r => r.json())
-      .then(d => { if (Array.isArray(d)) setTvShows(d) })
+      .then(d => { if (Array.isArray(d)) setTvShows(d.filter((i: SeerSearchResult) => !tracked(i))) })
       .finally(() => setTvLoading(false))
   }, [])
+
+  // Batch-fetch providers for newly seen items (ref prevents re-fetching on page appends)
+  useEffect(() => {
+    const newItems = movies.filter(m => !fetchedProviderIds.current.has(`movie-${m.id}`))
+    if (newItems.length === 0) return
+    newItems.forEach(m => fetchedProviderIds.current.add(`movie-${m.id}`))
+    const ids = newItems.map(m => m.id).join(',')
+    fetch(`/api/seer?action=providers&ids=${ids}&mediaType=movie`)
+      .then(r => r.json())
+      .then((data: { id: number; provider: string | null }[]) => {
+        setProviderMap(prev => {
+          const next = { ...prev }
+          for (const { id, provider } of data) { if (provider) next[String(id)] = provider }
+          return next
+        })
+      })
+      .catch(() => {})
+  }, [movies])
+
+  useEffect(() => {
+    const newItems = tvShows.filter(t => !fetchedProviderIds.current.has(`tv-${t.id}`))
+    if (newItems.length === 0) return
+    newItems.forEach(t => fetchedProviderIds.current.add(`tv-${t.id}`))
+    const ids = newItems.map(t => t.id).join(',')
+    fetch(`/api/seer?action=providers&ids=${ids}&mediaType=tv`)
+      .then(r => r.json())
+      .then((data: { id: number; provider: string | null }[]) => {
+        setProviderMap(prev => {
+          const next = { ...prev }
+          for (const { id, provider } of data) { if (provider) next[String(id)] = provider }
+          return next
+        })
+      })
+      .catch(() => {})
+  }, [tvShows])
 
   useEffect(() => {
     if (!activeItem && movies.length > 0) setActiveItem(movies[0])
@@ -596,8 +651,9 @@ export default function DiscoverSection() {
       const res  = await fetch(`/api/seer?action=discover&mediaType=${mediaType}&page=${page}`)
       const data = await res.json()
       if (Array.isArray(data) && data.length > 0) {
-        if (mediaType === 'movie') { setMovies(prev => [...prev, ...data]); setMoviesPage(page) }
-        else                       { setTvShows(prev => [...prev, ...data]); setTvPage(page) }
+        const fresh = data.filter((i: SeerSearchResult) => !tracked(i))
+        if (mediaType === 'movie') { setMovies(prev => [...prev, ...fresh]); setMoviesPage(page) }
+        else                       { setTvShows(prev => [...prev, ...fresh]); setTvPage(page) }
       }
     } finally {
       setMore(false)
@@ -672,6 +728,7 @@ export default function DiscoverSection() {
                 onHoverActivate={(item) => { if (listHoveredRef.current) activate(item) }}
                 onLoadMore={() => loadMore('movie')}
                 loadingMore={moviesMore}
+                providerMap={providerMap}
               />
             ) : (
               <ListPanel
@@ -683,6 +740,7 @@ export default function DiscoverSection() {
                 onHoverActivate={(item) => { if (listHoveredRef.current) activate(item) }}
                 onLoadMore={() => loadMore('tv')}
                 loadingMore={tvMore}
+                providerMap={providerMap}
               />
             )}
           </div>
@@ -732,7 +790,10 @@ export default function DiscoverSection() {
                       }`}
                     >
                       <span className="flex-1 truncate">{item.title ?? item.name}</span>
-                      <StatusDot status={item.mediaInfo?.status} />
+                      {providerMap[String(item.id)] && (() => {
+                        const p = providerInfo(providerMap[String(item.id)])
+                        return <span className="shrink-0 font-mono text-[10px]" style={{ color: p.color }}>[{p.abbr}]</span>
+                      })()}
                       {(item.releaseDate ?? item.firstAirDate) && (
                         <span className="text-[#888] shrink-0 text-xs">
                           {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
