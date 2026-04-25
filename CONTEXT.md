@@ -1,7 +1,7 @@
 # CTRLr — Project Context
 
 This file is the shared brain between Claude instances. Keep it updated as the project evolves.
-Last updated: 2026-04-24 (XSpeeds integrated, Trakt re-auth + writeToken fix, Seer quality profile fix)
+Last updated: 2026-04-26 (Seer drawer feedback + CSRF fix, Discover filter + provider logos)
 
 ---
 
@@ -305,6 +305,10 @@ New tools: **autobrr** (IRC announce grabs — xspeeds IRC confirmed: `irc.xspee
 - ~~Trakt token expired / not loading~~ — Fixed 2026-04-24. Re-authed via device flow. Fixed `writeToken` bug in `app/api/trakt/auth/route.ts` (was only saving access token; now saves all three values so auto-refresh works going forward).
 - ~~Seer drawer quality profile not reading from/saving to Sonarr~~ — Fixed 2026-04-24. Drawer now fetches `qualityProfileId` from Sonarr/Radarr directly. Saving writes to both Seer and the arr service. Arr is source of truth; CTRLr wins on tie.
 - ~~Seer quality defaults~~ — Fixed 2026-04-24. Movies default to 4K profile, TV to 1080p (non-4K), root folder to most free space.
+- ~~Seer drawer actions silently failing with 403~~ — Fixed 2026-04-26. Root cause: CSRF middleware used `request.nextUrl.host` (returns bind address `0.0.0.0:3000`) instead of `request.headers.get('host')` (client-facing hostname). Every POST/PUT/DELETE was 403ing since the middleware was written.
+- ~~Seer drawer closes with no feedback after save/request~~ — Fixed 2026-04-26. `saveConfig` now checks `res.ok`, shows green `saved` for 2.5s or inline error. `RequestModal.submit` shows `// requested` then auto-closes after 1.5s, or shows error and stays open. `SeerSection.handleDrawerRefresh` syncs `selected` with fresh request list so `configChanged` resets correctly after save.
+- ~~Discover section shows already-requested/available items~~ — Fixed 2026-04-26. Items with `mediaInfo.status >= 2` filtered out on load and on `--more` pages.
+- ~~Discover section has no streaming provider info~~ — Fixed 2026-04-26. New `GET /api/seer?action=providers&ids=...&mediaType=...` endpoint batch-fetches network/watchProvider for visible items in parallel. TV uses `networks[]` field; movies use `watchProviders.flatrate` for GB then US. List rows show `[NF]`/`[PV]`/`[D+]` badges; preview pane shows full TMDB logo image (24px rounded) in the backdrop header under `// stream`.
 - Trakt detail drawer: fix silent error — `searchReleases` throws but drawer shows "no results"; needs `relError` state (same pattern as ArrDetailDrawer)
 
 ---
