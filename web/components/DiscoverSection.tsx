@@ -73,11 +73,11 @@ function ListRow({ item, index, isActive, onHover, onClick, provider }: {
   isActive: boolean
   onHover: () => void
   onClick: () => void
-  provider?: string
+  provider?: { name: string; logo: string | null }
 }) {
   const title = item.title ?? item.name ?? '—'
   const year  = (item.releaseDate ?? item.firstAirDate)?.slice(0, 4)
-  const pInfo = provider ? providerInfo(provider) : null
+  const pInfo = provider ? providerInfo(provider.name) : null
 
   return (
     <div
@@ -108,7 +108,7 @@ function ListPanel({ label, items, loading, activeId, onActivate, onHoverActivat
   onHoverActivate: (item: SeerSearchResult) => void
   onLoadMore: () => void
   loadingMore: boolean
-  providerMap: Record<string, string>
+  providerMap: Record<string, { name: string; logo: string | null }>
 }) {
   return (
     <div className="flex flex-col min-h-0">
@@ -165,13 +165,14 @@ function fmtSize(bytes: number): string {
   return `${(bytes / 1024 ** 2).toFixed(0)} MB`
 }
 
-function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileInfo }: {
+function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileInfo, provider }: {
   item: SeerSearchResult | null
   detail: DiscoverDetail | null
   detailLoading: boolean
   profiles: Profile[]
   folders: RootFolder[]
   plexFileInfo: PlexFileInfo | null
+  provider?: { name: string; logo: string | null }
 }) {
   const [reqState,      setReqState]      = useState<ReqState>('idle')
   const [profileId,     setProfileId]     = useState<number | null>(null)
@@ -310,6 +311,17 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
               {director && <MetaRow label="dir"    value={director} />}
               {cast     && <MetaRow label="cast"   value={cast}   lines={2} />}
               {studio   && <MetaRow label="studio" value={studio} lines={2} />}
+              {provider?.logo && (
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <span className="text-[#6a9a7a] shrink-0 whitespace-nowrap w-[72px]">// stream</span>
+                  <img
+                    src={TMDB_W(45, provider.logo)}
+                    alt={provider.name}
+                    title={provider.name}
+                    className="h-6 w-6 rounded-md object-cover shrink-0"
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -497,7 +509,7 @@ export default function DiscoverSection() {
   const [tvLoading,     setTvLoading]     = useState(true)
   const [moviesMore,  setMoviesMore]  = useState(false)
   const [tvMore,      setTvMore]      = useState(false)
-  const [providerMap, setProviderMap] = useState<Record<string, string>>({})
+  const [providerMap, setProviderMap] = useState<Record<string, { name: string; logo: string | null }>>({})
   const fetchedProviderIds = useRef<Set<string>>(new Set())
 
   const [tab,           setTab]           = useState<'movie' | 'tv'>('movie')
@@ -544,10 +556,12 @@ export default function DiscoverSection() {
     const ids = newItems.map(m => m.id).join(',')
     fetch(`/api/seer?action=providers&ids=${ids}&mediaType=movie`)
       .then(r => r.json())
-      .then((data: { id: number; provider: string | null }[]) => {
+      .then((data: { id: number; provider: string | null; logoPath: string | null }[]) => {
         setProviderMap(prev => {
           const next = { ...prev }
-          for (const { id, provider } of data) { if (provider) next[String(id)] = provider }
+          for (const { id, provider, logoPath } of data) {
+            if (provider) next[String(id)] = { name: provider, logo: logoPath }
+          }
           return next
         })
       })
@@ -561,10 +575,12 @@ export default function DiscoverSection() {
     const ids = newItems.map(t => t.id).join(',')
     fetch(`/api/seer?action=providers&ids=${ids}&mediaType=tv`)
       .then(r => r.json())
-      .then((data: { id: number; provider: string | null }[]) => {
+      .then((data: { id: number; provider: string | null; logoPath: string | null }[]) => {
         setProviderMap(prev => {
           const next = { ...prev }
-          for (const { id, provider } of data) { if (provider) next[String(id)] = provider }
+          for (const { id, provider, logoPath } of data) {
+            if (provider) next[String(id)] = { name: provider, logo: logoPath }
+          }
           return next
         })
       })
@@ -753,6 +769,7 @@ export default function DiscoverSection() {
             profiles={profiles}
             folders={folders}
             plexFileInfo={plexFileInfo}
+            provider={activeItem ? providerMap[String(activeItem.id)] : undefined}
           />
         </div>
 
@@ -791,7 +808,7 @@ export default function DiscoverSection() {
                     >
                       <span className="flex-1 truncate">{item.title ?? item.name}</span>
                       {providerMap[String(item.id)] && (() => {
-                        const p = providerInfo(providerMap[String(item.id)])
+                        const p = providerInfo(providerMap[String(item.id)].name)
                         return <span className="shrink-0 font-mono text-[10px]" style={{ color: p.color }}>[{p.abbr}]</span>
                       })()}
                       {(item.releaseDate ?? item.firstAirDate) && (
@@ -821,6 +838,7 @@ export default function DiscoverSection() {
             profiles={profiles}
             folders={folders}
             plexFileInfo={plexFileInfo}
+            provider={activeItem ? providerMap[String(activeItem.id)] : undefined}
           />
         </div>
 

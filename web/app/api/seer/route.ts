@@ -25,18 +25,21 @@ export async function GET(req: NextRequest) {
         try {
           const detail = await getMediaDetail(mt, id) as Record<string, unknown>
           let provider: string | null = null
+          let logoPath: string | null = null
           // TV shows: prefer the network name (e.g. "Prime Video", "Netflix")
-          const networks = detail?.networks as { name: string }[] | undefined
+          const networks = detail?.networks as { name: string; logoPath?: string }[] | undefined
           if (mt === 'tv' && networks && networks.length > 0) {
             provider = networks[0].name ?? null
+            logoPath = networks[0].logoPath ?? null
           }
           // Fallback: flatrate watch provider for GB, then US
           if (!provider) {
-            const wps = (detail?.watchProviders ?? []) as { iso_3166_1: string; flatrate?: { name: string }[] }[]
+            const wps = (detail?.watchProviders ?? []) as { iso_3166_1: string; flatrate?: { name: string; logoPath?: string }[] }[]
             const region = wps.find(p => p.iso_3166_1 === 'GB') ?? wps.find(p => p.iso_3166_1 === 'US')
             provider = region?.flatrate?.[0]?.name ?? null
+            logoPath = region?.flatrate?.[0]?.logoPath ?? null
           }
-          return { id, provider }
+          return { id, provider, logoPath }
         } catch { return { id, provider: null } }
       }))
       return NextResponse.json(results)
