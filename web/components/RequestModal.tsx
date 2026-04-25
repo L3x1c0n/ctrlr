@@ -229,6 +229,12 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                         </option>
                       ))}
                     </select>
+                    {(() => {
+                      const sel = folders.find(f => f.path === rootFolder)
+                      if (!sel) return null
+                      const color = sel.freeSpace < 10 * 1024 ** 3 ? 'text-red-400' : sel.freeSpace < 50 * 1024 ** 3 ? 'text-yellow-400' : 'text-green-400'
+                      return <p className={`text-xs mt-1 ${color}`}>{fmtFree(sel.freeSpace)}</p>
+                    })()}
                   </div>
 
                   {submitError && (
