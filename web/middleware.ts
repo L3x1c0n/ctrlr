@@ -27,7 +27,7 @@ function csrfOk(request: NextRequest): boolean {
   if (!MUTATING_METHODS.has(request.method)) return true
   const origin  = request.headers.get('origin')
   const referer = request.headers.get('referer')
-  const host    = request.nextUrl.host
+  const host    = request.headers.get('host') ?? request.nextUrl.host
   const check   = origin ?? referer
   if (!check) return false
   try { return new URL(check).host === host } catch { return false }
