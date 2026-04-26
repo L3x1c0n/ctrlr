@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
     if (slug && type === 'episode') {
       const season = parseInt(searchParams.get('season') ?? '1')
       const episode = parseInt(searchParams.get('episode') ?? '1')
+      console.log(`[trakt detail] slug=${slug} season=${season} episode=${episode}`)
       const tmdbIdNum = tmdbId ? parseInt(tmdbId) : null
       const [detail, media] = await Promise.all([
         getTraktEpisodeDetail(slug, season, episode),

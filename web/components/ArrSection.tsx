@@ -347,7 +347,7 @@ export default function ArrSection({ service, label }: Props) {
             <div className="mb-4">
               {/* active queue rows */}
               {queueRows.length > 0 && (
-                <table className="w-full text-sm font-mono table-fixed md:table-auto mb-0">
+                <table className="w-full text-xs font-mono table-fixed md:table-auto mb-0">
                   <thead>
                     <tr className="text-[#999] text-xs uppercase border-b border-[#1a1a2e]">
                       <th className="py-1 pr-3 w-6"></th>
@@ -457,23 +457,23 @@ export default function ArrSection({ service, label }: Props) {
                 if (service === 'sonarr') {
                   const s = m as MonSerie
                   return (
-                    <div key={m.id} className="flex items-center gap-2 font-mono text-sm py-0.5 border-b border-[#0a0a14]">
-                      <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0 text-xs">{i + 1}</span>
+                    <div key={m.id} className="flex items-center gap-2 font-mono text-xs py-0.5 border-b border-[#0a0a14]">
+                      <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0">{i + 1}</span>
                       <button onClick={() => setSelected({ seriesId: m.id, title: m.title } as ArrQueueItem)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                       <span className="flex-1 text-white truncate">{m.title}</span>
-                      <span className="text-green-400 shrink-0 tabular-nums text-xs">{s.nextAiring ? fmtRelDate(s.nextAiring) : '—'}</span>
+                      <span className="text-green-400 shrink-0 tabular-nums">{s.nextAiring ? fmtRelDate(s.nextAiring) : '—'}</span>
                     </div>
                   )
                 } else {
                   const mv = m as MonMovie
                   const releaseDate = upcomingMovieDate(mv)
                   return (
-                    <div key={m.id} className="flex items-center gap-2 font-mono text-sm py-0.5 border-b border-[#0a0a14]">
-                      <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0 text-xs">{i + 1}</span>
+                    <div key={m.id} className="flex items-center gap-2 font-mono text-xs py-0.5 border-b border-[#0a0a14]">
+                      <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0">{i + 1}</span>
                       <button onClick={() => setSelected({ movieId: m.id, title: m.title } as ArrQueueItem)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                       <span className="flex-1 text-white truncate">{m.title}</span>
-                      <span className="text-[#888] shrink-0 text-xs">{releaseLabel(mv)}</span>
-                      <span className={`shrink-0 tabular-nums text-xs ${releaseDate ? 'text-green-400' : 'text-[#888]'}`}>
+                      <span className="text-[#888] shrink-0">{releaseLabel(mv)}</span>
+                      <span className={`shrink-0 tabular-nums ${releaseDate ? 'text-green-400' : 'text-[#888]'}`}>
                         {releaseDate ? fmtRelDate(releaseDate) : mv.status}
                       </span>
                     </div>

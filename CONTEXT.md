@@ -1,7 +1,7 @@
 # CTRLr — Project Context
 
 This file is the shared brain between Claude instances. Keep it updated as the project evolves.
-Last updated: 2026-04-26 (Seer drawer feedback + CSRF fix, Discover filter + provider logos)
+Last updated: 2026-04-26 (PlexTraktSync wired up; minor ArrSection font-size polish)
 
 ---
 
@@ -42,6 +42,7 @@ The two are developed in this monorepo so features, issues, and API contracts st
 | Seer (Overseerr fork) | 5055 | `overseerr.gh05t.duckdns.org`, Docker container |
 | Plex | 32400 | Direct, relay mode, not proxied |
 | Tautulli | 8181 | Snap service, not exposed via Caddy |
+| PlexTraktSync | — | Docker, watch daemon (`command: watch`); syncs Plex history → Trakt in real-time. Config at `/home/gh05t/docker/plextraktsync/` |
 
 ---
 
@@ -288,7 +289,7 @@ New tools: **autobrr** (IRC announce grabs — xspeeds IRC confirmed: `irc.xspee
 **Phase 3 — Hardware migration** — trivial once Docker: copy compose + volumes to new machine.
 
 ### Both platforms — not built anywhere yet
-- Trakt: watch history, check-in, ratings
+- Trakt: watch history UI, check-in, ratings (scrobbling itself now handled by PlexTraktSync daemon)
 - Plex: mark watched / unwatched, library search, deep link to play (deferred)
 - Tautulli: play history + user stats
 
