@@ -61,15 +61,15 @@ export default function PlexSection() {
     return (
       <tr className="border-b border-[#0f0f1a]">
         <td className="py-1 pr-3 text-right text-[#7070a8] tabular-nums select-none text-xs w-6">{index + 1}</td>
-        <td className="py-1 pr-4 text-white font-mono text-sm min-w-0">
-          <div className="flex items-center gap-2">
+        <td className="py-1 pr-4 text-white font-mono text-sm min-w-0 max-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => setSelected(item)}
               className="btn-xs text-cyan-600 hover:text-cyan-400 flex-shrink-0"
             >
               --info
             </button>
-            <span className="truncate">
+            <span className="truncate min-w-0">
               {item.grandparentTitle ?? item.title}
               {item.grandparentTitle && (
                 <span className="text-[#888] ml-2">
@@ -240,7 +240,7 @@ export default function PlexSection() {
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  shows: [</div>
             {shows.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {shows.length > 0 && (
-              <div className="overflow-x-hidden"><table className="w-full text-sm font-mono table-fixed">
+              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-fixed">
                 <tbody>{shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}</tbody>
               </table></div>
             )}
@@ -250,7 +250,7 @@ export default function PlexSection() {
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  movies: [</div>
             {movies.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {movies.length > 0 && (
-              <div className="overflow-x-hidden"><table className="w-full text-sm font-mono table-fixed">
+              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-fixed">
                 <tbody>{movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}</tbody>
               </table></div>
             )}
