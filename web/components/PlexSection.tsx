@@ -59,51 +59,45 @@ export default function PlexSection() {
 
   function MediaRow({ item, index }: { item: PlexMedia; index: number }) {
     return (
-      <tr className="border-b border-[#0f0f1a]">
-        <td className="py-1 pr-3 text-right text-[#7070a8] tabular-nums select-none text-xs w-6">{index + 1}</td>
-        <td className="py-1 pr-4 text-white font-mono text-sm min-w-0 max-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              onClick={() => setSelected(item)}
-              className="btn-xs text-cyan-600 hover:text-cyan-400 flex-shrink-0"
-            >
-              --info
-            </button>
-            <span className="truncate min-w-0">
-              {item.grandparentTitle ?? item.title}
-              {item.grandparentTitle && (
-                <span className="text-[#888] ml-2">
-                  S{String(item.parentIndex ?? 0).padStart(2, '0')}E{String(item.index ?? 0).padStart(2, '0')}
-                </span>
-              )}
-            </span>
-          </div>
-        </td>
-        <td className="text-right pr-3 font-mono text-xs text-[#999] w-10">
-          {item.year ?? ''}
-        </td>
-        <td className="text-right pr-2 font-mono text-xs w-5">
+      <div className="flex items-center gap-2 font-mono text-xs border-b border-[#0f0f1a] py-0.5">
+        <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums select-none">{index + 1}</span>
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <button
+            onClick={() => setSelected(item)}
+            className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0"
+          >
+            --info
+          </button>
+          <span className="truncate text-white">
+            {item.grandparentTitle ?? item.title}
+            {item.grandparentTitle && (
+              <span className="text-[#888] ml-2">
+                S{String(item.parentIndex ?? 0).padStart(2, '0')}E{String(item.index ?? 0).padStart(2, '0')}
+              </span>
+            )}
+          </span>
+        </div>
+        <span className="shrink-0 text-[#999] tabular-nums w-[36px] text-right">{item.year ?? ''}</span>
+        <span className="shrink-0 w-[16px] text-center">
           {item.viewCount && item.viewCount > 0
             ? <span className="text-[#999]">1</span>
             : <span className="text-yellow-400">Ø</span>}
-        </td>
-        <td className="text-right w-9">
-          <button
-            onClick={() => {
-              if (confirm(`Delete ${item.title} from Plex library?`)) {
-                fetch('/api/plex', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ action: 'delete', ratingKey: item.ratingKey }),
-                }).then(load)
-              }
-            }}
-            className="btn-xs text-red-400 whitespace-nowrap"
-          >
-            --rm
-          </button>
-        </td>
-      </tr>
+        </span>
+        <button
+          onClick={() => {
+            if (confirm(`Delete ${item.title} from Plex library?`)) {
+              fetch('/api/plex', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', ratingKey: item.ratingKey }),
+              }).then(load)
+            }
+          }}
+          className="btn-xs text-red-400 shrink-0"
+        >
+          --rm
+        </button>
+      </div>
     )
   }
 
@@ -240,9 +234,7 @@ export default function PlexSection() {
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  shows: [</div>
             {shows.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {shows.length > 0 && (
-              <div className="overflow-x-hidden"><table className="w-full text-sm font-mono table-fixed">
-                <tbody>{shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}</tbody>
-              </table></div>
+              <div>{shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}</div>
             )}
             <div className="font-mono text-xs text-[#6a9a7a] mt-1">  ], // {shows.length}</div>
           </div>
@@ -250,9 +242,7 @@ export default function PlexSection() {
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  movies: [</div>
             {movies.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {movies.length > 0 && (
-              <div className="overflow-x-hidden"><table className="w-full text-sm font-mono table-fixed">
-                <tbody>{movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}</tbody>
-              </table></div>
+              <div>{movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}</div>
             )}
             <div className="font-mono text-xs text-[#6a9a7a] mt-1">  ] // {movies.length}</div>
           </div>
@@ -262,9 +252,7 @@ export default function PlexSection() {
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  shows: [</div>
             {shows.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {shows.length > 0 && (
-              <div className="overflow-x-hidden"><table className="w-full text-sm font-mono table-auto">
-                <tbody>{shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}</tbody>
-              </table></div>
+              <div>{shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}</div>
             )}
             <div className="font-mono text-xs text-[#6a9a7a] mt-1">  ], // {shows.length}</div>
           </div>
@@ -272,9 +260,7 @@ export default function PlexSection() {
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  movies: [</div>
             {movies.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {movies.length > 0 && (
-              <div className="overflow-x-hidden"><table className="w-full text-sm font-mono table-auto">
-                <tbody>{movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}</tbody>
-              </table></div>
+              <div>{movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}</div>
             )}
             <div className="font-mono text-xs text-[#6a9a7a] mt-1">  ] // {movies.length}</div>
           </div>
