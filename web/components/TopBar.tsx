@@ -41,7 +41,7 @@ export default function TopBar() {
   }, [])
 
   useEffect(() => {
-    function tick() { setTime(new Date().toLocaleTimeString('en-GB', { hour12: false })) }
+    function tick() { setTime(new Date().toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })) }
     tick()
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
@@ -103,8 +103,8 @@ export default function TopBar() {
         )
       })}
 
-      {/* clock — ml-auto pushes it to far right of bar on both breakpoints */}
-      <div className="ml-auto flex items-center px-3 flex-none">
+      {/* clock — absolutely pinned to right edge so segments can never clip it */}
+      <div className="absolute right-0 top-0 bottom-0 flex items-center pl-3 pr-2" style={{ background: PAGE_BG }}>
         {time && <span className="font-mono text-xs md:text-sm tabular-nums text-white">{time}</span>}
       </div>
     </div>
