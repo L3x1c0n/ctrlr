@@ -240,7 +240,7 @@ export default function PlexSection() {
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  shows: [</div>
             {shows.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {shows.length > 0 && (
-              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-fixed">
+              <div className="overflow-x-hidden"><table className="w-full text-sm font-mono table-fixed">
                 <tbody>{shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}</tbody>
               </table></div>
             )}
@@ -250,7 +250,7 @@ export default function PlexSection() {
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  movies: [</div>
             {movies.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {movies.length > 0 && (
-              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-fixed">
+              <div className="overflow-x-hidden"><table className="w-full text-sm font-mono table-fixed">
                 <tbody>{movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}</tbody>
               </table></div>
             )}
@@ -262,7 +262,7 @@ export default function PlexSection() {
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  shows: [</div>
             {shows.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {shows.length > 0 && (
-              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-auto">
+              <div className="overflow-x-hidden"><table className="w-full text-sm font-mono table-auto">
                 <tbody>{shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}</tbody>
               </table></div>
             )}
@@ -272,7 +272,7 @@ export default function PlexSection() {
             <div className="font-mono text-xs text-[#6a9a7a] mb-2">  movies: [</div>
             {movies.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
             {movies.length > 0 && (
-              <div className="overflow-x-auto"><table className="w-full text-sm font-mono table-auto">
+              <div className="overflow-x-hidden"><table className="w-full text-sm font-mono table-auto">
                 <tbody>{movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}</tbody>
               </table></div>
             )}
