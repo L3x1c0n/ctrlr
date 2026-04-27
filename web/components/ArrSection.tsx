@@ -362,7 +362,7 @@ export default function ArrSection({ service, label }: Props) {
                       return (
                         <tr key={row.key} className="border-b border-[#0f0f1a]">
                           <td className="py-1 pr-3 text-right text-[#7070a8] tabular-nums select-none text-xs w-6">{i + 1}</td>
-                          <td className="py-1 pr-4 max-w-xs text-white">
+                          <td className="py-1 pr-4 max-w-xs text-white text-xs">
                             <div className="flex items-center gap-2">
                               {q ? (
                                 <button onClick={() => setSelected(q)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
