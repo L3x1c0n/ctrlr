@@ -773,8 +773,19 @@ export default function DiscoverSection() {
           />
         </div>
 
-        {/* mobile layout: list on top, preview below */}
+        {/* mobile layout: preview on top, list on bottom */}
         <div className="md:hidden flex flex-col gap-2">
+
+          {/* preview pane */}
+          <PreviewPane
+            item={activeItem}
+            detail={detail}
+            detailLoading={detailLoading}
+            profiles={profiles}
+            folders={folders}
+            plexFileInfo={plexFileInfo}
+            provider={activeItem ? providerMap[String(activeItem.id)] : undefined}
+          />
 
           {/* list */}
           <div className="flex flex-col border border-[#1a1a2e] overflow-hidden" style={{ height: 220 }}>
@@ -829,17 +840,6 @@ export default function DiscoverSection() {
               )}
             </div>
           </div>
-
-          {/* preview pane — same component as desktop */}
-          <PreviewPane
-            item={activeItem}
-            detail={detail}
-            detailLoading={detailLoading}
-            profiles={profiles}
-            folders={folders}
-            plexFileInfo={plexFileInfo}
-            provider={activeItem ? providerMap[String(activeItem.id)] : undefined}
-          />
         </div>
 
         <div className="font-mono text-xs text-[#6a9a7a] mt-3">{'}'}</div>
