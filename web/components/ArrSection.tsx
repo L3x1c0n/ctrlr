@@ -370,7 +370,7 @@ export default function ArrSection({ service, label }: Props) {
                                 <button
                                   onClick={() => setSelected(
                                     service === 'sonarr'
-                                      ? { seriesId: row.seriesId, title: row.title } as ArrQueueItem
+                                      ? { seriesId: row.seriesId, episodeId: row.calendarId, title: row.title } as ArrQueueItem
                                       : { movieId:  row.calendarId, title: row.title } as ArrQueueItem
                                   )}
                                   className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0"
