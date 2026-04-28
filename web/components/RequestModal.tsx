@@ -68,9 +68,17 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
         const defaultProfile = (p ?? []).find(pr => isUltraHD(pr.name)) ?? p?.[0]
         setProfileId(defaultProfile?.id ?? null)
         setRootFolder(sortedFolders[0]?.path ?? null)
-        // pre-select all seasons for TV
+        // pre-select seasons not already available in library
         if (item?.mediaType === 'tv' && d?.numberOfSeasons) {
-          setSelectedSeasons(new Set(Array.from({ length: d.numberOfSeasons }, (_, i) => i + 1)))
+          const availableSeasons = new Set<number>(
+            ((d as any)?.mediaInfo?.seasons ?? [])
+              .filter((s: any) => s.status === 5)
+              .map((s: any) => s.seasonNumber)
+          )
+          setSelectedSeasons(new Set(
+            Array.from({ length: d.numberOfSeasons }, (_, i) => i + 1)
+              .filter(n => !availableSeasons.has(n))
+          ))
         }
       })
       .catch(() => {})
