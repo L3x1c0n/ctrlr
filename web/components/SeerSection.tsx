@@ -153,7 +153,7 @@ export default function SeerSection() {
                 className="flex items-center justify-between px-3 py-2 border-b border-[#0f0f1a]"
               >
                 <div className="font-mono text-sm">
-                  <span className="text-white">{r.title ?? r.name}</span>
+                  <button onClick={() => openRequestModal(r)} className="text-white hover:text-cyan-400 transition-colors text-left">{r.title ?? r.name}</button>
                   <span className="text-[#999] ml-2 text-xs uppercase">{r.mediaType}</span>
                   {(r.releaseDate || r.firstAirDate) && (
                     <span className="text-[#999] ml-2 text-xs">

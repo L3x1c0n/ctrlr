@@ -73,7 +73,8 @@ export async function GET(req: NextRequest) {
           currentQualityProfileId = arrDetail?.qualityProfileId ?? null
         } catch { /* non-fatal */ }
       }
-      return NextResponse.json({ detail, profiles, rootFolders, serviceId, plexFileInfo, currentQualityProfileId })
+      const tvdbId = (detail as any)?.externalIds?.tvdbId ?? null
+      return NextResponse.json({ detail, profiles, rootFolders, serviceId, plexFileInfo, currentQualityProfileId, tvdbId })
     }
     if (searchParams.get('action') === 'defaults' && mediaType) {
       const defaults = await resolveDefaults(mediaType)

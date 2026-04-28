@@ -5,6 +5,7 @@ import { SeerSearchResult, DiscoverDetail } from '@/types'
 
 interface Profile    { id: number; name: string }
 interface RootFolder { path: string; freeSpace: number }
+interface SonarrEp   { id: number; seasonNumber: number; episodeNumber: number; title: string; hasFile: boolean }
 
 const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${path}`
 
@@ -36,17 +37,24 @@ interface Props {
 export default function RequestModal({ item, onClose, onDone }: Props) {
   const isOpen = item !== null
 
-  const [detail,     setDetail]     = useState<DiscoverDetail | null>(null)
-  const [profiles,   setProfiles]   = useState<Profile[]>([])
-  const [folders,    setFolders]    = useState<RootFolder[]>([])
-  const [profileId,  setProfileId]  = useState<number | null>(null)
-  const [rootFolder, setRootFolder] = useState<string | null>(null)
-  const [loading,          setLoading]          = useState(false)
-  const [submitting,       setSubmitting]       = useState(false)
-  const [submitted,        setSubmitted]        = useState(false)
-  const [submitError,      setSubmitError]      = useState<string | null>(null)
-  const [selectedSeasons,  setSelectedSeasons]  = useState<Set<number>>(new Set())
-  const [availableSeasons, setAvailableSeasons] = useState<Set<number>>(new Set())
+  const [detail,          setDetail]          = useState<DiscoverDetail | null>(null)
+  const [profiles,        setProfiles]        = useState<Profile[]>([])
+  const [folders,         setFolders]         = useState<RootFolder[]>([])
+  const [profileId,       setProfileId]       = useState<number | null>(null)
+  const [rootFolder,      setRootFolder]      = useState<string | null>(null)
+  const [loading,         setLoading]         = useState(false)
+  const [submitting,      setSubmitting]      = useState(false)
+  const [submitted,       setSubmitted]       = useState(false)
+  const [submitError,     setSubmitError]     = useState<string | null>(null)
+  const [submitStatus,    setSubmitStatus]    = useState('')
+  const [selectedSeasons, setSelectedSeasons] = useState<Set<number>>(new Set())
+  const [availableSeasons,setAvailableSeasons]= useState<Set<number>>(new Set())
+  const [sonarrSeriesId,  setSonarrSeriesId]  = useState<number | null>(null)
+  const [tvdbId,          setTvdbId]          = useState<number | null>(null)
+  const [sonarrEpisodes,  setSonarrEpisodes]  = useState<SonarrEp[]>([])
+  const [lookupSeasons,   setLookupSeasons]   = useState<{ seasonNumber: number; totalEpisodes: number }[]>([])
+  const [expandedSeason,  setExpandedSeason]  = useState<number | null>(null)
+  const [deselectedEps,   setDeselectedEps]   = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!item) return
@@ -58,11 +66,22 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
     setRootFolder(null)
     setSubmitted(false)
     setSubmitError(null)
+    setSubmitStatus('')
     setSelectedSeasons(new Set())
     setAvailableSeasons(new Set())
+    setSonarrSeriesId(null)
+    setTvdbId(null)
+    setSonarrEpisodes([])
+    setLookupSeasons([])
+    setExpandedSeason(null)
+    setDeselectedEps(new Set())
+
     fetch(`/api/seer?mediaId=${item.id}&mediaType=${item.mediaType}`)
       .then(r => r.json())
-      .then(({ detail: d, profiles: p, rootFolders: f }: { detail: DiscoverDetail; profiles: Profile[]; rootFolders: RootFolder[] }) => {
+      .then(({ detail: d, profiles: p, rootFolders: f, serviceId: sid, tvdbId: tvdb }: {
+        detail: DiscoverDetail; profiles: Profile[]; rootFolders: RootFolder[]
+        serviceId: number | null; tvdbId: number | null
+      }) => {
         const sortedFolders = [...(f ?? [])].sort((a, b) => b.freeSpace - a.freeSpace)
         setDetail(d ?? null)
         setProfiles(p ?? [])
@@ -70,7 +89,9 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
         const defaultProfile = (p ?? []).find(pr => isUltraHD(pr.name)) ?? p?.[0]
         setProfileId(defaultProfile?.id ?? null)
         setRootFolder(sortedFolders[0]?.path ?? null)
-        // cross-reference library availability per season
+        setSonarrSeriesId(sid ?? null)
+        setTvdbId(tvdb ?? null)
+
         if (item?.mediaType === 'tv' && d?.numberOfSeasons) {
           const inLib = new Set<number>(
             ((d as any)?.mediaInfo?.seasons ?? [])
@@ -82,16 +103,57 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
             Array.from({ length: d.numberOfSeasons }, (_, i) => i + 1)
               .filter(n => !inLib.has(n))
           ))
+
+          if (sid) {
+            fetch(`/api/sonarr?episodes=${sid}`)
+              .then(r => r.json())
+              .then(eps => setSonarrEpisodes(Array.isArray(eps) ? eps : []))
+              .catch(() => {})
+          } else if (tvdb) {
+            fetch(`/api/sonarr?lookup=${tvdb}`)
+              .then(r => r.json())
+              .then(data => {
+                if (Array.isArray(data)) {
+                  setLookupSeasons(
+                    data
+                      .filter((s: any) => s.seasonNumber > 0)
+                      .map((s: any) => ({
+                        seasonNumber: s.seasonNumber,
+                        totalEpisodes: s.statistics?.totalEpisodeCount ?? 0,
+                      }))
+                  )
+                }
+              })
+              .catch(() => {})
+          }
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [item?.id, item?.mediaType])
 
+  function getEpisodesForSeason(seasonNum: number): Array<{ key: string; episodeNumber: number; hasFile: boolean; title: string }> {
+    if (sonarrEpisodes.length > 0) {
+      return sonarrEpisodes
+        .filter(e => e.seasonNumber === seasonNum)
+        .sort((a, b) => a.episodeNumber - b.episodeNumber)
+        .map(e => ({ key: `${e.seasonNumber}:${e.episodeNumber}`, episodeNumber: e.episodeNumber, hasFile: e.hasFile, title: e.title }))
+    }
+    const ls = lookupSeasons.find(s => s.seasonNumber === seasonNum)
+    if (!ls) return []
+    return Array.from({ length: ls.totalEpisodes }, (_, i) => ({
+      key: `${seasonNum}:${i + 1}`,
+      episodeNumber: i + 1,
+      hasFile: false,
+      title: `Episode ${i + 1}`,
+    }))
+  }
+
   async function submit() {
     if (!item) return
     setSubmitting(true)
     setSubmitError(null)
+    setSubmitStatus('submitting...')
     try {
       const res = await fetch('/api/seer', {
         method: 'POST',
@@ -110,12 +172,44 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
         setSubmitError(data?.error ?? `HTTP ${res.status}`)
         return
       }
+
+      if (item.mediaType === 'tv' && deselectedEps.size > 0) {
+        let sid = sonarrSeriesId
+
+        if (!sid && tvdbId) {
+          setSubmitStatus('waiting for Sonarr...')
+          for (let i = 0; i < 12; i++) {
+            await new Promise(r => setTimeout(r, 5000))
+            const r = await fetch(`/api/sonarr?tvdb=${tvdbId}`)
+            const d = await r.json()
+            if (d.seriesId) { sid = d.seriesId; break }
+          }
+        }
+
+        if (sid) {
+          setSubmitStatus('applying episode monitoring...')
+          const epsRes = await fetch(`/api/sonarr?episodes=${sid}`)
+          const eps: SonarrEp[] = await epsRes.json()
+          const toUnmonitor = eps
+            .filter(e => deselectedEps.has(`${e.seasonNumber}:${e.episodeNumber}`))
+            .map(e => e.id)
+          if (toUnmonitor.length > 0) {
+            await fetch('/api/sonarr', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'updateEpisodeMonitor', episodeIds: toUnmonitor, monitored: false }),
+            })
+          }
+        }
+      }
+
       setSubmitted(true)
-      setTimeout(() => onDone(), 1500)
+      setTimeout(() => onDone(), 2000)
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'request failed')
     } finally {
       setSubmitting(false)
+      setSubmitStatus('')
     }
   }
 
@@ -151,7 +245,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
 
         {item && (
           <div>
-            {/* backdrop area — same as Discover preview pane */}
+            {/* backdrop area */}
             <div className="relative shrink-0 w-full" style={{ aspectRatio: '16/9' }}>
               {backdrop
                 ? <img src={TMDB_W(780, backdrop)} alt="" className="w-full h-full object-cover" style={{ filter: 'blur(2px) brightness(0.8)' }} />
@@ -160,7 +254,6 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
               <div className="absolute inset-0 bg-[#0A0A0F]/30" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/20 to-transparent" />
 
-              {/* inset poster */}
               {poster && (
                 <img
                   src={TMDB_W(185, poster)}
@@ -175,7 +268,6 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                 />
               )}
 
-              {/* title + meta to the right of poster */}
               <div
                 className="absolute flex flex-col overflow-hidden"
                 style={{ bottom: 0, left: poster ? 137 : 12, right: 8, height: 188, paddingTop: 4 }}
@@ -257,7 +349,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
 
                   {item?.mediaType === 'tv' && seasons && seasons > 0 && (
                     <div>
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-1.5">
                         <label className="text-[#6a9a7a] text-xs">// seasons</label>
                         <button
                           onClick={() => {
@@ -266,37 +358,83 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                             } else {
                               setSelectedSeasons(new Set(Array.from({ length: seasons }, (_, i) => i + 1)))
                             }
+                            setExpandedSeason(null)
                           }}
                           className="btn-xs text-[#888]"
                         >
                           {selectedSeasons.size === seasons ? '--none' : '--all'}
                         </button>
                       </div>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="space-y-0.5">
                         {Array.from({ length: seasons }, (_, i) => i + 1).map(n => {
                           const inLib   = availableSeasons.has(n)
                           const checked = selectedSeasons.has(n)
+                          const isExpand = expandedSeason === n
+                          const eps = getEpisodesForSeason(n)
                           return (
-                            <button
-                              key={n}
-                              onClick={() => {
-                                if (inLib) return
-                                setSelectedSeasons(prev => {
-                                  const next = new Set(prev)
-                                  if (next.has(n)) next.delete(n); else next.add(n)
-                                  return next
-                                })
-                              }}
-                              className="font-mono text-xs px-2 py-0.5 border transition-colors"
-                              style={{
-                                borderColor: inLib ? '#E5A00D' : checked ? '#4a4a7a' : '#1a1a2e',
-                                color:       inLib ? '#E5A00D' : checked ? '#fff'    : '#555',
-                                background:  inLib ? 'rgba(229,160,13,0.1)' : checked ? '#0d0d1a' : 'transparent',
-                                cursor:      inLib ? 'default' : 'pointer',
-                              }}
-                            >
-                              S{String(n).padStart(2, '0')}
-                            </button>
+                            <div key={n}>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    if (inLib) return
+                                    setSelectedSeasons(prev => {
+                                      const next = new Set(prev)
+                                      if (next.has(n)) next.delete(n); else next.add(n)
+                                      return next
+                                    })
+                                  }}
+                                  className="font-mono text-xs px-2 py-0.5 border transition-colors shrink-0"
+                                  style={{
+                                    borderColor: inLib ? '#E5A00D' : checked ? '#4a4a7a' : '#1a1a2e',
+                                    color:       inLib ? '#E5A00D' : checked ? '#fff'    : '#555',
+                                    background:  inLib ? 'rgba(229,160,13,0.1)' : checked ? '#0d0d1a' : 'transparent',
+                                    cursor:      inLib ? 'default' : 'pointer',
+                                  }}
+                                >
+                                  S{String(n).padStart(2, '0')}
+                                </button>
+                                {eps.length > 0 && (
+                                  <button
+                                    onClick={() => setExpandedSeason(isExpand ? null : n)}
+                                    className="font-mono text-xs text-[#555] hover:text-[#888] transition-colors flex items-center gap-1"
+                                  >
+                                    <span>{isExpand ? '▾' : '▸'}</span>
+                                    <span>{eps.length} ep</span>
+                                  </button>
+                                )}
+                              </div>
+                              {isExpand && eps.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1 ml-1 pl-3 border-l border-[#1a1a2e]">
+                                  {eps.map(ep => {
+                                    const desel = deselectedEps.has(ep.key)
+                                    return (
+                                      <button
+                                        key={ep.key}
+                                        onClick={() => {
+                                          if (ep.hasFile) return
+                                          setDeselectedEps(prev => {
+                                            const next = new Set(prev)
+                                            if (next.has(ep.key)) next.delete(ep.key); else next.add(ep.key)
+                                            return next
+                                          })
+                                        }}
+                                        title={ep.title}
+                                        className="font-mono text-xs px-1.5 py-0.5 border transition-colors"
+                                        style={{
+                                          borderColor: ep.hasFile ? '#E5A00D' : desel ? '#2a1a1a' : '#1a2a4a',
+                                          color:       ep.hasFile ? '#E5A00D' : desel ? '#553333' : '#5a8ab0',
+                                          background:  ep.hasFile ? 'rgba(229,160,13,0.08)' : desel ? 'transparent' : 'rgba(26,42,74,0.3)',
+                                          cursor:      ep.hasFile ? 'default' : 'pointer',
+                                          textDecoration: desel && !ep.hasFile ? 'line-through' : 'none',
+                                        }}
+                                      >
+                                        E{String(ep.episodeNumber).padStart(2, '0')}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                            </div>
                           )
                         })}
                       </div>
@@ -308,7 +446,9 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                   )}
                   <div className="flex gap-3 pt-1 items-center">
                     {submitted ? (
-                      <span className="text-green-400 text-xs">// requested</span>
+                      <span className="text-green-400 text-xs">
+                        // requested{deselectedEps.size > 0 ? ` · ${deselectedEps.size} ep${deselectedEps.size !== 1 ? 's' : ''} unmonitored` : ''}
+                      </span>
                     ) : (
                       <>
                         <button
@@ -316,7 +456,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                           disabled={submitting}
                           className="btn-xs text-blue-400 disabled:opacity-40"
                         >
-                          {submitting ? '...' : '--request'}
+                          {submitting ? (submitStatus || '...') : '--request'}
                         </button>
                         <button onClick={onClose} className="btn-xs text-[#555]">--cancel</button>
                       </>

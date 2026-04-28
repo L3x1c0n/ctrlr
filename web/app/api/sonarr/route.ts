@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getQueue, deleteQueueItem, triggerSearch, getSeriesDetail, getQualityProfiles, updateSeries, getHealth, getMonitored, getCalendarToday, searchReleases, grabRelease, findByTvdb, findEpisodeId, searchEpisode, getNextEpisodeId, getEpisodes, getRecentlyAdded } from '@/lib/sonarr'
+import { getQueue, deleteQueueItem, triggerSearch, getSeriesDetail, getQualityProfiles, updateSeries, getHealth, getMonitored, getCalendarToday, searchReleases, grabRelease, findByTvdb, findEpisodeId, searchEpisode, getNextEpisodeId, getEpisodes, getRecentlyAdded, lookupSeries, updateEpisodeMonitoring } from '@/lib/sonarr'
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,6 +22,10 @@ export async function GET(req: NextRequest) {
     const nextEp = p.get('nextEpisode')
     if (nextEp) {
       return NextResponse.json({ episodeId: await getNextEpisodeId(Number(nextEp)) })
+    }
+    const lookup = p.get('lookup')
+    if (lookup) {
+      return NextResponse.json(await lookupSeries(Number(lookup)))
     }
     const tvdb = p.get('tvdb')
     if (tvdb) {
@@ -52,6 +56,7 @@ export async function POST(req: NextRequest) {
     else if (action === 'toggleMonitor') await updateSeries(seriesId, { monitored })
     else if (action === 'grab')          await grabRelease(guid, indexerId)
     else if (action === 'searchEpisode') await searchEpisode(body.episodeId)
+    else if (action === 'updateEpisodeMonitor') await updateEpisodeMonitoring(body.episodeIds, body.monitored)
     else return NextResponse.json({ error: 'unknown action' }, { status: 400 })
     return NextResponse.json({ ok: true })
   } catch (e) {

@@ -115,6 +115,15 @@ export async function getNextEpisodeId(seriesId: number): Promise<number | null>
   return next[0]?.id ?? null
 }
 
+export async function updateEpisodeMonitoring(episodeIds: number[], monitored: boolean): Promise<void> {
+  await fetch(`${BASE}/api/v3/episode/monitor`, {
+    method: 'PUT',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ episodeIds, monitored }),
+    cache: 'no-store',
+  })
+}
+
 export async function searchEpisode(episodeId: number): Promise<void> {
   await fetch(`${BASE}/api/v3/command`, {
     method: 'POST',
@@ -245,6 +254,18 @@ export async function getRecentlyAdded(limit = 7): Promise<RecentEpisode[]> {
     })
   }
   return results
+}
+
+export interface LookupSeason {
+  seasonNumber: number
+  statistics: { totalEpisodeCount: number }
+}
+
+export async function lookupSeries(tvdbId: number): Promise<LookupSeason[]> {
+  const res = await fetch(`${BASE}/api/v3/series/lookup?term=tvdb:${tvdbId}`, { headers, cache: 'no-store' })
+  if (!res.ok) return []
+  const results: Array<{ seasons?: LookupSeason[] }> = await res.json()
+  return (results[0]?.seasons ?? []).filter(s => s.seasonNumber > 0)
 }
 
 export async function getMonitored(): Promise<MonitoredSeries[]> {
