@@ -268,6 +268,65 @@ export async function lookupSeries(tvdbId: number): Promise<LookupSeason[]> {
   return (results[0]?.seasons ?? []).filter(s => s.seasonNumber > 0)
 }
 
+// Hold tag/delay profile pattern inspired by Vansmak/episeerr (https://github.com/Vansmak/episeerr)
+export async function ensureHoldTag(): Promise<number> {
+  const tagsRes = await fetch(`${BASE}/api/v3/tag`, { headers, cache: 'no-store' })
+  const tags: Array<{ id: number; label: string }> = await tagsRes.json()
+  const existing = tags.find(t => t.label === 'ctrlr_hold')
+  if (existing) return existing.id
+  const res = await fetch(`${BASE}/api/v3/tag`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ label: 'ctrlr_hold' }),
+    cache: 'no-store',
+  })
+  const tag = await res.json()
+  return tag.id
+}
+
+export async function ensureHoldDelayProfile(tagId: number): Promise<void> {
+  const res = await fetch(`${BASE}/api/v3/delayprofile`, { headers, cache: 'no-store' })
+  const profiles: Array<{ tags: number[] }> = await res.json()
+  if (profiles.some(p => p.tags.includes(tagId))) return
+  await fetch(`${BASE}/api/v3/delayprofile`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      enableUsenet: true,
+      enableTorrent: true,
+      preferredProtocol: 'usenet',
+      usenetDelay: 10519200,
+      torrentDelay: 10519200,
+      bypassIfHighestQuality: false,
+      order: 1,
+      tags: [tagId],
+    }),
+    cache: 'no-store',
+  })
+}
+
+export async function applyHoldTag(seriesId: number, tagId: number): Promise<void> {
+  const current = await getSeriesDetail(seriesId)
+  const tags = Array.from(new Set([...(current.tags ?? []), tagId]))
+  await fetch(`${BASE}/api/v3/series/${seriesId}`, {
+    method: 'PUT',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...current, tags }),
+    cache: 'no-store',
+  })
+}
+
+export async function releaseHoldTag(seriesId: number, tagId: number): Promise<void> {
+  const current = await getSeriesDetail(seriesId)
+  const tags = (current.tags ?? []).filter((t: number) => t !== tagId)
+  await fetch(`${BASE}/api/v3/series/${seriesId}`, {
+    method: 'PUT',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...current, tags }),
+    cache: 'no-store',
+  })
+}
+
 export async function getMonitored(): Promise<MonitoredSeries[]> {
   const res = await fetch(`${BASE}/api/v3/series`, { headers, cache: 'no-store' })
   if (!res.ok) return []

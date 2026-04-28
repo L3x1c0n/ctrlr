@@ -167,11 +167,17 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
 
       if (item.mediaType === 'tv') {
         let sid = sonarrSeriesId
+        let holdTagId: number | null = null
 
         if (!sid && tvdbId) {
+          // Setup hold infrastructure then poll for series at 2s intervals
+          const holdRes = await fetch('/api/sonarr?holdSetup=1')
+          const holdData = await holdRes.json()
+          holdTagId = holdData.tagId ?? null
+
           setSubmitStatus('waiting for Sonarr...')
-          for (let i = 0; i < 12; i++) {
-            await new Promise(r => setTimeout(r, 5000))
+          for (let i = 0; i < 30; i++) {
+            await new Promise(r => setTimeout(r, 2000))
             const r = await fetch(`/api/sonarr?tvdb=${tvdbId}`)
             const d = await r.json()
             if (d.seriesId) { sid = d.seriesId; break }
@@ -179,6 +185,14 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
           if (!sid) {
             setSubmitError('Seerr request sent but Sonarr did not pick it up — check Sonarr health and try again')
             return
+          }
+          // Apply hold tag immediately so nothing gets grabbed during episode setup
+          if (holdTagId !== null) {
+            await fetch('/api/sonarr', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'applyHold', seriesId: sid, tagId: holdTagId }),
+            })
           }
         }
 
@@ -198,6 +212,15 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
             })
           }
           setMonitoredCount(inSelectedSeasons.length - toUnmonitor.length)
+
+          // Release hold — Sonarr now starts searching with correct episode set
+          if (holdTagId !== null) {
+            await fetch('/api/sonarr', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'releaseHold', seriesId: sid, tagId: holdTagId }),
+            })
+          }
         }
       }
 
