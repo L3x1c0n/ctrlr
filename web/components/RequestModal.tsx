@@ -41,10 +41,11 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
   const [folders,    setFolders]    = useState<RootFolder[]>([])
   const [profileId,  setProfileId]  = useState<number | null>(null)
   const [rootFolder, setRootFolder] = useState<string | null>(null)
-  const [loading,     setLoading]     = useState(false)
-  const [submitting,  setSubmitting]  = useState(false)
-  const [submitted,   setSubmitted]   = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [loading,          setLoading]          = useState(false)
+  const [submitting,       setSubmitting]       = useState(false)
+  const [submitted,        setSubmitted]        = useState(false)
+  const [submitError,      setSubmitError]      = useState<string | null>(null)
+  const [selectedSeasons,  setSelectedSeasons]  = useState<Set<number>>(new Set())
 
   useEffect(() => {
     if (!item) return
@@ -56,6 +57,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
     setRootFolder(null)
     setSubmitted(false)
     setSubmitError(null)
+    setSelectedSeasons(new Set())
     fetch(`/api/seer?mediaId=${item.id}&mediaType=${item.mediaType}`)
       .then(r => r.json())
       .then(({ detail: d, profiles: p, rootFolders: f }: { detail: DiscoverDetail; profiles: Profile[]; rootFolders: RootFolder[] }) => {
@@ -66,6 +68,10 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
         const defaultProfile = (p ?? []).find(pr => isUltraHD(pr.name)) ?? p?.[0]
         setProfileId(defaultProfile?.id ?? null)
         setRootFolder(sortedFolders[0]?.path ?? null)
+        // pre-select all seasons for TV
+        if (item?.mediaType === 'tv' && d?.numberOfSeasons) {
+          setSelectedSeasons(new Set(Array.from({ length: d.numberOfSeasons }, (_, i) => i + 1)))
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -85,6 +91,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
           mediaId: item.id,
           profileId,
           rootFolder,
+          ...(item.mediaType === 'tv' && selectedSeasons.size > 0 ? { seasons: Array.from(selectedSeasons).sort((a, b) => a - b) } : {}),
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -236,6 +243,46 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                       return <p className={`text-xs mt-1 ${color}`}>{fmtFree(sel.freeSpace)}</p>
                     })()}
                   </div>
+
+                  {item?.mediaType === 'tv' && seasons && seasons > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[#6a9a7a] text-xs">// seasons</label>
+                        <button
+                          onClick={() => {
+                            if (selectedSeasons.size === seasons) {
+                              setSelectedSeasons(new Set())
+                            } else {
+                              setSelectedSeasons(new Set(Array.from({ length: seasons }, (_, i) => i + 1)))
+                            }
+                          }}
+                          className="btn-xs text-[#888]"
+                        >
+                          {selectedSeasons.size === seasons ? '--none' : '--all'}
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {Array.from({ length: seasons }, (_, i) => i + 1).map(n => (
+                          <button
+                            key={n}
+                            onClick={() => setSelectedSeasons(prev => {
+                              const next = new Set(prev)
+                              if (next.has(n)) next.delete(n); else next.add(n)
+                              return next
+                            })}
+                            className="font-mono text-xs px-2 py-0.5 border transition-colors"
+                            style={{
+                              borderColor: selectedSeasons.has(n) ? '#4a4a7a' : '#1a1a2e',
+                              color:       selectedSeasons.has(n) ? '#fff'    : '#555',
+                              background:  selectedSeasons.has(n) ? '#0d0d1a' : 'transparent',
+                            }}
+                          >
+                            S{String(n).padStart(2, '0')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {submitError && (
                     <p className="text-red-400 text-xs">{`2> ${submitError}`}</p>
