@@ -47,6 +47,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
   const [submitted,       setSubmitted]       = useState(false)
   const [submitError,     setSubmitError]     = useState<string | null>(null)
   const [submitStatus,    setSubmitStatus]    = useState('')
+  const [monitoredCount,  setMonitoredCount]  = useState<number | null>(null)
   const [selectedSeasons, setSelectedSeasons] = useState<Set<number>>(new Set())
   const [availableSeasons,setAvailableSeasons]= useState<Set<number>>(new Set())
   const [sonarrSeriesId,  setSonarrSeriesId]  = useState<number | null>(null)
@@ -67,6 +68,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
     setSubmitted(false)
     setSubmitError(null)
     setSubmitStatus('')
+    setMonitoredCount(null)
     setSelectedSeasons(new Set())
     setAvailableSeasons(new Set())
     setSonarrSeriesId(null)
@@ -163,7 +165,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
         return
       }
 
-      if (item.mediaType === 'tv' && deselectedEps.size > 0) {
+      if (item.mediaType === 'tv') {
         let sid = sonarrSeriesId
 
         if (!sid && tvdbId) {
@@ -174,13 +176,18 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
             const d = await r.json()
             if (d.seriesId) { sid = d.seriesId; break }
           }
+          if (!sid) {
+            setSubmitError('Seerr request sent but Sonarr did not pick it up — check Sonarr health and try again')
+            return
+          }
         }
 
         if (sid) {
           setSubmitStatus('applying episode monitoring...')
           const epsRes = await fetch(`/api/sonarr?episodes=${sid}`)
           const eps: SonarrEp[] = await epsRes.json()
-          const toUnmonitor = eps
+          const inSelectedSeasons = eps.filter(e => selectedSeasons.has(e.seasonNumber))
+          const toUnmonitor = inSelectedSeasons
             .filter(e => deselectedEps.has(`${e.seasonNumber}:${e.episodeNumber}`))
             .map(e => e.id)
           if (toUnmonitor.length > 0) {
@@ -190,11 +197,11 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
               body: JSON.stringify({ action: 'updateEpisodeMonitor', episodeIds: toUnmonitor, monitored: false }),
             })
           }
+          setMonitoredCount(inSelectedSeasons.length - toUnmonitor.length)
         }
       }
 
       setSubmitted(true)
-      setTimeout(() => onDone(), 2000)
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'request failed')
     } finally {
@@ -367,9 +374,20 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                                 <button
                                   onClick={() => {
                                     if (inLib) return
+                                    const willSelect = !selectedSeasons.has(n)
                                     setSelectedSeasons(prev => {
                                       const next = new Set(prev)
                                       if (next.has(n)) next.delete(n); else next.add(n)
+                                      return next
+                                    })
+                                    setDeselectedEps(prev => {
+                                      const next = new Set(prev)
+                                      const seasonEps = getEpisodesForSeason(n)
+                                      if (willSelect) {
+                                        seasonEps.forEach(e => next.delete(e.key))
+                                      } else {
+                                        seasonEps.filter(e => !e.hasFile).forEach(e => next.add(e.key))
+                                      }
                                       return next
                                     })
                                   }}
@@ -394,7 +412,26 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                                 )}
                               </div>
                               {isExpand && eps.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1 ml-1 pl-3 border-l border-[#1a1a2e]">
+                                <div className="mt-1 ml-1 pl-3 border-l border-[#1a1a2e]">
+                                  <div className="flex gap-2 mb-1">
+                                    <button
+                                      onClick={() => setDeselectedEps(prev => {
+                                        const next = new Set(prev)
+                                        eps.filter(e => !e.hasFile).forEach(e => next.delete(e.key))
+                                        return next
+                                      })}
+                                      className="btn-xs text-[#5a8ab0]"
+                                    >--all</button>
+                                    <button
+                                      onClick={() => setDeselectedEps(prev => {
+                                        const next = new Set(prev)
+                                        eps.filter(e => !e.hasFile).forEach(e => next.add(e.key))
+                                        return next
+                                      })}
+                                      className="btn-xs text-[#555]"
+                                    >--none</button>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
                                   {eps.map(ep => {
                                     const desel = deselectedEps.has(ep.key)
                                     return (
@@ -422,6 +459,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                                       </button>
                                     )
                                   })}
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -432,13 +470,27 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                   )}
 
                   {submitError && (
-                    <p className="text-red-400 text-xs">{`2> ${submitError}`}</p>
+                    <div className="space-y-1.5">
+                      <p className="text-red-400 text-xs">{`2> ${submitError}`}</p>
+                      <button onClick={submit} disabled={submitting} className="btn-xs text-blue-400 disabled:opacity-40">
+                        {submitting ? (submitStatus || '...') : '--retry'}
+                      </button>
+                    </div>
+                  )}
+                  {submitting && submitStatus === 'waiting for Sonarr...' && (
+                    <div className="flex items-center gap-2 text-xs text-[#7070a8]">
+                      <span className="animate-pulse">◆</span>
+                      <span>{submitStatus}</span>
+                    </div>
                   )}
                   <div className="flex gap-3 pt-1 items-center">
                     {submitted ? (
-                      <span className="text-green-400 text-xs">
-                        // requested{deselectedEps.size > 0 ? ` · ${deselectedEps.size} ep${deselectedEps.size !== 1 ? 's' : ''} unmonitored` : ''}
-                      </span>
+                      <>
+                        <span className="text-green-400 text-xs">
+                          // requested{monitoredCount !== null ? ` · ${monitoredCount} ep${monitoredCount !== 1 ? 's' : ''} monitored` : ''}
+                        </span>
+                        <button onClick={onDone} className="btn-xs text-[#555]">--done</button>
+                      </>
                     ) : (
                       <>
                         <button
@@ -446,9 +498,9 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                           disabled={submitting}
                           className="btn-xs text-blue-400 disabled:opacity-40"
                         >
-                          {submitting ? (submitStatus || '...') : '--request'}
+                          {submitting && submitStatus !== 'waiting for Sonarr...' ? (submitStatus || '...') : '--request'}
                         </button>
-                        <button onClick={onClose} className="btn-xs text-[#555]">--cancel</button>
+                        {!submitting && <button onClick={onClose} className="btn-xs text-[#555]">--cancel</button>}
                       </>
                     )}
                   </div>
