@@ -46,6 +46,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
   const [submitted,        setSubmitted]        = useState(false)
   const [submitError,      setSubmitError]      = useState<string | null>(null)
   const [selectedSeasons,  setSelectedSeasons]  = useState<Set<number>>(new Set())
+  const [availableSeasons, setAvailableSeasons] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     if (!item) return
@@ -58,6 +59,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
     setSubmitted(false)
     setSubmitError(null)
     setSelectedSeasons(new Set())
+    setAvailableSeasons(new Set())
     fetch(`/api/seer?mediaId=${item.id}&mediaType=${item.mediaType}`)
       .then(r => r.json())
       .then(({ detail: d, profiles: p, rootFolders: f }: { detail: DiscoverDetail; profiles: Profile[]; rootFolders: RootFolder[] }) => {
@@ -68,16 +70,17 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
         const defaultProfile = (p ?? []).find(pr => isUltraHD(pr.name)) ?? p?.[0]
         setProfileId(defaultProfile?.id ?? null)
         setRootFolder(sortedFolders[0]?.path ?? null)
-        // pre-select seasons not already available in library
+        // cross-reference library availability per season
         if (item?.mediaType === 'tv' && d?.numberOfSeasons) {
-          const availableSeasons = new Set<number>(
+          const inLib = new Set<number>(
             ((d as any)?.mediaInfo?.seasons ?? [])
               .filter((s: any) => s.status === 5)
               .map((s: any) => s.seasonNumber)
           )
+          setAvailableSeasons(inLib)
           setSelectedSeasons(new Set(
             Array.from({ length: d.numberOfSeasons }, (_, i) => i + 1)
-              .filter(n => !availableSeasons.has(n))
+              .filter(n => !inLib.has(n))
           ))
         }
       })
@@ -270,24 +273,32 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                         </button>
                       </div>
                       <div className="flex flex-wrap gap-1">
-                        {Array.from({ length: seasons }, (_, i) => i + 1).map(n => (
-                          <button
-                            key={n}
-                            onClick={() => setSelectedSeasons(prev => {
-                              const next = new Set(prev)
-                              if (next.has(n)) next.delete(n); else next.add(n)
-                              return next
-                            })}
-                            className="font-mono text-xs px-2 py-0.5 border transition-colors"
-                            style={{
-                              borderColor: selectedSeasons.has(n) ? '#4a4a7a' : '#1a1a2e',
-                              color:       selectedSeasons.has(n) ? '#fff'    : '#555',
-                              background:  selectedSeasons.has(n) ? '#0d0d1a' : 'transparent',
-                            }}
-                          >
-                            S{String(n).padStart(2, '0')}
-                          </button>
-                        ))}
+                        {Array.from({ length: seasons }, (_, i) => i + 1).map(n => {
+                          const inLib   = availableSeasons.has(n)
+                          const checked = selectedSeasons.has(n)
+                          return (
+                            <button
+                              key={n}
+                              onClick={() => {
+                                if (inLib) return
+                                setSelectedSeasons(prev => {
+                                  const next = new Set(prev)
+                                  if (next.has(n)) next.delete(n); else next.add(n)
+                                  return next
+                                })
+                              }}
+                              className="font-mono text-xs px-2 py-0.5 border transition-colors"
+                              style={{
+                                borderColor: inLib ? '#E5A00D' : checked ? '#4a4a7a' : '#1a1a2e',
+                                color:       inLib ? '#E5A00D' : checked ? '#fff'    : '#555',
+                                background:  inLib ? 'rgba(229,160,13,0.1)' : checked ? '#0d0d1a' : 'transparent',
+                                cursor:      inLib ? 'default' : 'pointer',
+                              }}
+                            >
+                              S{String(n).padStart(2, '0')}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
