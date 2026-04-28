@@ -456,10 +456,11 @@ export default function ArrSection({ service, label }: Props) {
               {monitored.slice(0, UPCOMING_CAP).map((m, i) => {
                 if (service === 'sonarr') {
                   const s = m as MonSerie
+                  const calEp = calendar.find(c => c.seriesId === m.id)
                   return (
                     <div key={m.id} className="flex items-center gap-2 font-mono text-xs py-0.5 border-b border-[#0a0a14]">
                       <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0">{i + 1}</span>
-                      <button onClick={() => setSelected({ seriesId: m.id, title: m.title } as ArrQueueItem)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                      <button onClick={() => setSelected({ seriesId: m.id, episodeId: calEp?.id, title: m.title } as ArrQueueItem)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                       <span className="flex-1 text-white truncate">{m.title}</span>
                       <span className="text-green-400 shrink-0 tabular-nums">{s.nextAiring ? fmtRelDate(s.nextAiring) : '—'}</span>
                     </div>
