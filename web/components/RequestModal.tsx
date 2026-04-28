@@ -109,22 +109,12 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
               .then(r => r.json())
               .then(eps => setSonarrEpisodes(Array.isArray(eps) ? eps : []))
               .catch(() => {})
-          } else if (tvdb) {
-            fetch(`/api/sonarr?lookup=${tvdb}`)
-              .then(r => r.json())
-              .then(data => {
-                if (Array.isArray(data)) {
-                  setLookupSeasons(
-                    data
-                      .filter((s: any) => s.seasonNumber > 0)
-                      .map((s: any) => ({
-                        seasonNumber: s.seasonNumber,
-                        totalEpisodes: s.statistics?.totalEpisodeCount ?? 0,
-                      }))
-                  )
-                }
-              })
-              .catch(() => {})
+          } else {
+            setLookupSeasons(
+              ((d as any)?.seasons ?? [])
+                .filter((s: any) => s.seasonNumber > 0)
+                .map((s: any) => ({ seasonNumber: s.seasonNumber, totalEpisodes: s.episodeCount ?? 0 }))
+            )
           }
         }
       })
