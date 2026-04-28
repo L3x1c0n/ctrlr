@@ -1,7 +1,7 @@
 # CTRLr — Project Context
 
 This file is the shared brain between Claude instances. Keep it updated as the project evolves.
-Last updated: 2026-04-26 (PlexTraktSync wired up; minor ArrSection font-size polish)
+Last updated: 2026-04-28 (autobrr RSS+IRC fixed; multiple mobile/UI fixes; SSE discussion)
 
 ---
 
@@ -52,7 +52,7 @@ The two are developed in this monorepo so features, issues, and API contracts st
 - Next.js 16.2.3 (App Router) + TypeScript + Tailwind CSS 4
 - Node 20.20.2 via nvm
 - Standalone build output
-- No WebSockets — polling only
+- No WebSockets — polling only (see Phase 5 for planned migration to SSE — evaluate SSE before committing to WebSockets)
 - Build: `PATH="/home/gh05t/.nvm/versions/node/v20.20.2/bin:$PATH" npm run build`
 - Deploy: `sudo systemctl restart ctrlr-web` (rebuild required for source changes; restart alone is not enough)
 

@@ -31,7 +31,7 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<number | null>(null)
 
   const mediaId = item?.movieId ?? item?.seriesId
-  const searchId = service === 'radarr' ? item?.movieId : (item?.episodeId ?? selectedEpisodeId ?? undefined)
+  const searchId = service === 'radarr' ? item?.movieId : (selectedEpisodeId ?? undefined)
 
   useEffect(() => {
     setReleases(null)
@@ -39,23 +39,28 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
     setEpisodes(null)
     setSelectedEpisodeId(null)
     if (!item || !mediaId) { setDetail(null); setProfiles([]); return }
-    // For Sonarr items without a specific episodeId, fetch all episodes for the picker
-    if (service === 'sonarr' && item.seriesId && !item.episodeId) {
+    // Always fetch episodes for Sonarr so the picker is always visible
+    if (service === 'sonarr' && item.seriesId) {
       fetch(`/api/sonarr?episodes=${item.seriesId}`)
         .then(r => r.json())
         .then((eps: SonarrEpisode[]) => {
           setEpisodes(eps)
-          const now = Date.now()
-          const next = eps
-            .filter(e => e.monitored && !e.hasFile && e.airDateUtc && new Date(e.airDateUtc).getTime() > now)
-            .sort((a, b) => new Date(a.airDateUtc!).getTime() - new Date(b.airDateUtc!).getTime())
-          if (next[0]) {
-            setSelectedEpisodeId(next[0].id)
+          // If a specific episodeId was passed in, use it; otherwise auto-select
+          if (item.episodeId) {
+            setSelectedEpisodeId(item.episodeId)
           } else {
-            const aired = eps
-              .filter(e => e.seasonNumber > 0 && e.airDateUtc && new Date(e.airDateUtc).getTime() <= now)
-              .sort((a, b) => new Date(b.airDateUtc!).getTime() - new Date(a.airDateUtc!).getTime())
-            setSelectedEpisodeId(aired[0]?.id ?? null)
+            const now = Date.now()
+            const next = eps
+              .filter(e => e.monitored && !e.hasFile && e.airDateUtc && new Date(e.airDateUtc).getTime() > now)
+              .sort((a, b) => new Date(a.airDateUtc!).getTime() - new Date(b.airDateUtc!).getTime())
+            if (next[0]) {
+              setSelectedEpisodeId(next[0].id)
+            } else {
+              const aired = eps
+                .filter(e => e.seasonNumber > 0 && e.airDateUtc && new Date(e.airDateUtc).getTime() <= now)
+                .sort((a, b) => new Date(b.airDateUtc!).getTime() - new Date(a.airDateUtc!).getTime())
+              setSelectedEpisodeId(aired[0]?.id ?? null)
+            }
           }
         })
         .catch(() => setEpisodes([]))
@@ -240,8 +245,8 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
                 </div>
               )}
 
-              {/* episode picker for sonarr series-level items */}
-              {service === 'sonarr' && !item?.episodeId && episodes !== null && (
+              {/* episode picker — always shown for sonarr so user can see and confirm which episode */}
+              {service === 'sonarr' && episodes !== null && (
                 <div className="mb-6">
                   <p className="text-[#7070a8] text-xs mb-2">{`/* episode */`}</p>
                   {episodes.length === 0
