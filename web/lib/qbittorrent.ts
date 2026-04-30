@@ -162,7 +162,7 @@ export async function getState(): Promise<QBState & { posters: Record<string, st
 }
 
 export async function pauseTorrent(hash: string): Promise<void> {
-  await authedFetch('/api/v2/torrents/stop', {
+  await authedFetch('/api/v2/torrents/pause', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `hashes=${hash}`,
@@ -170,7 +170,7 @@ export async function pauseTorrent(hash: string): Promise<void> {
 }
 
 export async function resumeTorrent(hash: string): Promise<void> {
-  await authedFetch('/api/v2/torrents/start', {
+  await authedFetch('/api/v2/torrents/resume', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `hashes=${hash}`,

@@ -94,8 +94,12 @@ export async function POST(req: NextRequest) {
     else if (action === 'approve') await approveRequest(id)
     else if (action === 'delete') await deleteRequest(id)
     else if (action === 'update') {
-      // Push to Seer and directly to the arr service — most recent write wins
-      await updateSeerRequest(id, profileId, rootFolder)
+      // For TV: only update the arr service directly — Seerr PUT re-triggers season monitoring
+      // which would override episode-level selections made at request time.
+      // For movies: safe to update both since there's no episode monitoring to protect.
+      if (mediaType !== 'tv') {
+        await updateSeerRequest(id, profileId, rootFolder)
+      }
       if (serviceId != null && profileId) {
         if (mediaType === 'tv') {
           await updateSeries(serviceId, { qualityProfileId: profileId })

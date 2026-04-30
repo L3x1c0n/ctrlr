@@ -85,8 +85,10 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
   const [rootFolders, setRootFolders] = useState<{ path: string; freeSpace: number }[]>([])
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState<string | null>(null)
-  const [profileId, setProfileId] = useState<number>(0)
-  const [rootFolder, setRootFolder] = useState<string>('')
+  const [profileId,       setProfileId]       = useState<number>(0)
+  const [loadedProfileId, setLoadedProfileId] = useState<number>(0)
+  const [rootFolder,      setRootFolder]      = useState<string>('')
+  const [loadedRootFolder,setLoadedRootFolder]= useState<string>('')
   const [serviceId, setServiceId] = useState<number | null>(null)
   const [releases,          setReleases]          = useState<Release[] | null>(null)
   const [relLoading,        setRelLoading]        = useState(false)
@@ -100,7 +102,8 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
     if (!request) {
       setDetail(null); setProfiles([]); setRootFolders([]); setServiceId(null)
       setReleases(null); setRelError(null); setEpisodes(null); setSelectedEpisodeId(null)
-      setProfileId(0)
+      setProfileId(0); setLoadedProfileId(0)
+      setLoadedRootFolder('')
       return
     }
     setRootFolder(request.rootFolder ?? '')
@@ -115,7 +118,10 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
         const sid = d.serviceId ?? null
         setServiceId(sid)
         // Source of truth: arr service profile > Seer request profile
-        setProfileId(d.currentQualityProfileId ?? request.profileId ?? 0)
+        const resolvedProfile = d.currentQualityProfileId ?? request.profileId ?? 0
+        setProfileId(resolvedProfile)
+        setLoadedProfileId(resolvedProfile)
+        setLoadedRootFolder(request.rootFolder ?? '')
         // For TV, fetch episode list for the picker
         if (sid && request.media.mediaType === 'tv') {
           fetch(`/api/sonarr?episodes=${sid}`)
@@ -194,7 +200,7 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
     }
   }
 
-  const configChanged = request && (profileId !== (request.profileId ?? 0) || rootFolder !== (request.rootFolder ?? ''))
+  const configChanged = request && (profileId !== loadedProfileId || rootFolder !== loadedRootFolder)
 
   const isOpen = !!request
   const poster = detail?.posterPath
