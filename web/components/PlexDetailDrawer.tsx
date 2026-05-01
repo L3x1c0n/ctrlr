@@ -355,23 +355,34 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
         const d = data.detail ?? null
         setDetail(d)
         if (!d) return
-        const guids: { id: string }[] = d.Guid ?? []
-        const tmdb = guids.find(g => g.id.startsWith('tmdb://'))
-        if (!tmdb) return
-        const id = parseInt(tmdb.id.replace('tmdb://', ''))
         const mt: 'movie' | 'tv' = d.type === 'movie' ? 'movie' : 'tv'
-        setTmdbId(id)
         setSeerType(mt)
-        setSeerLoading(true)
-        fetch(`/api/seer?mediaId=${id}&mediaType=${mt}`)
-          .then(r => r.json())
-          .then(s => {
-            const status = (s.detail as any)?.mediaInfo?.status ?? null
-            setSeerStatus(status)
-            setSeerPoster((s.detail as any)?.posterPath ?? null)
-          })
-          .catch(() => {})
-          .finally(() => setSeerLoading(false))
+
+        // For episodes, use the grandparent (show) ratingKey to get the show's TMDB ID
+        const keyForLookup = (d.type === 'episode' && d.grandparentRatingKey)
+          ? d.grandparentRatingKey
+          : null
+
+        const resolveGuids = keyForLookup
+          ? fetch(`/api/plex?ratingKey=${keyForLookup}`).then(r => r.json()).then(s => (s.detail?.Guid ?? []) as { id: string }[])
+          : Promise.resolve((d.Guid ?? []) as { id: string }[])
+
+        resolveGuids.then(guids => {
+          const tmdb = guids.find(g => g.id.startsWith('tmdb://'))
+          if (!tmdb) return
+          const id = parseInt(tmdb.id.replace('tmdb://', ''))
+          setTmdbId(id)
+          setSeerLoading(true)
+          fetch(`/api/seer?mediaId=${id}&mediaType=${mt}`)
+            .then(r => r.json())
+            .then(s => {
+              const status = (s.detail as any)?.mediaInfo?.status ?? null
+              setSeerStatus(status)
+              setSeerPoster((s.detail as any)?.posterPath ?? null)
+            })
+            .catch(() => {})
+            .finally(() => setSeerLoading(false))
+        }).catch(() => {})
       })
       .catch(() => {})
       .finally(() => setLoading(false))
