@@ -532,7 +532,7 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                           {statusLabel[seerStatus] ?? String(seerStatus)}
                         </span>
                       )}
-                      {(seerStatus === null || seerStatus === 3) && (
+                      {tmdbId && (
                         <button
                           onClick={() => setRequestItem({
                             id: tmdbId,
