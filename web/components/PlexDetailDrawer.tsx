@@ -1,8 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PlexMedia } from '@/types'
+import { PlexMedia, SeerSearchResult } from '@/types'
 import Spinner from '@/components/Spinner'
+import RequestModal from '@/components/RequestModal'
+
+const statusLabel: Record<number, string> = { 1: 'Pending', 2: 'Approved', 3: 'Declined', 4: 'Available', 5: 'Processing' }
+const statusColor: Record<number, string>  = { 1: 'text-yellow-400', 2: 'text-blue-400', 3: 'text-red-400', 4: 'text-green-400', 5: 'text-purple-400' }
 
 function fmtDuration(ms: number): string {
   const total = Math.floor(ms / 1000)
@@ -33,6 +37,7 @@ interface PlexDetail {
   Director?: { tag: string }[]
   Writer?: { tag: string }[]
   Role?: { tag: string; role?: string }[]
+  Guid?: { id: string }[]
 }
 
 interface PlexChild {
@@ -317,6 +322,12 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
   const [showArt,      setShowArt]      = useState(false)
   const [showMatch,    setShowMatch]    = useState(false)
   const [showSeries,   setShowSeries]   = useState(false)
+  const [seerLoading,  setSeerLoading]  = useState(false)
+  const [seerStatus,   setSeerStatus]   = useState<number | null>(null)
+  const [seerPoster,   setSeerPoster]   = useState<string | null>(null)
+  const [tmdbId,       setTmdbId]       = useState<number | null>(null)
+  const [seerType,     setSeerType]     = useState<'movie' | 'tv'>('movie')
+  const [requestItem,  setRequestItem]  = useState<SeerSearchResult | null>(null)
 
   // Reset panel state when the source item changes
   useEffect(() => {
@@ -325,6 +336,9 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
     setShowArt(false)
     setShowMatch(false)
     setShowSeries(false)
+    setSeerStatus(null)
+    setSeerPoster(null)
+    setTmdbId(null)
   }, [item])
 
   // Fetch detail whenever the active key changes
@@ -332,9 +346,33 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
     if (!currentKey) { setDetail(null); return }
     setLoading(true)
     setDetail(null)
+    setSeerStatus(null)
+    setSeerPoster(null)
+    setTmdbId(null)
     fetch(`/api/plex?ratingKey=${currentKey}`)
       .then(r => r.json())
-      .then(data => setDetail(data.detail ?? null))
+      .then(data => {
+        const d = data.detail ?? null
+        setDetail(d)
+        if (!d) return
+        const guids: { id: string }[] = d.Guid ?? []
+        const tmdb = guids.find(g => g.id.startsWith('tmdb://'))
+        if (!tmdb) return
+        const id = parseInt(tmdb.id.replace('tmdb://', ''))
+        const mt: 'movie' | 'tv' = d.type === 'movie' ? 'movie' : 'tv'
+        setTmdbId(id)
+        setSeerType(mt)
+        setSeerLoading(true)
+        fetch(`/api/seer?mediaId=${id}&mediaType=${mt}`)
+          .then(r => r.json())
+          .then(s => {
+            const status = (s.detail as any)?.mediaInfo?.status ?? null
+            setSeerStatus(status)
+            setSeerPoster((s.detail as any)?.posterPath ?? null)
+          })
+          .catch(() => {})
+          .finally(() => setSeerLoading(false))
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [currentKey])
@@ -470,6 +508,36 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                 </div>
               )}
 
+              {/* seer */}
+              {tmdbId && (
+                <div className="mb-6">
+                  <p className="text-[#7070a8] text-xs mb-2">{`/* seer */`}</p>
+                  {seerLoading ? (
+                    <Spinner />
+                  ) : (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {seerStatus !== null && (
+                        <span className={`text-xs ${statusColor[seerStatus] ?? 'text-[#888]'}`}>
+                          {statusLabel[seerStatus] ?? String(seerStatus)}
+                        </span>
+                      )}
+                      {(seerStatus === null || seerStatus === 3) && (
+                        <button
+                          onClick={() => setRequestItem({
+                            id: tmdbId,
+                            mediaType: seerType,
+                            title: isEpisode ? (detail?.grandparentTitle ?? detail?.title) : detail?.title,
+                            overview: detail?.summary ?? '',
+                            posterPath: seerPoster ?? undefined,
+                          })}
+                          className="btn-xs text-cyan-600 hover:text-cyan-400"
+                        >--request</button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* artwork */}
               <div className="mb-6">
                 <div className="flex items-center gap-3 mb-2">
@@ -542,6 +610,15 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
           )}
         </div>
       </div>
+
+      <RequestModal
+        item={requestItem}
+        onClose={() => setRequestItem(null)}
+        onDone={() => {
+          setRequestItem(null)
+          setSeerStatus(5)
+        }}
+      />
     </>
   )
 }
