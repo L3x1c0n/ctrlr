@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { findByTmdb as radarrFindByTmdb, getMovieDetail, getQualityProfiles, getQueue as getRadarrQueue } from '@/lib/radarr'
-import { getSeriesDetail, getQualityProfiles as getSonarrProfiles, getQueue as getSonarrQueue } from '@/lib/sonarr'
+import { getSeriesDetail, getQualityProfiles as getSonarrProfiles, getQueue as getSonarrQueue, getEpisodeById } from '@/lib/sonarr'
 import { getMediaDetail as getSeerDetail } from '@/lib/seer'
 import { findByTmdb as plexFindByTmdb, findByTitle as plexFindByTitle } from '@/lib/plex'
 import { getTorrentsByHashes } from '@/lib/qbittorrent'
@@ -55,11 +55,15 @@ export async function GET(req: NextRequest) {
         ])
         profiles = profs as object[]
         const queueItem = (queue as ArrQueue).records?.find(r => (r as any).seriesId === arrId) ?? null
-        arr = { ...(detail as object ?? {}), queueItem }
-        if ((queueItem as any)?.downloadId) {
-          const torrents = await withTimeout(getTorrentsByHashes([(queueItem as any).downloadId]), 4000, [] as object[])
-          qbit = (torrents as object[])[0] ?? null
-        }
+        const episodeId = (queueItem as any)?.episodeId ?? null
+        const [torrents, episodeDetail] = await Promise.all([
+          (queueItem as any)?.downloadId
+            ? withTimeout(getTorrentsByHashes([(queueItem as any).downloadId]), 4000, [] as object[])
+            : Promise.resolve([] as object[]),
+          episodeId ? withTimeout(getEpisodeById(episodeId), 4000, null) : Promise.resolve(null),
+        ])
+        arr = { ...(detail as object ?? {}), queueItem, episodeDetail }
+        qbit = (torrents as object[])[0] ?? null
       }
     }
 

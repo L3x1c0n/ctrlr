@@ -482,6 +482,9 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       })
       if (data.arr && !arrDetail) setArrDetail(data.arr)
       if (data.profiles?.length && !profiles.length) setProfiles(data.profiles)
+      // Use episode synopsis from queue item if available and not already set
+      const epOverview = data.arr?.episodeDetail?.overview
+      if (epOverview) setEpisodeSynopsis(prev => prev || epOverview)
       // If some services came back null and we have retries left, retry once after a delay
       const hasGaps = !data.arr || !data.plex
       if (hasGaps && attempt < 3) {
