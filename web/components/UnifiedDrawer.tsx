@@ -15,6 +15,195 @@ export type DrawerEntry =
   | { via: 'sonarr'; seriesId: number; episodeId?: number; title?: string }
   | { via: 'plex'; ratingKey: string; mediaType: 'movie' | 'tv'; title?: string; thumb?: string }
 
+// ── plex sub-types ────────────────────────────────────────────────────────────
+
+interface PlexChild { ratingKey: string; title: string; index: number; leafCount?: number; duration?: number }
+interface PlexPhoto { key: string; selected: boolean; thumb: string }
+interface PlexMatch { guid: string; name: string; year?: string; thumb?: string }
+
+// ── plex sub-components ───────────────────────────────────────────────────────
+
+function fmtDuration(ms: number): string {
+  const total = Math.floor(ms / 1000)
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
+
+function PlexSeriesBrowser({ showKey }: { showKey: string }) {
+  const [seasons,       setSeasons]       = useState<PlexChild[]>([])
+  const [loading,       setLoading]       = useState(true)
+  const [openSeason,    setOpenSeason]    = useState<string | null>(null)
+  const [episodes,      setEpisodes]      = useState<Record<string, PlexChild[]>>({})
+  const [loadingSeason, setLoadingSeason] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/plex?children=${showKey}`)
+      .then(r => r.json()).then(d => setSeasons(d.children ?? [])).catch(() => {}).finally(() => setLoading(false))
+  }, [showKey])
+
+  async function toggleSeason(key: string) {
+    if (openSeason === key) { setOpenSeason(null); return }
+    setOpenSeason(key)
+    if (episodes[key]) return
+    setLoadingSeason(key)
+    try {
+      const d = await fetch(`/api/plex?children=${key}`).then(r => r.json())
+      setEpisodes(prev => ({ ...prev, [key]: d.children ?? [] }))
+    } finally { setLoadingSeason(null) }
+  }
+
+  if (loading) return <Spinner />
+  if (!seasons.length) return <p className="text-[#999] text-xs">// no seasons</p>
+  return (
+    <div className="space-y-0.5">
+      {seasons.map(s => (
+        <div key={s.ratingKey}>
+          <button onClick={() => toggleSeason(s.ratingKey)}
+            className="w-full flex items-center justify-between py-1.5 px-2 hover:bg-[#1a1a2e] text-left">
+            <span className="text-[#ccc] text-xs">S{String(s.index).padStart(2,'0')} — {s.title}</span>
+            <span className="text-[#888] text-xs flex gap-2">
+              {s.leafCount != null && <span>{s.leafCount}ep</span>}
+              <span>{openSeason === s.ratingKey ? '▲' : '▼'}</span>
+            </span>
+          </button>
+          {openSeason === s.ratingKey && (
+            <div className="ml-3 border-l border-[#2a2a4a] pl-2 pb-1">
+              {loadingSeason === s.ratingKey ? <div className="py-2"><Spinner /></div> : (
+                <div className="space-y-0.5 pt-0.5">
+                  {(episodes[s.ratingKey] ?? []).map(ep => (
+                    <div key={ep.ratingKey} className="py-1 px-1.5 flex items-center gap-2">
+                      <span className="text-[#7070a8] text-xs w-7 shrink-0">E{String(ep.index).padStart(2,'0')}</span>
+                      <span className="text-[#bbb] text-xs truncate flex-1">{ep.title}</span>
+                      {ep.duration != null && <span className="text-[#666] text-xs shrink-0">{fmtDuration(ep.duration)}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function PlexArtGrid({ ratingKey, kind, onSelect }: { ratingKey: string; kind: 'posters' | 'arts'; onSelect: (key: string) => Promise<void> }) {
+  const [photos,  setPhotos]  = useState<PlexPhoto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [acting,  setActing]  = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/plex?${kind}=${ratingKey}`)
+      .then(r => r.json()).then(d => setPhotos(d.photos ?? [])).catch(() => {}).finally(() => setLoading(false))
+  }, [ratingKey, kind])
+
+  async function pick(p: PlexPhoto) {
+    setActing(p.key)
+    await onSelect(p.key)
+    setPhotos(prev => prev.map(x => ({ ...x, selected: x.key === p.key })))
+    setActing(null)
+  }
+
+  function srcLabel(key: string) {
+    if (key.startsWith('tmdb://'))   return 'tmdb'
+    if (key.startsWith('fanart://')) return 'fanart'
+    if (key.startsWith('local://'))  return 'local'
+    if (key.startsWith('http'))      return 'remote'
+    return 'plex'
+  }
+
+  const isPortrait = kind === 'posters'
+  if (loading) return <Spinner />
+  if (!photos.length) return <p className="text-[#999] text-xs">// none available</p>
+  return (
+    <>
+      <p className="text-[#7070a8] text-xs mb-1.5">// {photos.length} available — click to set</p>
+      <div className={`grid gap-2 ${isPortrait ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        {photos.map((p, i) => (
+          <div key={i} className="flex flex-col gap-0.5">
+            <button onClick={() => pick(p)} disabled={!!acting}
+              className={`relative overflow-hidden border ${p.selected ? 'border-white' : 'border-[#2a2a4a] hover:border-[#7070a8]'} ${acting === p.key ? 'opacity-40' : ''}`}
+              style={{ aspectRatio: isPortrait ? '2/3' : '16/9' }}>
+              <img src={`/api/plex?thumb=${encodeURIComponent(p.thumb)}`} alt="" className="w-full h-full object-cover" />
+              {p.selected && (
+                <div className="absolute inset-0 flex items-end justify-start p-0.5 bg-gradient-to-t from-black/60 to-transparent">
+                  <span className="text-[7px] font-mono text-green-400 leading-none">✓ set</span>
+                </div>
+              )}
+              {acting === p.key && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                  <span className="text-[8px] font-mono text-white">...</span>
+                </div>
+              )}
+            </button>
+            <div className="flex justify-between items-center px-0.5">
+              <span className="text-[7px] font-mono text-[#7070a8]">[{i}]</span>
+              <span className="text-[7px] font-mono text-[#888]">{srcLabel(p.key)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+function PlexMatchPanel({ ratingKey, mediaType, onDone }: { ratingKey: string; mediaType: string; onDone: () => void }) {
+  const [query,   setQuery]   = useState('')
+  const [results, setResults] = useState<PlexMatch[]>([])
+  const [loading, setLoading] = useState(false)
+  const [acting,  setActing]  = useState<string | null>(null)
+
+  async function search() {
+    if (!query.trim()) return
+    setLoading(true); setResults([])
+    try {
+      const d = await fetch(`/api/plex?matchQuery=${encodeURIComponent(query)}&matchType=${mediaType}`).then(r => r.json())
+      setResults(d.results ?? [])
+    } finally { setLoading(false) }
+  }
+
+  async function apply(m: PlexMatch) {
+    setActing(m.guid)
+    try {
+      await fetch('/api/plex', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'match', ratingKey, guid: m.guid, name: m.name, mediaType }),
+      })
+      onDone()
+    } finally { setActing(null) }
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <input type="text" value={query} onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && search()} placeholder="search title..."
+          className="bg-[#0f0f1a] border border-[#1a1a2e] text-white font-mono text-xs px-2 py-1 flex-1 focus:outline-none focus:border-[#888]" />
+        <button onClick={search} disabled={loading} className="btn-xs text-violet-400">{loading ? '...' : '--grep'}</button>
+      </div>
+      {results.length > 0 && (
+        <div className="space-y-1 max-h-48 overflow-y-auto">
+          {results.map((m, i) => (
+            <div key={i} className="flex items-center gap-2 py-1 border-b border-[#0f0f1a]">
+              {m.thumb && <img src={m.thumb} alt="" className="w-8 aspect-[2/3] object-cover shrink-0 border border-[#2a2a4a]" />}
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-xs truncate">{m.name}</p>
+                {m.year && <p className="text-[#999] text-xs">{m.year}</p>}
+              </div>
+              <button onClick={() => apply(m)} disabled={!!acting} className="btn-xs text-blue-400 shrink-0">
+                {acting === m.guid ? '...' : '--set'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function fmtSize(b: number): string {
@@ -109,6 +298,12 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const [episodes,   setEpisodes]   = useState<SonarrEpisode[] | null>(null)
   const [selEpId,    setSelEpId]    = useState<number | null>(null)
 
+  // plex panels
+  const [showPosters, setShowPosters] = useState(false)
+  const [showArt,     setShowArt]     = useState(false)
+  const [showMatch,   setShowMatch]   = useState(false)
+  const [showSeries,  setShowSeries]  = useState(false)
+
   // request modal
   const [requestItem, setRequestItem] = useState<SeerSearchResult | null>(null)
 
@@ -123,6 +318,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
     setTmdbId(null); setArrDetail(null); setProfiles([]); setPipeline(null)
     setReleases(null); setRelError(null); setEpisodes(null); setSelEpId(null)
+    setShowPosters(false); setShowArt(false); setShowMatch(false); setShowSeries(false)
     setResolving(true)
 
     async function resolve() {
@@ -542,17 +738,16 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                       <>
                         {(() => {
                           const m = plex.Media?.[0]
-                          const res = fmtRes(m?.videoResolution)
+                          const res    = fmtRes(m?.videoResolution)
                           const codecs = [m?.videoCodec, m?.audioCodec].filter(Boolean).join(' / ')
-                          const br = fmtBitrate(m?.bitrate)
-                          const size = fmtSize(m?.Part?.[0]?.size ?? 0)
+                          const br     = fmtBitrate(m?.bitrate)
                           return (
                             <div className="space-y-1">
-                              {res && <div className="flex gap-2"><span className="text-[#bbb] w-20">resolution:</span><span className="text-green-300">{res}</span></div>}
+                              {res    && <div className="flex gap-2"><span className="text-[#bbb] w-20">resolution:</span><span className="text-green-300">{res}</span></div>}
                               {codecs && <div className="flex gap-2"><span className="text-[#bbb] w-20">codec:</span><span className="text-[#ccc]">{codecs}</span></div>}
                               {m?.container && <div className="flex gap-2"><span className="text-[#bbb] w-20">container:</span><span className="text-[#ccc]">{m.container}</span></div>}
-                              {br && <div className="flex gap-2"><span className="text-[#bbb] w-20">bitrate:</span><span className="text-[#ccc]">{br}</span></div>}
-                              {m?.Part?.[0]?.size && <div className="flex gap-2"><span className="text-[#bbb] w-20">size:</span><span className="text-[#ccc]">{size}</span></div>}
+                              {br    && <div className="flex gap-2"><span className="text-[#bbb] w-20">bitrate:</span><span className="text-[#ccc]">{br}</span></div>}
+                              {m?.Part?.[0]?.size && <div className="flex gap-2"><span className="text-[#bbb] w-20">size:</span><span className="text-[#ccc]">{fmtSize(m.Part[0].size!)}</span></div>}
                             </div>
                           )
                         })()}
@@ -560,11 +755,48 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           <button onClick={() => plexAction('refresh')} disabled={!!acting} className="btn-xs text-blue-400">
                             {acting === 'plex-refresh' ? '...' : '--refresh'}
                           </button>
+                          <button onClick={() => { setShowPosters(v => !v); setShowArt(false); setShowMatch(false) }}
+                            className={`btn-xs ${showPosters ? 'text-white' : 'text-[#999]'}`}>--posters</button>
+                          <button onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
+                            className={`btn-xs ${showArt ? 'text-white' : 'text-[#999]'}`}>--art</button>
+                          <button onClick={() => { setShowMatch(v => !v); setShowPosters(false); setShowArt(false) }}
+                            className={`btn-xs ${showMatch ? 'text-white' : 'text-[#999]'}`}>--fix-match</button>
+                          {mediaType === 'tv' && (
+                            <button onClick={() => setShowSeries(v => !v)}
+                              className={`btn-xs ${showSeries ? 'text-white' : 'text-[#999]'}`}>--series</button>
+                          )}
                           <button onClick={() => { if (confirm(`Delete from Plex?`)) plexAction('delete') }}
                             disabled={!!acting} className="btn-xs text-red-400">
                             {acting === 'plex-delete' ? '...' : '--rm'}
                           </button>
                         </div>
+
+                        {showPosters && (
+                          <div className="mt-2">
+                            <PlexArtGrid ratingKey={plex.ratingKey} kind="posters"
+                              onSelect={async key => { await plexAction('setPoster', { photoKey: key }) }} />
+                          </div>
+                        )}
+                        {showArt && (
+                          <div className="mt-2">
+                            <PlexArtGrid ratingKey={plex.ratingKey} kind="arts"
+                              onSelect={async key => { await plexAction('setArt', { photoKey: key }) }} />
+                          </div>
+                        )}
+                        {showMatch && (
+                          <div className="mt-2">
+                            <PlexMatchPanel
+                              ratingKey={plex.ratingKey}
+                              mediaType={mediaType === 'tv' ? 'show' : 'movie'}
+                              onDone={() => { setShowMatch(false); if (tmdbId) fetchPipeline(tmdbId, mediaType) }}
+                            />
+                          </div>
+                        )}
+                        {showSeries && mediaType === 'tv' && (
+                          <div className="mt-2">
+                            <PlexSeriesBrowser showKey={plex.ratingKey} />
+                          </div>
+                        )}
                       </>
                     ) : (
                       <p className="text-[#555] text-xs">not in library</p>
