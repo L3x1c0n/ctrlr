@@ -811,7 +811,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                       {qbitData ? (
                         <>
                           {qbitData.name && entry?.via === 'qbit' && (
-                            <p className="text-[#999] text-[10px] break-all leading-snug">{qbitData.name}</p>
+                            <p className="text-[#ccc] text-xs break-all leading-relaxed">{qbitData.name}</p>
                           )}
                           <div className="flex items-center gap-2">
                             <span className="text-[#bbb] w-20">progress:</span>
