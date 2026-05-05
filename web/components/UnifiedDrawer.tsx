@@ -377,7 +377,22 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
               if (targetId) {
                 setSelEpId(targetId)
                 const ep = eps.find(e => e.id === targetId)
-                if (ep?.overview) setEpisodeSynopsis(ep.overview)
+                if (ep?.overview) {
+                  setEpisodeSynopsis(ep.overview)
+                } else if (ep) {
+                  // Sonarr has no overview — try Trakt as fallback
+                  // arr.tvdbId available after pipeline loads; use entry.seriesId to get it now
+                  fetch(`/api/sonarr?mediaId=${entry.seriesId}`)
+                    .then(r => r.json())
+                    .then(d => {
+                      const tvdbId = d.detail?.tvdbId
+                      if (!tvdbId) return
+                      return fetch(`/api/trakt?tvdbId=${tvdbId}&season=${ep.seasonNumber}&episode=${ep.episodeNumber}`)
+                        .then(r => r.json())
+                        .then(t => { if (t.overview) setEpisodeSynopsis(t.overview) })
+                    })
+                    .catch(() => {})
+                }
               }
             })
             .catch(() => setEpisodes([]))
@@ -589,8 +604,8 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
   // null = not yet resolved → spinner; -1 = resolved, no tmdb id → show without pipeline data
   const loading = resolving || tmdbId === null || (tmdbId > 0 && pipeline === null)
-  // True when viewing a specific episode (not a series/movie) — suppresses series overview fallback
-  const isSpecificEpisode = !!(plexEpisode || (entry?.via === 'sonarr' && (entry as any).episodeId))
+  // True when viewing a specific episode — suppresses series overview fallback
+  const isSpecificEpisode = !!(plexEpisode || (mediaType === 'tv' && selEpId))
   const isPaused = qbitData?.state?.toLowerCase().includes('paused')
 
   // ── render ───────────────────────────────────────────────────────────────────

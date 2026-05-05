@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUpcomingMovies, getUpcomingEpisodes, getTraktMovieDetail, getTraktEpisodeDetail } from '@/lib/trakt'
+import { getUpcomingMovies, getUpcomingEpisodes, getTraktMovieDetail, getTraktEpisodeDetail, getTraktSlugByTvdb } from '@/lib/trakt'
 import { getMediaDetail } from '@/lib/seer'
 import { getEpisodeFileStatus } from '@/lib/sonarr'
 import { getMovieFileStatus } from '@/lib/radarr'
@@ -32,6 +32,17 @@ export async function GET(req: NextRequest) {
       const watchProviders = extractWatchProviders(media)
       return NextResponse.json({ detail, posterPath, backdropPath, watchProviders })
     }
+    // Episode synopsis by tvdbId (no slug needed — resolves slug internally)
+    const tvdbId = searchParams.get('tvdbId')
+    if (tvdbId && searchParams.get('season')) {
+      const season  = parseInt(searchParams.get('season') ?? '1')
+      const episode = parseInt(searchParams.get('episode') ?? '1')
+      const resolvedSlug = await getTraktSlugByTvdb(parseInt(tvdbId))
+      if (!resolvedSlug) return NextResponse.json({ overview: null })
+      const detail = await getTraktEpisodeDetail(resolvedSlug, season, episode)
+      return NextResponse.json({ overview: (detail as any)?.overview ?? null })
+    }
+
     if (slug && type === 'episode') {
       const season = parseInt(searchParams.get('season') ?? '1')
       const episode = parseInt(searchParams.get('episode') ?? '1')

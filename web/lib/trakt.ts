@@ -149,3 +149,13 @@ export async function getTraktEpisodeDetail(slug: string, season: number, episod
   if (!res.ok) return null
   return res.json()
 }
+
+export async function getTraktSlugByTvdb(tvdbId: number): Promise<string | null> {
+  const res = await fetch(
+    `https://api.trakt.tv/search/tvdb/${tvdbId}?type=show`,
+    { headers: await getHeaders(), cache: 'no-store' }
+  )
+  if (!res.ok) return null
+  const results = await res.json()
+  return (results as any[])[0]?.show?.ids?.slug ?? null
+}
