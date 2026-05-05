@@ -64,6 +64,7 @@ export interface ArrMediaDetail {
   status: string
   ratings?: Record<string, { value: number; votes?: number }>
   movieFile?: { quality: { quality: { name: string; resolution?: number } }; size?: number }
+  tmdbId?: number
 }
 
 export interface ArrQueue {

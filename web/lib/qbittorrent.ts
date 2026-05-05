@@ -185,6 +185,13 @@ export async function deleteTorrent(hash: string, deleteFiles = false): Promise<
   })
 }
 
+export async function getTorrentsByHashes(hashes: string[]): Promise<object[]> {
+  if (hashes.length === 0) return []
+  const res = await authedFetch(`/api/v2/torrents/info?hashes=${hashes.join('|')}`)
+  if (!res.ok) return []
+  return res.json()
+}
+
 export async function getTorrentDetail(hash: string) {
   const [propsRes, filesRes] = await Promise.all([
     authedFetch(`/api/v2/torrents/properties?hash=${hash}`),

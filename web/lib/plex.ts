@@ -74,6 +74,24 @@ export async function getRecentlyAdded(): Promise<{ movies: PlexMedia[]; shows: 
 
 // Check if a TMDB item exists in the Plex library using GUID filter
 export async function isInLibrary(tmdbId: number, mediaType: 'movie' | 'tv'): Promise<boolean> {
+  return !!(await findByTmdb(tmdbId, mediaType))
+}
+
+// Find a Plex item by TMDB ID — returns ratingKey + Media info or null
+export async function findByTmdb(tmdbId: number, mediaType: 'movie' | 'tv'): Promise<{
+  ratingKey: string
+  thumb?: string
+  art?: string
+  Media?: {
+    videoResolution?: string
+    videoCodec?: string
+    audioCodec?: string
+    audioChannels?: number
+    bitrate?: number
+    container?: string
+    Part?: { size?: number; file?: string }[]
+  }[]
+} | null> {
   const sections = mediaType === 'movie' ? MOVIE_SECTIONS : [TV_SECTION]
   const type     = mediaType === 'movie' ? 1 : 2
   const guid     = `tmdb://${tmdbId}`
@@ -86,10 +104,10 @@ export async function isInLibrary(tmdbId: number, mediaType: 'movie' | 'tv'): Pr
       if (!res.ok) continue
       const data  = await res.json()
       const items = data?.MediaContainer?.Metadata ?? []
-      if (items.length > 0) return true
+      if (items.length > 0) return items[0]
     } catch { continue }
   }
-  return false
+  return null
 }
 
 export async function deleteMedia(ratingKey: string): Promise<void> {

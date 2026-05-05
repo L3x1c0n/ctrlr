@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PlexMedia } from '@/types'
 import Spinner from '@/components/Spinner'
-import PlexDetailDrawer from '@/components/PlexDetailDrawer'
+import UnifiedDrawer, { DrawerEntry } from '@/components/UnifiedDrawer'
 
 export default function PlexSection() {
   const [movies, setMovies]   = useState<PlexMedia[]>([])
@@ -12,7 +12,11 @@ export default function PlexSection() {
   const [max, setMax]         = useState<number>(15)
   const [error, setError]     = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState<PlexMedia | null>(null)
+  const [selected, setSelected] = useState<DrawerEntry | null>(null)
+  function openPlex(item: PlexMedia) {
+    const mt: 'movie' | 'tv' = (item.type === 'show' || item.grandparentRatingKey) ? 'tv' : 'movie'
+    setSelected({ via: 'plex', ratingKey: item.ratingKey, mediaType: mt, title: item.grandparentTitle ?? item.title, thumb: item.thumb })
+  }
   const [plexTab, setPlexTab]   = useState<'shows' | 'movies'>('shows')
 
   // search
@@ -63,7 +67,7 @@ export default function PlexSection() {
         <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums select-none">{index + 1}</span>
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           <button
-            onClick={() => setSelected(item)}
+            onClick={() => openPlex(item)}
             className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0"
           >
             --info
@@ -156,7 +160,7 @@ export default function PlexSection() {
                   <div key={item.ratingKey} className="flex items-center gap-3 border-b border-[#0f0f1a] py-0.5">
                     <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums text-xs">{i + 1}</span>
                     <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <button onClick={() => setSelected(item)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                      <button onClick={() => openPlex(item)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                       <span className="truncate text-white">
                         {item.grandparentTitle ?? item.title}
                         {item.grandparentTitle && (
@@ -268,11 +272,7 @@ export default function PlexSection() {
         <div className="font-mono text-xs text-[#6a9a7a] mt-2">{'}'}</div>
       </section>
 
-      <PlexDetailDrawer
-        item={selected}
-        onClose={() => setSelected(null)}
-        onRefresh={load}
-      />
+      <UnifiedDrawer entry={selected} onClose={() => setSelected(null)} onRefresh={load} />
     </>
   )
 }

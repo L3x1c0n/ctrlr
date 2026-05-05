@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { ArrQueueItem, ArrCalendarItem } from '@/types'
 import Spinner from '@/components/Spinner'
-import ArrDetailDrawer from '@/components/ArrDetailDrawer'
+import UnifiedDrawer, { DrawerEntry } from '@/components/UnifiedDrawer'
 
 function fmtRelDate(dateStr: string): string {
   const diff = new Date(dateStr).getTime() - Date.now()
@@ -138,7 +138,15 @@ export default function ArrSection({ service, label }: Props) {
   const [retained,       setRetained]       = useState<RetainedRow[]>(() => [])
   const [error,          setError]          = useState<string | null>(null)
   const [loading,        setLoading]        = useState(true)
-  const [selected,       setSelected]       = useState<ArrQueueItem | null>(null)
+  const [selected,       setSelected]       = useState<DrawerEntry | null>(null)
+
+  function openArr(item: ArrQueueItem) {
+    if (service === 'radarr' && item.movieId) {
+      setSelected({ via: 'radarr', movieId: item.movieId, title: item.title })
+    } else if (service === 'sonarr' && item.seriesId) {
+      setSelected({ via: 'sonarr', seriesId: item.seriesId, episodeId: item.episodeId, title: item.title })
+    }
+  }
   const [dismissed,      setDismissed]      = useState<Set<string>>(() => new Set())
 
   // Track previous live row states to detect disappearances
@@ -365,13 +373,13 @@ export default function ArrSection({ service, label }: Props) {
                           <td className="py-1 pr-4 max-w-xs text-white text-xs">
                             <div className="flex items-center gap-2">
                               {q ? (
-                                <button onClick={() => setSelected(q)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                                <button onClick={() => openArr(q)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                               ) : row.calendarId ? (
                                 <button
                                   onClick={() => setSelected(
                                     service === 'sonarr'
-                                      ? { seriesId: row.seriesId, episodeId: row.calendarId, title: row.title } as ArrQueueItem
-                                      : { movieId:  row.calendarId, title: row.title } as ArrQueueItem
+                                      ? { via: 'sonarr', seriesId: row.seriesId!, episodeId: row.calendarId, title: row.title }
+                                      : { via: 'radarr', movieId: row.calendarId!, title: row.title }
                                   )}
                                   className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0"
                                 >--info</button>
@@ -426,13 +434,13 @@ export default function ArrSection({ service, label }: Props) {
                           <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0">{rows.length + i + 1}</span>
                           {isEp ? (
                             <>
-                              <button onClick={() => setSelected({ seriesId: ep!.seriesId, title: ep!.seriesTitle } as ArrQueueItem)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                              <button onClick={() => setSelected({ via: 'sonarr', seriesId: ep!.seriesId, title: ep!.seriesTitle })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                               <span className="flex-1 text-white truncate">{ep!.seriesTitle}</span>
                               <span className="text-[#888] shrink-0 tabular-nums">S{String(ep!.seasonNumber).padStart(2,'0')}E{String(ep!.episodeNumber).padStart(2,'0')}</span>
                             </>
                           ) : (
                             <>
-                              <button onClick={() => setSelected({ movieId: mv!.id, title: mv!.title } as ArrQueueItem)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                              <button onClick={() => setSelected({ via: 'radarr', movieId: mv!.id, title: mv!.title })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                               <span className="flex-1 text-white truncate">{mv!.title}</span>
                               <span className="text-[#888] shrink-0">{mv!.year}</span>
                             </>
@@ -460,7 +468,7 @@ export default function ArrSection({ service, label }: Props) {
                   return (
                     <div key={m.id} className="flex items-center gap-2 font-mono text-xs py-0.5 border-b border-[#0a0a14]">
                       <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0">{i + 1}</span>
-                      <button onClick={() => setSelected({ seriesId: m.id, episodeId: calEp?.id, title: m.title } as ArrQueueItem)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                      <button onClick={() => setSelected({ via: 'sonarr', seriesId: m.id, episodeId: calEp?.id, title: m.title })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                       <span className="flex-1 text-white truncate">{m.title}</span>
                       <span className="text-green-400 shrink-0 tabular-nums">{s.nextAiring ? fmtRelDate(s.nextAiring) : '—'}</span>
                     </div>
@@ -471,7 +479,7 @@ export default function ArrSection({ service, label }: Props) {
                   return (
                     <div key={m.id} className="flex items-center gap-2 font-mono text-xs py-0.5 border-b border-[#0a0a14]">
                       <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0">{i + 1}</span>
-                      <button onClick={() => setSelected({ movieId: m.id, title: m.title } as ArrQueueItem)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                      <button onClick={() => setSelected({ via: 'radarr', movieId: m.id, title: m.title })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                       <span className="flex-1 text-white truncate">{m.title}</span>
                       <span className="text-[#888] shrink-0">{releaseLabel(mv)}</span>
                       <span className={`shrink-0 tabular-nums ${releaseDate ? 'text-green-400' : 'text-[#888]'}`}>
@@ -503,7 +511,7 @@ export default function ArrSection({ service, label }: Props) {
         </div>
       </section>
 
-      <ArrDetailDrawer service={service} item={selected} onClose={() => setSelected(null)} onRefresh={load} />
+      <UnifiedDrawer entry={selected} onClose={() => setSelected(null)} onRefresh={load} />
     </>
   )
 }
