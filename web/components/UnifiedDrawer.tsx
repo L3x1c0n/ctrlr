@@ -406,7 +406,12 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
           setTmdbId(entry.tmdbId ?? -1)  // -1 = resolved but no tmdb id
         }
       } catch { /* ignore */ }
-      finally { setResolving(false) }
+      finally {
+        setResolving(false)
+        // If resolve() finished without setting tmdbId, mark as -1 so the
+        // loading condition clears and the drawer renders with partial data
+        setTmdbId(prev => prev === null ? -1 : prev)
+      }
     }
 
     resolve()
@@ -891,7 +896,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                         <span className={`text-xs ${statusColor[seer.mediaInfo.status] ?? 'text-[#888]'}`}>
                           {statusLabel[seer.mediaInfo.status] ?? String(seer.mediaInfo.status)}
                         </span>
-                        {tmdbId && (
+                        {tmdbId && seer.mediaInfo.status < 4 && (
                           <button
                             className="btn-xs text-cyan-600 hover:text-cyan-400"
                             onClick={() => setRequestItem({

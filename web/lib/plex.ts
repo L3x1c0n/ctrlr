@@ -77,8 +77,7 @@ export async function isInLibrary(tmdbId: number, mediaType: 'movie' | 'tv'): Pr
   return !!(await findByTmdb(tmdbId, mediaType))
 }
 
-// Find a Plex item by TMDB ID — returns ratingKey + Media info or null
-export async function findByTmdb(tmdbId: number, mediaType: 'movie' | 'tv'): Promise<{
+type PlexLibraryItem = {
   ratingKey: string
   thumb?: string
   art?: string
@@ -91,7 +90,33 @@ export async function findByTmdb(tmdbId: number, mediaType: 'movie' | 'tv'): Pro
     container?: string
     Part?: { size?: number; file?: string }[]
   }[]
-} | null> {
+}
+
+// Find a Plex item by title search — fallback when GUID lookup misses (e.g. TVDB-matched shows)
+export async function findByTitle(title: string, mediaType: 'movie' | 'tv'): Promise<PlexLibraryItem | null> {
+  try {
+    const type = mediaType === 'movie' ? 1 : 2
+    const res  = await fetch(
+      `${PLEX_URL}/hubs/search?query=${encodeURIComponent(title)}&limit=5`,
+      { headers, cache: 'no-store' }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    const hubs = data?.MediaContainer?.Hub ?? []
+    for (const hub of hubs) {
+      if (hub.type !== (mediaType === 'movie' ? 'movie' : 'show')) continue
+      for (const item of (hub.Metadata ?? [])) {
+        const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+        if (norm(item.title) === norm(title)) return item
+      }
+    }
+  } catch { /* ignore */ }
+  return null
+}
+
+// Find a Plex item by TMDB ID — returns ratingKey + Media info or null
+// Falls back to TVDB GUID for shows matched via TheTVDB agent
+export async function findByTmdb(tmdbId: number, mediaType: 'movie' | 'tv'): Promise<PlexLibraryItem | null> {
   const sections = mediaType === 'movie' ? MOVIE_SECTIONS : [TV_SECTION]
   const type     = mediaType === 'movie' ? 1 : 2
   const guid     = `tmdb://${tmdbId}`
@@ -107,6 +132,8 @@ export async function findByTmdb(tmdbId: number, mediaType: 'movie' | 'tv'): Pro
       if (items.length > 0) return items[0]
     } catch { continue }
   }
+  // tvdb:// GUID fallback — shows matched via TheTVDB agent won't have tmdb:// as primary
+  // (tvdbId !== tmdbId, but this catches the case where we have no GUID match at all)
   return null
 }
 

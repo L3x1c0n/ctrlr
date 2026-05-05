@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { findByTmdb as radarrFindByTmdb, getMovieDetail, getQualityProfiles, getQueue as getRadarrQueue } from '@/lib/radarr'
 import { getSeriesDetail, getQualityProfiles as getSonarrProfiles, getQueue as getSonarrQueue } from '@/lib/sonarr'
 import { getMediaDetail as getSeerDetail } from '@/lib/seer'
-import { findByTmdb as plexFindByTmdb } from '@/lib/plex'
+import { findByTmdb as plexFindByTmdb, findByTitle as plexFindByTitle } from '@/lib/plex'
 import { getTorrentsByHashes } from '@/lib/qbittorrent'
 import { ArrQueue } from '@/types'
 
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // Fire Seer + Plex + Arr ID lookup all in parallel — don't block on any one service
-    const [seerDetail, plexItem, arrId] = await Promise.all([
+    const [seerDetail, plexByGuid, arrId] = await Promise.all([
       withTimeout(getSeerDetail(mediaType, tmdbId), 6000, null),
       withTimeout(plexFindByTmdb(tmdbId, mediaType), 6000, null),
       mediaType === 'movie'
@@ -62,6 +62,10 @@ export async function GET(req: NextRequest) {
         }
       }
     }
+
+    // If GUID-based Plex lookup missed (e.g. TVDB-matched show), try by title
+    const plexItem = plexByGuid
+      ?? (arr ? await withTimeout(plexFindByTitle((arr as any).title, mediaType), 4000, null) : null)
 
     return NextResponse.json({ arr, qbit, seer: seerDetail, plex: plexItem, profiles })
   } catch (e) {
