@@ -3,7 +3,8 @@
 import { Fragment, useState, useEffect, useRef, useMemo } from 'react'
 import { TraktMovie, TraktEpisode } from '@/types'
 import Spinner from '@/components/Spinner'
-import TraktDetailDrawer, { TraktSelectedItem } from '@/components/TraktDetailDrawer'
+import { TraktSelectedItem } from '@/components/TraktDetailDrawer'
+import UnifiedDrawer, { DrawerEntry } from '@/components/UnifiedDrawer'
 import MarqueeText from '@/components/MarqueeText'
 
 // ── constants ─────────────────────────────────────────────────────────────────
@@ -512,7 +513,15 @@ export default function TraktSection() {
   const [inArrShows,         setInArrShows]         = useState<Set<number>>(new Set())
   const [error,              setError]              = useState<string | null>(null)
   const [loading,            setLoading]            = useState(true)
-  const [selected,           setSelected]           = useState<TraktSelectedItem | null>(null)
+  const [selected,           setSelected]           = useState<DrawerEntry | null>(null)
+
+  function selectTrakt(item: TraktSelectedItem) {
+    if (item.type === 'movie') {
+      setSelected({ via: 'trakt', tmdbId: item.data.movie.ids.tmdb, mediaType: 'movie', title: item.data.movie.title })
+    } else {
+      setSelected({ via: 'trakt', tmdbId: item.data.show.ids.tmdb, mediaType: 'tv', title: item.data.show.title })
+    }
+  }
   const [expandedDay,        setExpandedDay]        = useState<string | null>(null)
   const [view,               setView]               = useState<CalView>('month')
   const [forecastOffset,     setForecastOffset]     = useState(0)
@@ -603,10 +612,10 @@ export default function TraktSection() {
               const expandedInWeek = week.find(d => d.dateKey === expandedDay)
               return (
                 <div key={wi}>
-                  <WeekRow week={week} expandedDay={expandedDay} onToggleDay={toggleDay} onSelect={setSelected} />
+                  <WeekRow week={week} expandedDay={expandedDay} onToggleDay={toggleDay} onSelect={selectTrakt} />
                   <CalSep highlight={!!expandedInWeek} />
                   {expandedInWeek && expandedDay && (
-                    <ExpandedPanel dateKey={expandedDay} items={expandedInWeek.items} onSelect={setSelected} onClose={() => setExpandedDay(null)} />
+                    <ExpandedPanel dateKey={expandedDay} items={expandedInWeek.items} onSelect={selectTrakt} onClose={() => setExpandedDay(null)} />
                   )}
                 </div>
               )
@@ -615,17 +624,17 @@ export default function TraktSection() {
         )}
 
         {!loading && !error && view === 'forecast' && (
-          <ForecastView itemMap={itemMap} offset={forecastOffset} onOffsetChange={setForecastOffset} onSelect={setSelected} />
+          <ForecastView itemMap={itemMap} offset={forecastOffset} onOffsetChange={setForecastOffset} onSelect={selectTrakt} />
         )}
 
         {!loading && !error && view === 'agenda' && (
-          <AgendaView itemMap={itemMap} cap={cap} agendaOffset={agendaOffset} onOffsetChange={setAgendaOffset} onSelect={setSelected} />
+          <AgendaView itemMap={itemMap} cap={cap} agendaOffset={agendaOffset} onOffsetChange={setAgendaOffset} onSelect={selectTrakt} />
         )}
 
         <div className="font-mono text-xs text-[#6a9a7a] mt-2">{'}'}</div>
       </section>
 
-      <TraktDetailDrawer item={selected} onClose={() => setSelected(null)} />
+      <UnifiedDrawer entry={selected} onClose={() => setSelected(null)} onRefresh={() => {}} />
     </>
   )
 }

@@ -14,6 +14,9 @@ export type DrawerEntry =
   | { via: 'radarr'; movieId: number; title?: string }
   | { via: 'sonarr'; seriesId: number; episodeId?: number; title?: string }
   | { via: 'plex'; ratingKey: string; mediaType: 'movie' | 'tv'; title?: string; thumb?: string }
+  | { via: 'seer'; tmdbId: number; mediaType: 'movie' | 'tv'; title?: string }
+  | { via: 'trakt'; tmdbId: number; mediaType: 'movie' | 'tv'; title?: string }
+  | { via: 'qbit'; hash: string; tmdbId?: number; mediaType?: 'movie' | 'tv'; title?: string; posterUrl?: string }
 
 // ── plex sub-types ────────────────────────────────────────────────────────────
 
@@ -393,6 +396,14 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
           const tmdb = (guidSource as { id: string }[]).find(g => g.id.startsWith('tmdb://'))
           if (tmdb) setTmdbId(parseInt(tmdb.id.replace('tmdb://', '')))
+
+        } else if (entry.via === 'seer' || entry.via === 'trakt') {
+          setMediaType(entry.mediaType)
+          setTmdbId(entry.tmdbId)
+
+        } else if (entry.via === 'qbit') {
+          setMediaType(entry.mediaType ?? 'movie')
+          if (entry.tmdbId) setTmdbId(entry.tmdbId)
         }
       } catch { /* ignore */ }
       finally { setResolving(false) }
@@ -435,7 +446,8 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const plexThumb = plex?.thumb ? `/api/plex?thumb=${encodeURIComponent(plex.thumb)}` : null
   const poster   = plexThumb
                 ?? arr?.images?.find((i: any) => i.coverType === 'poster')?.remoteUrl
-                ?? (entry?.via === 'plex' && entry.thumb ? `/api/plex?thumb=${encodeURIComponent(entry.thumb)}` : null)
+                ?? (entry?.via === 'plex'  && entry.thumb     ? `/api/plex?thumb=${encodeURIComponent(entry.thumb)}` : null)
+                ?? (entry?.via === 'qbit'  && entry.posterUrl ? entry.posterUrl : null)
   const backdrop = arr?.images?.find((i: any) => i.coverType === 'fanart')?.remoteUrl
   const title    = arr?.title ?? entry?.title ?? '—'
   const year     = arr?.year

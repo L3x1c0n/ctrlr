@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { SeerRequest, SeerSearchResult } from '@/types'
 import Spinner from '@/components/Spinner'
-import SeerDetailDrawer from '@/components/SeerDetailDrawer'
+import UnifiedDrawer, { DrawerEntry } from '@/components/UnifiedDrawer'
 import DiscoverSection from '@/components/DiscoverSection'
 import MarqueeText from '@/components/MarqueeText'
 import RequestModal from '@/components/RequestModal'
@@ -31,7 +31,7 @@ export default function SeerSection() {
   const [searching, setSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState<SeerRequest | null>(null)
+  const [selected, setSelected] = useState<DrawerEntry | null>(null)
   const [requestItem, setRequestItem] = useState<SeerSearchResult | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [page, setPage] = useState(0)
@@ -58,12 +58,8 @@ export default function SeerSection() {
   }, [])
 
   const handleDrawerRefresh = useCallback(async () => {
-    const fresh = await loadRequests()
-    if (fresh && selected) {
-      const updated = fresh.find(r => r.id === selected.id)
-      if (updated) setSelected(updated)
-    }
-  }, [loadRequests, selected])
+    await loadRequests()
+  }, [loadRequests])
 
   useEffect(() => {
     loadRequests()
@@ -220,7 +216,7 @@ export default function SeerSection() {
                         <div key={r.id} className="flex items-center gap-3 border-b border-[#0f0f1a] py-0.5">
                           <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums text-xs">{pi * PAGE_SIZE + i + 1}</span>
                           <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                            <button onClick={() => setSelected(r)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                            <button onClick={() => setSelected({ via: 'seer', tmdbId: r.media.tmdbId, mediaType: r.media.mediaType as 'movie' | 'tv', title: r.media.title ?? r.media.name })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                             <MarqueeText className="min-w-0">{r.media.title ?? r.media.name}</MarqueeText>
                           </div>
                           <span className="hidden md:block shrink-0 text-[#999] text-xs uppercase whitespace-nowrap w-[48px]">{r.type}</span>
@@ -251,11 +247,7 @@ export default function SeerSection() {
         <DiscoverSection />
       </section>
 
-      <SeerDetailDrawer
-        request={selected}
-        onClose={() => setSelected(null)}
-        onRefresh={handleDrawerRefresh}
-      />
+      <UnifiedDrawer entry={selected} onClose={() => setSelected(null)} onRefresh={handleDrawerRefresh} />
 
       {requestItem && (
         <RequestModal

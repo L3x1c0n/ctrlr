@@ -24,40 +24,54 @@ function extractTitle(name: string): string {
 
 interface ArrMediaItem {
   title: string
+  tmdbId?: number
   images: { coverType: string; remoteUrl?: string }[]
   alternateTitles?: { title: string }[]    // Sonarr
   alternativeTitles?: { title: string }[]  // Radarr
 }
 
-async function buildPosterMap(category: string): Promise<Map<string, string>> {
-  const map = new Map<string, string>()
-  const isTV = /tv|sonarr/i.test(category)
+interface EnrichmentMaps {
+  posters: Map<string, string>
+  tmdbIds: Map<string, number>
+}
+
+async function buildEnrichmentMaps(category: string): Promise<EnrichmentMaps> {
+  const posters = new Map<string, string>()
+  const tmdbIds = new Map<string, number>()
+  const isTV    = /tv|sonarr/i.test(category)
   const isMovie = /movie|radarr/i.test(category)
-  if (!isTV && !isMovie) return map
+  if (!isTV && !isMovie) return { posters, tmdbIds }
 
   try {
-    const base = isTV ? process.env.SONARR_URL : process.env.RADARR_URL
-    const key = isTV ? process.env.SONARR_API_KEY : process.env.RADARR_API_KEY
+    const base     = isTV ? process.env.SONARR_URL : process.env.RADARR_URL
+    const key      = isTV ? process.env.SONARR_API_KEY : process.env.RADARR_API_KEY
     const endpoint = isTV ? 'series' : 'movie'
     const res = await fetch(`${base}/api/v3/${endpoint}`, {
       headers: { 'X-Api-Key': key! },
       cache: 'no-store',
     })
-    if (!res.ok) return map
+    if (!res.ok) return { posters, tmdbIds }
     const items: ArrMediaItem[] = await res.json()
     for (const item of items) {
       const poster = item.images.find(i => i.coverType === 'poster')?.remoteUrl
-      if (!poster) continue
-      map.set(normalizeForMatch(item.title), poster)
+      const norm   = normalizeForMatch(item.title)
+      if (poster) posters.set(norm, poster)
+      if (item.tmdbId) tmdbIds.set(norm, item.tmdbId)
       const alts = [...(item.alternateTitles ?? []), ...(item.alternativeTitles ?? [])]
       for (const alt of alts) {
         if (!alt.title) continue
-        const norm = normalizeForMatch(alt.title)
-        if (norm.length > 3) map.set(norm, poster)  // skip empty/trivially-short normalized strings
+        const altNorm = normalizeForMatch(alt.title)
+        if (altNorm.length <= 3) continue
+        if (poster) posters.set(altNorm, poster)
+        if (item.tmdbId) tmdbIds.set(altNorm, item.tmdbId)
       }
     }
   } catch { /* ignore */ }
-  return map
+  return { posters, tmdbIds }
+}
+
+async function buildPosterMap(category: string): Promise<Map<string, string>> {
+  return (await buildEnrichmentMaps(category)).posters
 }
 
 export async function getPosterForTorrent(name: string, category: string): Promise<string | null> {
@@ -118,14 +132,13 @@ async function authedFetch(path: string, opts: RequestInit = {}): Promise<Respon
   return res
 }
 
-export async function getState(): Promise<QBState & { posters: Record<string, string> }> {
+export async function getState(): Promise<QBState & { posters: Record<string, string>; tmdbIds: Record<string, number>; mediaTypes: Record<string, 'movie' | 'tv'> }> {
   const [torrentsRes, transferRes] = await Promise.all([
     authedFetch('/api/v2/torrents/info'),
     authedFetch('/api/v2/transfer/info'),
   ])
   const [torrents, transfer] = await Promise.all([torrentsRes.json(), transferRes.json()])
 
-  // Build poster map per category, then resolve each torrent
   const categoryGroups = new Map<string, typeof torrents>()
   for (const t of torrents) {
     const cat = t.category || 'unknown'
@@ -133,32 +146,39 @@ export async function getState(): Promise<QBState & { posters: Record<string, st
     categoryGroups.get(cat)!.push(t)
   }
 
-  const posters: Record<string, string> = {}
+  const posters:    Record<string, string>          = {}
+  const tmdbIds:    Record<string, number>          = {}
+  const mediaTypes: Record<string, 'movie' | 'tv'> = {}
+
   await Promise.all(
     [...categoryGroups.entries()].map(async ([cat, group]) => {
-      const posterMap = await buildPosterMap(cat)
-      if (posterMap.size === 0) return
+      const { posters: posterMap, tmdbIds: tmdbMap } = await buildEnrichmentMaps(cat)
+      const isTV = /tv|sonarr/i.test(cat)
+      if (posterMap.size === 0 && tmdbMap.size === 0) return
       for (const t of group) {
         const needle = extractTitle(t.name)
-        let url = posterMap.get(needle)
-        if (!url) {
-          for (const [title, u] of posterMap) {
+        function resolve<T>(map: Map<string, T>): T | undefined {
+          let v = map.get(needle)
+          if (!v) for (const [title, u] of map) {
             if (!title.includes(' ')) continue
-            if (needle.startsWith(title) || title.startsWith(needle)) { url = u; break }
+            if (needle.startsWith(title) || title.startsWith(needle)) { v = u; break }
           }
-          if (!url) {
-            for (const [title, u] of posterMap) {
-              if (title.length < 12) continue
-              if (needle.includes(title) || title.includes(needle)) { url = u; break }
-            }
+          if (!v) for (const [title, u] of map) {
+            if (title.length < 12) continue
+            if (needle.includes(title) || title.includes(needle)) { v = u; break }
           }
+          return v
         }
-        if (url) posters[t.hash] = url
+        const url    = resolve(posterMap)
+        const tmdbId = resolve(tmdbMap)
+        if (url)    posters[t.hash]    = url
+        if (tmdbId) tmdbIds[t.hash]    = tmdbId
+        mediaTypes[t.hash] = isTV ? 'tv' : 'movie'
       }
     })
   )
 
-  return { torrents, transfer, posters }
+  return { torrents, transfer, posters, tmdbIds, mediaTypes }
 }
 
 export async function pauseTorrent(hash: string): Promise<void> {

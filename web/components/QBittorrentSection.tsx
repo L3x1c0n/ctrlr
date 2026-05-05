@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { QBTorrent, QBTransferInfo } from '@/types'
 import ProgressBar from '@/components/ProgressBar'
 import Spinner from '@/components/Spinner'
-import QBDetailDrawer from '@/components/QBDetailDrawer'
+import UnifiedDrawer, { DrawerEntry } from '@/components/UnifiedDrawer'
 import MarqueeText from '@/components/MarqueeText'
 
 const SCRAMBLE_CHARS = '01ﾊﾐﾋｱｳｦ█▓▒░╪┼╬╫╩╦╠═'
@@ -129,10 +129,12 @@ interface Props {
 export default function QBittorrentSection({ onTransferUpdate }: Props) {
   const [torrents, setTorrents] = useState<QBTorrent[]>([])
   const [transfer, setTransfer] = useState<QBTransferInfo | null>(null)
-  const [posters, setPosters] = useState<Record<string, string>>({})
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [selected,      setSelected]      = useState<QBTorrent | null>(null)
+  const [posters,    setPosters]    = useState<Record<string, string>>({})
+  const [tmdbIds,    setTmdbIds]    = useState<Record<string, number>>({})
+  const [mediaTypes, setMediaTypes] = useState<Record<string, 'movie' | 'tv'>>({})
+  const [error,      setError]      = useState<string | null>(null)
+  const [loading,    setLoading]    = useState(true)
+  const [selected,   setSelected]   = useState<DrawerEntry | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
   const fetch_ = useCallback(async () => {
@@ -149,6 +151,8 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
       setTorrents(sorted)
       setTransfer(data.transfer)
       setPosters(data.posters ?? {})
+      setTmdbIds(data.tmdbIds ?? {})
+      setMediaTypes(data.mediaTypes ?? {})
       onTransferUpdate(data.transfer)
       setError(null)
     } catch (e) {
@@ -196,7 +200,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
               <div key={t.hash} className="flex items-center gap-3 border-b border-[#0f0f1a] py-1">
                 <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums select-none">{i + 1}</span>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <button onClick={() => setSelected(t)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                  <button onClick={() => setSelected({ via: 'qbit', hash: t.hash, tmdbId: tmdbIds[t.hash], mediaType: mediaTypes[t.hash], title: t.name, posterUrl: posters[t.hash] })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
                   <MarqueeText className="min-w-0">
                     <ScrambledName name={t.name} active={t.state === 'downloading'} />
                   </MarqueeText>
@@ -232,12 +236,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
         <div className="font-mono text-xs text-[#6a9a7a] mt-1">] // {torrents.length} active</div>
       </section>
 
-      <QBDetailDrawer
-        torrent={selected}
-        posterUrl={selected ? (posters[selected.hash] ?? null) : null}
-        onClose={() => setSelected(null)}
-        onRefresh={fetch_}
-      />
+      <UnifiedDrawer entry={selected} onClose={() => setSelected(null)} onRefresh={fetch_} />
     </>
   )
 }
