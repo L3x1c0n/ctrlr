@@ -415,10 +415,10 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
         } else if (entry.via === 'qbit') {
           setMediaType(entry.mediaType ?? 'movie')
           setTmdbId(entry.tmdbId ?? -1)
-          // Always fetch torrent data directly by hash — don't rely on pipeline
-          fetch(`/api/qbittorrent?hash=${entry.hash}`)
+          // Fetch torrent stats directly by hash (?info= returns QBTorrent fields)
+          fetch(`/api/qbittorrent?info=${entry.hash}`)
             .then(r => r.json())
-            .then(data => setQbitDirect(data))
+            .then(data => { if (data) setQbitDirect(data) })
             .catch(() => {})
         }
       } catch { /* ignore */ }
@@ -476,13 +476,13 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   // ── helpers ──────────────────────────────────────────────────────────────────
 
   const arr    = pipeline?.arr    ?? arrDetail
-  const qbit   = pipeline?.qbit   ?? qbitDirect?.properties ? qbitDirect : null
+  const qbit   = pipeline?.qbit   ?? null
   const seer   = pipeline?.seer   ?? null
   const plex   = pipeline?.plex   ?? null
   const profs  = pipeline?.profiles?.length ? pipeline.profiles : profiles
 
-  // For qbit entries, supplement pipeline qbit with direct fetch data
-  const qbitData = qbit ?? (qbitDirect ? { ...qbitDirect, hash: entry?.via === 'qbit' ? entry.hash : null } : null)
+  // qbitData: prefer pipeline result, fall back to direct fetch (has QBTorrent fields)
+  const qbitData = qbit ?? qbitDirect ?? null
 
   const stage  = detectStage(arr, qbitData, seer, plex)
   const qitem  = arr?.queueItem ?? null
@@ -589,6 +589,8 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
   // null = not yet resolved → spinner; -1 = resolved, no tmdb id → show without pipeline data
   const loading = resolving || tmdbId === null || (tmdbId > 0 && pipeline === null)
+  // True when viewing a specific episode (not a series/movie) — suppresses series overview fallback
+  const isSpecificEpisode = !!(plexEpisode || (entry?.via === 'sonarr' && (entry as any).episodeId))
   const isPaused = qbitData?.state?.toLowerCase().includes('paused')
 
   // ── render ───────────────────────────────────────────────────────────────────
@@ -965,11 +967,11 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                 </div>
               </div>
 
-              {/* overview — prefer episode synopsis over series overview */}
-              {(episodeSynopsis || arr?.overview) && (
+              {/* overview — episode synopsis when available; series overview only for movie/series entries */}
+              {(episodeSynopsis || (!isSpecificEpisode && arr?.overview)) && (
                 <div className="mb-6">
                   <SectionHeader label="overview" />
-                  <p className="text-[#bbb] text-xs leading-relaxed">{episodeSynopsis ?? arr.overview}</p>
+                  <p className="text-[#bbb] text-xs leading-relaxed">{episodeSynopsis || arr?.overview}</p>
                 </div>
               )}
 

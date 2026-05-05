@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getState, pauseTorrent, resumeTorrent, deleteTorrent, getTorrentDetail } from '@/lib/qbittorrent'
+import { getState, pauseTorrent, resumeTorrent, deleteTorrent, getTorrentDetail, getTorrentsByHashes } from '@/lib/qbittorrent'
 
 export async function GET(req: NextRequest) {
   try {
-    const hash = req.nextUrl.searchParams.get('hash')
+    const p    = req.nextUrl.searchParams
+    const hash = p.get('hash')
+    const info = p.get('info')  // ?info=HASH returns QBTorrent stats (progress, speeds, state)
+    if (info) {
+      const torrents = await getTorrentsByHashes([info])
+      return NextResponse.json(torrents[0] ?? null)
+    }
     if (hash) {
       const detail = await getTorrentDetail(hash)
       return NextResponse.json(detail)
