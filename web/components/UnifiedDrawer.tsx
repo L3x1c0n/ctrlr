@@ -664,7 +664,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       >
         {backdrop && (
           <div className="absolute top-0 inset-x-0 h-72 overflow-hidden">
-            <div className="absolute inset-0 scale-110 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${backdrop})`, filter: 'blur(20px)', opacity: 0.35, maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }} />
+            <div className="absolute inset-0 scale-110 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${backdrop})`, filter: 'none', opacity: 1, maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }} />
             {plex?.ratingKey && (
               <button
                 onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
