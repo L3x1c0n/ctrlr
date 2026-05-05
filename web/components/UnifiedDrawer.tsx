@@ -544,7 +544,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                 ?? arr?.images?.find((i: any) => i.coverType === 'poster')?.remoteUrl
                 ?? (entry?.via === 'plex'  && entry.thumb     ? `/api/plex?thumb=${encodeURIComponent(entry.thumb)}` : null)
                 ?? (entry?.via === 'qbit'  && entry.posterUrl ? entry.posterUrl : null)
-  const backdrop = arr?.images?.find((i: any) => i.coverType === 'fanart')?.remoteUrl
+  const backdrop = plex?.art ? `/api/plex?thumb=${encodeURIComponent(plex.art)}` : null
   const title    = arr?.title ?? entry?.title ?? '—'
   const year     = arr?.year
   const imdbRating = arr?.ratings?.imdb?.value ?? arr?.ratings?.movieDb?.value ?? null
