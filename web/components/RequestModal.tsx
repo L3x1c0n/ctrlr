@@ -50,6 +50,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
   const [monitoredCount,  setMonitoredCount]  = useState<number | null>(null)
   const [selectedSeasons, setSelectedSeasons] = useState<Set<number>>(new Set())
   const [availableSeasons,setAvailableSeasons]= useState<Set<number>>(new Set())
+  const [radarrMovieId,   setRadarrMovieId]   = useState<number | null>(null)
   const [sonarrSeriesId,  setSonarrSeriesId]  = useState<number | null>(null)
   const [tvdbId,          setTvdbId]          = useState<number | null>(null)
   const [sonarrEpisodes,  setSonarrEpisodes]  = useState<SonarrEp[]>([])
@@ -71,6 +72,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
     setMonitoredCount(null)
     setSelectedSeasons(new Set())
     setAvailableSeasons(new Set())
+    setRadarrMovieId(null)
     setSonarrSeriesId(null)
     setTvdbId(null)
     setSonarrEpisodes([])
@@ -91,7 +93,8 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
         const defaultProfile = (p ?? []).find(pr => isUltraHD(pr.name)) ?? p?.[0]
         setProfileId(defaultProfile?.id ?? null)
         setRootFolder(sortedFolders[0]?.path ?? null)
-        setSonarrSeriesId(sid ?? null)
+        if (item?.mediaType === 'movie') setRadarrMovieId(sid ?? null)
+        else setSonarrSeriesId(sid ?? null)
         setTvdbId(tvdb ?? null)
 
         if (item?.mediaType === 'tv' && d?.numberOfSeasons) {
@@ -163,6 +166,14 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
       if (!res.ok || data?.error) {
         setSubmitError(data?.error ?? `HTTP ${res.status}`)
         return
+      }
+
+      if (item.mediaType === 'movie' && radarrMovieId && profileId) {
+        await fetch('/api/radarr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'updateQuality', movieId: radarrMovieId, qualityProfileId: profileId }),
+        })
       }
 
       if (item.mediaType === 'tv') {
