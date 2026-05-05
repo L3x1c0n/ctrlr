@@ -4,6 +4,14 @@ import { getSeriesDetail, getQualityProfiles as getSonarrProfiles, getQueue as g
 import { getMediaDetail as getSeerDetail } from '@/lib/seer'
 import { findByTmdb as plexFindByTmdb } from '@/lib/plex'
 import { getTorrentsByHashes } from '@/lib/qbittorrent'
+import { ArrQueue } from '@/types'
+
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  const timer = new Promise<T>(resolve => setTimeout(() => resolve(fallback), ms))
+  return Promise.race([p.catch(() => fallback), timer])
+}
+
+const emptyQueue: ArrQueue = { records: [], totalRecords: 0 }
 
 export async function GET(req: NextRequest) {
   const p         = req.nextUrl.searchParams
@@ -12,45 +20,45 @@ export async function GET(req: NextRequest) {
   if (!tmdbId || !mediaType) return NextResponse.json({ error: 'missing params' }, { status: 400 })
 
   try {
-    const [seerDetail, plexItem] = await Promise.all([
-      getSeerDetail(mediaType, tmdbId).catch(() => null),
-      plexFindByTmdb(tmdbId, mediaType).catch(() => null),
+    // Fire Seer + Plex + Arr ID lookup all in parallel — don't block on any one service
+    const [seerDetail, plexItem, arrId] = await Promise.all([
+      withTimeout(getSeerDetail(mediaType, tmdbId), 6000, null),
+      withTimeout(plexFindByTmdb(tmdbId, mediaType), 6000, null),
+      mediaType === 'movie'
+        ? withTimeout(radarrFindByTmdb(tmdbId), 6000, null)
+        : Promise.resolve((await withTimeout(getSeerDetail(mediaType, tmdbId), 6000, null) as any)?.mediaInfo?.externalServiceId ?? null),
     ])
 
     let arr: object | null = null
     let qbit: object | null = null
     let profiles: object[] = []
 
-    if (mediaType === 'movie') {
-      const radarrId = await radarrFindByTmdb(tmdbId).catch(() => null)
-      if (radarrId) {
+    if (arrId) {
+      if (mediaType === 'movie') {
         const [detail, queue, profs] = await Promise.all([
-          getMovieDetail(radarrId).catch(() => null),
-          getRadarrQueue().catch(() => ({ records: [] })),
-          getQualityProfiles().catch(() => []),
+          withTimeout(getMovieDetail(arrId as number), 6000, null),
+          withTimeout(getRadarrQueue(), 6000, emptyQueue),
+          withTimeout(getQualityProfiles(), 6000, [] as object[]),
         ])
-        profiles = profs
-        const queueItem = queue.records.find((r: any) => r.movieId === radarrId) ?? null
-        arr = { ...detail, queueItem }
-        if (queueItem?.downloadId) {
-          const torrents = await getTorrentsByHashes([queueItem.downloadId]).catch(() => [])
-          qbit = torrents[0] ?? null
+        profiles = profs as object[]
+        const queueItem = (queue as ArrQueue).records?.find(r => (r as any).movieId === arrId) ?? null
+        arr = { ...(detail as object ?? {}), queueItem }
+        if ((queueItem as any)?.downloadId) {
+          const torrents = await withTimeout(getTorrentsByHashes([(queueItem as any).downloadId]), 4000, [] as object[])
+          qbit = (torrents as object[])[0] ?? null
         }
-      }
-    } else {
-      const seerServiceId = (seerDetail as any)?.mediaInfo?.externalServiceId ?? null
-      if (seerServiceId) {
+      } else {
         const [detail, queue, profs] = await Promise.all([
-          getSeriesDetail(seerServiceId).catch(() => null),
-          getSonarrQueue().catch(() => ({ records: [] })),
-          getSonarrProfiles().catch(() => []),
+          withTimeout(getSeriesDetail(arrId as number), 6000, null),
+          withTimeout(getSonarrQueue(), 6000, emptyQueue),
+          withTimeout(getSonarrProfiles(), 6000, [] as object[]),
         ])
-        profiles = profs
-        const queueItem = queue.records.find((r: any) => r.seriesId === seerServiceId) ?? null
-        arr = { ...detail, queueItem }
-        if (queueItem?.downloadId) {
-          const torrents = await getTorrentsByHashes([queueItem.downloadId]).catch(() => [])
-          qbit = torrents[0] ?? null
+        profiles = profs as object[]
+        const queueItem = (queue as ArrQueue).records?.find(r => (r as any).seriesId === arrId) ?? null
+        arr = { ...(detail as object ?? {}), queueItem }
+        if ((queueItem as any)?.downloadId) {
+          const torrents = await withTimeout(getTorrentsByHashes([(queueItem as any).downloadId]), 4000, [] as object[])
+          qbit = (torrents as object[])[0] ?? null
         }
       }
     }

@@ -403,7 +403,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
         } else if (entry.via === 'qbit') {
           setMediaType(entry.mediaType ?? 'movie')
-          if (entry.tmdbId) setTmdbId(entry.tmdbId)
+          setTmdbId(entry.tmdbId ?? -1)  // -1 = resolved but no tmdb id
         }
       } catch { /* ignore */ }
       finally { setResolving(false) }
@@ -414,21 +414,42 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
   // ── step 2: fetch pipeline once tmdbId is known ─────────────────────────────
 
-  const fetchPipeline = useCallback(async (id: number, mt: 'movie' | 'tv') => {
+  const fetchPipeline = useCallback(async (id: number, mt: 'movie' | 'tv', attempt = 1) => {
     setPipelineLoading(true)
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 12000)
     try {
-      const res  = await fetch(`/api/pipeline?tmdbId=${id}&mediaType=${mt}`)
+      const res  = await fetch(`/api/pipeline?tmdbId=${id}&mediaType=${mt}`, { signal: controller.signal })
       const data = await res.json()
-      setPipeline(data)
-      // pipeline may return fresher arr detail + profiles
+      // Merge with existing pipeline: don't overwrite a service that previously loaded with a null
+      setPipeline(prev => {
+        if (!prev) return data
+        return {
+          arr:      data.arr      ?? prev.arr,
+          qbit:     data.qbit     ?? prev.qbit,
+          seer:     data.seer     ?? prev.seer,
+          plex:     data.plex     ?? prev.plex,
+          profiles: data.profiles?.length ? data.profiles : prev.profiles,
+        }
+      })
       if (data.arr && !arrDetail) setArrDetail(data.arr)
       if (data.profiles?.length && !profiles.length) setProfiles(data.profiles)
-    } catch { /* ignore */ }
-    finally { setPipelineLoading(false) }
+      // If some services came back null and we have retries left, retry once after a delay
+      const hasGaps = !data.arr || !data.plex
+      if (hasGaps && attempt < 3) {
+        setTimeout(() => fetchPipeline(id, mt, attempt + 1), 4000 * attempt)
+      }
+    } catch {
+      setPipeline(prev => prev ?? { arr: null, qbit: null, seer: null, plex: null, profiles: [] })
+      if (attempt < 3) setTimeout(() => fetchPipeline(id, mt, attempt + 1), 4000 * attempt)
+    } finally {
+      clearTimeout(timeout)
+      setPipelineLoading(false)
+    }
   }, [arrDetail, profiles.length])
 
   useEffect(() => {
-    if (tmdbId) fetchPipeline(tmdbId, mediaType)
+    if (tmdbId && tmdbId > 0) fetchPipeline(tmdbId, mediaType)
   }, [tmdbId, mediaType]) // eslint-disable-line
 
   // ── helpers ──────────────────────────────────────────────────────────────────
@@ -541,7 +562,8 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     setActing(null)
   }
 
-  const loading = resolving || (!!entry && !arr && !pipeline && pipelineLoading)
+  // null = not yet resolved → spinner; -1 = resolved, no tmdb id → show without pipeline data
+  const loading = resolving || tmdbId === null || (tmdbId > 0 && pipeline === null)
   const isPaused = qbit?.state?.toLowerCase().includes('paused')
 
   // ── render ───────────────────────────────────────────────────────────────────
