@@ -298,6 +298,9 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const [episodes,   setEpisodes]   = useState<SonarrEpisode[] | null>(null)
   const [selEpId,    setSelEpId]    = useState<number | null>(null)
 
+  // plex episode info (set when entry is via plex and type === 'episode')
+  const [plexEpisode, setPlexEpisode] = useState<{ showTitle: string; season: number; episode: number; title: string } | null>(null)
+
   // plex panels
   const [showPosters, setShowPosters] = useState(false)
   const [showArt,     setShowArt]     = useState(false)
@@ -319,6 +322,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     setTmdbId(null); setArrDetail(null); setProfiles([]); setPipeline(null)
     setReleases(null); setRelError(null); setEpisodes(null); setSelEpId(null)
     setShowPosters(false); setShowArt(false); setShowMatch(false); setShowSeries(false)
+    setPlexEpisode(null)
     setResolving(true)
 
     async function resolve() {
@@ -366,12 +370,28 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
             .catch(() => setEpisodes([]))
 
         } else if (entry.via === 'plex') {
-          const res  = await fetch(`/api/plex?ratingKey=${entry.ratingKey}`)
-          const data = await res.json()
+          const res    = await fetch(`/api/plex?ratingKey=${entry.ratingKey}`)
+          const data   = await res.json()
           const detail = data.detail ?? null
           setMediaType(entry.mediaType)
-          const guids: { id: string }[] = detail?.Guid ?? []
-          const tmdb = guids.find(g => g.id.startsWith('tmdb://'))
+
+          const isEpisode = detail?.type === 'episode'
+          if (isEpisode) {
+            setPlexEpisode({
+              showTitle: detail.grandparentTitle ?? entry.title ?? '',
+              season:    detail.parentIndex ?? 0,
+              episode:   detail.index ?? 0,
+              title:     detail.title ?? '',
+            })
+          }
+
+          // Episodes don't carry Guid — fetch from the show (grandparent) instead
+          const guidSource = isEpisode && detail?.grandparentRatingKey
+            ? await fetch(`/api/plex?ratingKey=${detail.grandparentRatingKey}`)
+                .then(r => r.json()).then(d => d.detail?.Guid ?? []).catch(() => [])
+            : (detail?.Guid ?? [])
+
+          const tmdb = (guidSource as { id: string }[]).find(g => g.id.startsWith('tmdb://'))
           if (tmdb) setTmdbId(parseInt(tmdb.id.replace('tmdb://', '')))
         }
       } catch { /* ignore */ }
@@ -564,10 +584,20 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium leading-snug">
-                    {title}
-                    {year && <span className="text-[#ccc] ml-2 font-normal">({year})</span>}
-                  </p>
+                  {plexEpisode ? (
+                    <>
+                      <p className="text-white text-sm font-medium leading-snug">{plexEpisode.showTitle}</p>
+                      <p className="text-[#999] text-xs mt-0.5">
+                        S{String(plexEpisode.season).padStart(2,'0')}E{String(plexEpisode.episode).padStart(2,'0')}
+                        {plexEpisode.title && <span className="text-[#bbb]"> — {plexEpisode.title}</span>}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-white text-sm font-medium leading-snug">
+                      {title}
+                      {year && <span className="text-[#ccc] ml-2 font-normal">({year})</span>}
+                    </p>
+                  )}
                   {arr?.genres?.length > 0 && (
                     <p className="text-[#bbb] text-xs mt-0.5">{arr.genres.slice(0, 3).join(', ')}</p>
                   )}
