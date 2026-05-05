@@ -604,8 +604,11 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
   // null = not yet resolved → spinner; -1 = resolved, no tmdb id → show without pipeline data
   const loading = resolving || tmdbId === null || (tmdbId > 0 && pipeline === null)
-  // True when viewing a specific episode — suppresses series overview fallback
-  const isSpecificEpisode = !!(plexEpisode || (mediaType === 'tv' && selEpId))
+  // Suppress series overview when entry is inherently episode-level.
+  // Don't use selEpId here — it's async and causes a race with the pipeline render.
+  const isEpisodeMode = entry?.via === 'sonarr'
+                     || entry?.via === 'qbit'
+                     || !!plexEpisode
   const isPaused = qbitData?.state?.toLowerCase().includes('paused')
 
   // ── render ───────────────────────────────────────────────────────────────────
@@ -982,8 +985,8 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                 </div>
               </div>
 
-              {/* overview — episode synopsis when available; series overview only for movie/series entries */}
-              {(episodeSynopsis || (!isSpecificEpisode && arr?.overview)) && (
+              {/* overview — episode synopsis when available; series overview only for movie/seer/trakt entries */}
+              {(episodeSynopsis || (!isEpisodeMode && arr?.overview)) && (
                 <div className="mb-6">
                   <SectionHeader label="overview" />
                   <p className="text-[#bbb] text-xs leading-relaxed">{episodeSynopsis || arr?.overview}</p>
