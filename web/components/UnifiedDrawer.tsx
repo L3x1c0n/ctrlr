@@ -544,9 +544,11 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                 ?? arr?.images?.find((i: any) => i.coverType === 'poster')?.remoteUrl
                 ?? (entry?.via === 'plex'  && entry.thumb     ? `/api/plex?thumb=${encodeURIComponent(entry.thumb)}` : null)
                 ?? (entry?.via === 'qbit'  && entry.posterUrl ? entry.posterUrl : null)
-  const backdrop = plex?.art
-    ? `/api/plex?thumb=${encodeURIComponent(plex.art)}`
-    : arr?.images?.find((i: any) => i.coverType === 'fanart')?.remoteUrl ?? null
+  // Backdrop: prefer Radarr/Sonarr fanart (direct HTTPS URL, no proxy needed for CSS bg-image)
+  // Fall back to Plex art via proxy if no arr fanart available
+  const arrFanart = arr?.images?.find((i: any) => i.coverType === 'fanart')?.remoteUrl ?? null
+  const backdrop  = arrFanart
+    ?? (plex?.art ? `/api/plex?thumb=${encodeURIComponent(plex.art)}` : null)
   const title    = arr?.title ?? entry?.title ?? '—'
   const year     = arr?.year
   const imdbRating = arr?.ratings?.imdb?.value ?? arr?.ratings?.movieDb?.value ?? null
@@ -662,7 +664,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       >
         {backdrop && (
           <div className="absolute top-0 inset-x-0 h-72 overflow-hidden">
-            <div className="absolute inset-0 scale-110 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${backdrop})`, filter: 'blur(20px)', opacity: 0.18, maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }} />
+            <div className="absolute inset-0 scale-110 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${backdrop})`, filter: 'blur(20px)', opacity: 0.35, maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }} />
             {plex?.ratingKey && (
               <button
                 onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}

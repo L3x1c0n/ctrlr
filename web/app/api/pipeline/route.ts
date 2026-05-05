@@ -68,8 +68,8 @@ export async function GET(req: NextRequest) {
     }
 
     // If GUID-based Plex lookup missed (e.g. TVDB-matched show), try by title
-    const plexItem = plexByGuid
-      ?? (arr ? await withTimeout(plexFindByTitle((arr as any).title, mediaType), 4000, null) : null)
+    const plexByTitle = plexByGuid ? null : (arr ? await withTimeout(plexFindByTitle((arr as any).title, mediaType), 4000, null) : null)
+    const plexItem = plexByGuid ?? plexByTitle
 
     return NextResponse.json({ arr, qbit, seer: seerDetail, plex: plexItem, profiles })
   } catch (e) {
