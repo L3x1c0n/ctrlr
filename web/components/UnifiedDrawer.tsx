@@ -290,6 +290,12 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const [pipeline,   setPipeline]   = useState<{ arr: any; qbit: any; seer: any; plex: any; profiles: any[] } | null>(null)
   const [pipelineLoading, setPipelineLoading] = useState(false)
 
+  // qbit direct — fetched by hash when entry is via qbit, regardless of pipeline
+  const [qbitDirect, setQbitDirect] = useState<any>(null)
+
+  // episode synopsis — fetched for Sonarr/Plex episode entries
+  const [episodeSynopsis, setEpisodeSynopsis] = useState<string | null>(null)
+
   // actions
   const [acting,     setActing]     = useState<string | null>(null)
   const [qualActing, setQualActing] = useState(false)
@@ -325,7 +331,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     setTmdbId(null); setArrDetail(null); setProfiles([]); setPipeline(null)
     setReleases(null); setRelError(null); setEpisodes(null); setSelEpId(null)
     setShowPosters(false); setShowArt(false); setShowMatch(false); setShowSeries(false)
-    setPlexEpisode(null)
+    setPlexEpisode(null); setQbitDirect(null); setEpisodeSynopsis(null)
     setResolving(true)
 
     async function resolve() {
@@ -361,13 +367,17 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
             .then(r => r.json())
             .then((eps: SonarrEpisode[]) => {
               setEpisodes(eps)
-              if (entry.episodeId) {
-                setSelEpId(entry.episodeId)
-              } else {
+              let targetId = entry.episodeId ?? null
+              if (!targetId) {
                 const now = Date.now()
                 const next = eps.filter(e => e.monitored && !e.hasFile && e.airDateUtc && new Date(e.airDateUtc).getTime() > now)
                   .sort((a, b) => new Date(a.airDateUtc!).getTime() - new Date(b.airDateUtc!).getTime())
-                if (next[0]) setSelEpId(next[0].id)
+                targetId = next[0]?.id ?? null
+              }
+              if (targetId) {
+                setSelEpId(targetId)
+                const ep = eps.find(e => e.id === targetId)
+                if (ep?.overview) setEpisodeSynopsis(ep.overview)
               }
             })
             .catch(() => setEpisodes([]))
@@ -386,6 +396,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
               episode:   detail.index ?? 0,
               title:     detail.title ?? '',
             })
+            if (detail.summary) setEpisodeSynopsis(detail.summary)
           }
 
           // Episodes don't carry Guid — fetch from the show (grandparent) instead
@@ -403,7 +414,12 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
         } else if (entry.via === 'qbit') {
           setMediaType(entry.mediaType ?? 'movie')
-          setTmdbId(entry.tmdbId ?? -1)  // -1 = resolved but no tmdb id
+          setTmdbId(entry.tmdbId ?? -1)
+          // Always fetch torrent data directly by hash — don't rely on pipeline
+          fetch(`/api/qbittorrent?hash=${entry.hash}`)
+            .then(r => r.json())
+            .then(data => setQbitDirect(data))
+            .catch(() => {})
         }
       } catch { /* ignore */ }
       finally {
@@ -460,14 +476,17 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   // ── helpers ──────────────────────────────────────────────────────────────────
 
   const arr    = pipeline?.arr    ?? arrDetail
-  const qbit   = pipeline?.qbit   ?? null
+  const qbit   = pipeline?.qbit   ?? qbitDirect?.properties ? qbitDirect : null
   const seer   = pipeline?.seer   ?? null
   const plex   = pipeline?.plex   ?? null
   const profs  = pipeline?.profiles?.length ? pipeline.profiles : profiles
 
-  const stage  = detectStage(arr, qbit, seer, plex)
+  // For qbit entries, supplement pipeline qbit with direct fetch data
+  const qbitData = qbit ?? (qbitDirect ? { ...qbitDirect, hash: entry?.via === 'qbit' ? entry.hash : null } : null)
+
+  const stage  = detectStage(arr, qbitData, seer, plex)
   const qitem  = arr?.queueItem ?? null
-  const pct    = qbit ? qbit.progress * 100 : (qitem && qitem.size > 0 ? ((qitem.size - qitem.sizeleft) / qitem.size) * 100 : 0)
+  const pct    = qbitData ? (qbitData.progress ?? 0) * 100 : (qitem && qitem.size > 0 ? ((qitem.size - qitem.sizeleft) / qitem.size) * 100 : 0)
 
   const plexThumb = plex?.thumb ? `/api/plex?thumb=${encodeURIComponent(plex.thumb)}` : null
   const poster   = plexThumb
@@ -498,13 +517,14 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   }
 
   async function qbitAction(action: string, extra: object = {}) {
-    if (!qbit) return
+    const hash = qbitData?.hash ?? (entry?.via === 'qbit' ? entry.hash : null)
+    if (!hash) return
     setActing(`qbit-${action}`)
     try {
       await fetch('/api/qbittorrent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, hash: qbit.hash, ...extra }),
+        body: JSON.stringify({ action, hash, ...extra }),
       })
       onRefresh()
       if (tmdbId) fetchPipeline(tmdbId, mediaType)
@@ -569,7 +589,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
   // null = not yet resolved → spinner; -1 = resolved, no tmdb id → show without pipeline data
   const loading = resolving || tmdbId === null || (tmdbId > 0 && pipeline === null)
-  const isPaused = qbit?.state?.toLowerCase().includes('paused')
+  const isPaused = qbitData?.state?.toLowerCase().includes('paused')
 
   // ── render ───────────────────────────────────────────────────────────────────
 
@@ -783,40 +803,51 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                   )}
 
                   {/* qbittorrent row */}
-                  {qbit && (
+                  {(qbitData || entry?.via === 'qbit') && (
                     <div className="space-y-1.5 text-xs border-l-2 border-[#2a2a4a] pl-3">
                       <p className="text-[#7070a8] text-[10px] uppercase tracking-wider">qbittorrent</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#bbb] w-20">progress:</span>
-                        <ProgressBar pct={qbit.progress * 100} width={16} />
-                        <span className="text-[#999]">{(qbit.progress * 100).toFixed(0)}%</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <span className="text-[#bbb] w-20">downloaded:</span>
-                        <span className="text-[#ccc]">{fmtSize(qbit.downloaded)}</span>
-                        <span className="text-[#555]">of</span>
-                        <span className="text-[#ccc]">{fmtSize(qbit.size)}</span>
-                      </div>
-                      {(qbit.dlspeed > 0 || qbit.upspeed > 0) && (
-                        <div className="flex gap-3">
-                          <span className="text-green-400">↓ {fmtSpeed(qbit.dlspeed)}</span>
-                          <span className="text-blue-400">↑ {fmtSpeed(qbit.upspeed)}</span>
-                        </div>
+                      {qbitData ? (
+                        <>
+                          {qbitData.name && entry?.via === 'qbit' && (
+                            <p className="text-[#999] text-[10px] break-all leading-snug">{qbitData.name}</p>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <span className="text-[#bbb] w-20">progress:</span>
+                            <ProgressBar pct={(qbitData.progress ?? 0) * 100} width={16} />
+                            <span className="text-[#999]">{((qbitData.progress ?? 0) * 100).toFixed(0)}%</span>
+                          </div>
+                          {qbitData.size > 0 && (
+                            <div className="flex gap-2">
+                              <span className="text-[#bbb] w-20">downloaded:</span>
+                              <span className="text-[#ccc]">{fmtSize(qbitData.downloaded ?? 0)}</span>
+                              <span className="text-[#555]">of</span>
+                              <span className="text-[#ccc]">{fmtSize(qbitData.size)}</span>
+                            </div>
+                          )}
+                          {((qbitData.dlspeed ?? 0) > 0 || (qbitData.upspeed ?? 0) > 0) && (
+                            <div className="flex gap-3">
+                              <span className="text-green-400">↓ {fmtSpeed(qbitData.dlspeed ?? 0)}</span>
+                              <span className="text-blue-400">↑ {fmtSpeed(qbitData.upspeed ?? 0)}</span>
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <span className="text-[#bbb] w-20">state:</span>
+                            <span className="text-white">{qbitData.state}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            <button onClick={() => qbitAction(isPaused ? 'resume' : 'pause')} disabled={!!acting}
+                              className={`btn-xs ${isPaused ? 'text-green-400' : 'text-yellow-400'}`}>
+                              {acting === `qbit-${isPaused ? 'resume' : 'pause'}` ? '...' : isPaused ? '--resume' : '--pause'}
+                            </button>
+                            <button onClick={() => { if (confirm(`Delete torrent?`)) qbitAction('delete', { deleteFiles: false }) }}
+                              disabled={!!acting} className="btn-xs text-red-400">--rm</button>
+                            <button onClick={() => { if (confirm(`Delete torrent and files?`)) qbitAction('delete', { deleteFiles: true }) }}
+                              disabled={!!acting} className="btn-xs text-red-600">--rm --files</button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-[#555] text-xs">loading...</p>
                       )}
-                      <div className="flex gap-2">
-                        <span className="text-[#bbb] w-20">state:</span>
-                        <span className="text-white">{qbit.state}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        <button onClick={() => qbitAction(isPaused ? 'resume' : 'pause')} disabled={!!acting}
-                          className={`btn-xs ${isPaused ? 'text-green-400' : 'text-yellow-400'}`}>
-                          {acting === `qbit-${isPaused ? 'resume' : 'pause'}` ? '...' : isPaused ? '--resume' : '--pause'}
-                        </button>
-                        <button onClick={() => { if (confirm(`Delete torrent?`)) qbitAction('delete', { deleteFiles: false }) }}
-                          disabled={!!acting} className="btn-xs text-red-400">--rm</button>
-                        <button onClick={() => { if (confirm(`Delete torrent and files?`)) qbitAction('delete', { deleteFiles: true }) }}
-                          disabled={!!acting} className="btn-xs text-red-600">--rm --files</button>
-                      </div>
                     </div>
                   )}
 
@@ -934,11 +965,11 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                 </div>
               </div>
 
-              {/* overview */}
-              {arr?.overview && (
+              {/* overview — prefer episode synopsis over series overview */}
+              {(episodeSynopsis || arr?.overview) && (
                 <div className="mb-6">
                   <SectionHeader label="overview" />
-                  <p className="text-[#bbb] text-xs leading-relaxed">{arr.overview}</p>
+                  <p className="text-[#bbb] text-xs leading-relaxed">{episodeSynopsis ?? arr.overview}</p>
                 </div>
               )}
 

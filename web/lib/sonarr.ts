@@ -95,6 +95,7 @@ export interface SonarrEpisode {
   seasonNumber: number
   episodeNumber: number
   title: string
+  overview?: string
   airDateUtc?: string
   hasFile: boolean
   monitored: boolean
