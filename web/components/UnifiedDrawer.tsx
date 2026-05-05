@@ -522,8 +522,16 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
         className={`fixed top-0 right-0 bottom-0 z-50 w-full md:w-[480px] bg-[#16162a] border-l-2 border-[#2a2a4a] shadow-[-8px_0_32px_rgba(0,0,0,0.6)] transition-[transform,visibility] duration-200 font-mono ${isOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}`}
       >
         {backdrop && (
-          <div className="absolute top-0 inset-x-0 h-72 pointer-events-none overflow-hidden">
-            <div className="absolute inset-0 scale-110 bg-cover bg-center" style={{ backgroundImage: `url(${backdrop})`, filter: 'blur(20px)', opacity: 0.18, maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }} />
+          <div className="absolute top-0 inset-x-0 h-72 overflow-hidden">
+            <div className="absolute inset-0 scale-110 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${backdrop})`, filter: 'blur(20px)', opacity: 0.18, maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }} />
+            {plex?.ratingKey && (
+              <button
+                onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
+                className={`absolute bottom-2 right-2 z-20 text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
+              >
+                ✎ art
+              </button>
+            )}
           </div>
         )}
 
@@ -541,7 +549,17 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
               {/* media header */}
               <div className="flex gap-4 mb-6">
                 {poster && (
-                  <img src={poster} alt={title} className="w-36 aspect-[2/3] flex-shrink-0 object-cover border border-[#1a1a2e]" />
+                  <div className="relative flex-shrink-0">
+                    <img src={poster} alt={title} className="w-36 aspect-[2/3] object-cover border border-[#1a1a2e]" />
+                    {plex?.ratingKey && (
+                      <button
+                        onClick={() => { setShowPosters(v => !v); setShowArt(false); setShowMatch(false) }}
+                        className={`absolute bottom-1 right-1 text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showPosters ? 'border-white text-white bg-black/80' : 'border-[#444] text-[#777] bg-black/60 hover:border-[#aaa] hover:text-[#ccc]'}`}
+                      >
+                        ✎
+                      </button>
+                    )}
+                  </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-medium leading-snug">
@@ -755,10 +773,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           <button onClick={() => plexAction('refresh')} disabled={!!acting} className="btn-xs text-blue-400">
                             {acting === 'plex-refresh' ? '...' : '--refresh'}
                           </button>
-                          <button onClick={() => { setShowPosters(v => !v); setShowArt(false); setShowMatch(false) }}
-                            className={`btn-xs ${showPosters ? 'text-white' : 'text-[#999]'}`}>--posters</button>
-                          <button onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
-                            className={`btn-xs ${showArt ? 'text-white' : 'text-[#999]'}`}>--art</button>
                           <button onClick={() => { setShowMatch(v => !v); setShowPosters(false); setShowArt(false) }}
                             className={`btn-xs ${showMatch ? 'text-white' : 'text-[#999]'}`}>--fix-match</button>
                           {mediaType === 'tv' && (
