@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getQueue, deleteQueueItem, triggerSearch, getSeriesDetail, getQualityProfiles, updateSeries, getHealth, getMonitored, getCalendarToday, searchReleases, grabRelease, findByTvdb, findEpisodeId, searchEpisode, getNextEpisodeId, getEpisodes, getRecentlyAdded, lookupSeries, updateEpisodeMonitoring, ensureHoldTag, ensureHoldDelayProfile, applyHoldTag, releaseHoldTag } from '@/lib/sonarr'
+import { getQueue, deleteQueueItem, triggerSearch, getSeriesDetail, getQualityProfiles, updateSeries, getHealth, getMonitored, getCalendarToday, searchReleases, grabRelease, findByTvdb, findEpisodeId, searchEpisode, getNextEpisodeId, getEpisodes, getEpisodeById, getRecentlyAdded, lookupSeries, updateEpisodeMonitoring, ensureHoldTag, ensureHoldDelayProfile, applyHoldTag, releaseHoldTag } from '@/lib/sonarr'
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,6 +14,10 @@ export async function GET(req: NextRequest) {
     const releasesFor = p.get('releasesFor')
     if (releasesFor) {
       return NextResponse.json(await searchReleases(Number(releasesFor)))
+    }
+    const episodeId = p.get('episodeId')
+    if (episodeId) {
+      return NextResponse.json(await getEpisodeById(Number(episodeId)))
     }
     const episodesFor = p.get('episodes')
     if (episodesFor) {

@@ -362,36 +362,48 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
           setMediaType('tv')
           if (detail?.tmdbId) setTmdbId(detail.tmdbId)
 
-          // fetch episodes for sonarr
-          fetch(`/api/sonarr?episodes=${entry.seriesId}`)
-            .then(r => r.json())
-            .then((eps: SonarrEpisode[]) => {
-              setEpisodes(eps)
-              let targetId = entry.episodeId ?? null
-              if (!targetId) {
-                const now = Date.now()
-                const next = eps.filter(e => e.monitored && !e.hasFile && e.airDateUtc && new Date(e.airDateUtc).getTime() > now)
-                  .sort((a, b) => new Date(a.airDateUtc!).getTime() - new Date(b.airDateUtc!).getTime())
-                targetId = next[0]?.id ?? null
-              }
-              if (targetId) {
-                setSelEpId(targetId)
-                const ep = eps.find(e => e.id === targetId)
-                if (ep?.overview) {
+          // If we have a specific episodeId, fetch that episode directly (fastest path)
+          if (entry.episodeId) {
+            fetch(`/api/sonarr?episodeId=${entry.episodeId}`)
+              .then(r => r.json())
+              .then((ep: SonarrEpisode | null) => {
+                if (!ep) return
+                setSelEpId(ep.id)
+                if (ep.overview) {
                   setEpisodeSynopsis(ep.overview)
-                } else if (ep) {
-                  // Sonarr has no overview — try Trakt as fallback
-                  // arr.tvdbId available after pipeline loads; use entry.seriesId to get it now
+                } else {
+                  // Try Trakt fallback
                   fetch(`/api/sonarr?mediaId=${entry.seriesId}`)
                     .then(r => r.json())
                     .then(d => {
                       const tvdbId = d.detail?.tvdbId
                       if (!tvdbId) return
-                      return fetch(`/api/trakt?tvdbId=${tvdbId}&season=${ep.seasonNumber}&episode=${ep.episodeNumber}`)
+                      fetch(`/api/trakt?tvdbId=${tvdbId}&season=${ep.seasonNumber}&episode=${ep.episodeNumber}`)
                         .then(r => r.json())
                         .then(t => { if (t.overview) setEpisodeSynopsis(t.overview) })
+                        .catch(() => {})
                     })
                     .catch(() => {})
+                }
+              })
+              .catch(() => {})
+          }
+
+          // Also fetch full episodes list for the picker UI
+          fetch(`/api/sonarr?episodes=${entry.seriesId}`)
+            .then(r => r.json())
+            .then((eps: SonarrEpisode[]) => {
+              setEpisodes(eps)
+              if (!entry.episodeId) {
+                // Auto-select next upcoming episode
+                const now = Date.now()
+                const next = eps.filter(e => e.monitored && !e.hasFile && e.airDateUtc && new Date(e.airDateUtc).getTime() > now)
+                  .sort((a, b) => new Date(a.airDateUtc!).getTime() - new Date(b.airDateUtc!).getTime())
+                const targetId = next[0]?.id ?? null
+                if (targetId) {
+                  setSelEpId(targetId)
+                  const ep = eps.find(e => e.id === targetId)
+                  if (ep?.overview) setEpisodeSynopsis(ep.overview)
                 }
               }
             })

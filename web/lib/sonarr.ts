@@ -107,6 +107,12 @@ export async function getEpisodes(seriesId: number): Promise<SonarrEpisode[]> {
   return res.json()
 }
 
+export async function getEpisodeById(episodeId: number): Promise<SonarrEpisode | null> {
+  const res = await fetch(`${BASE}/api/v3/episode/${episodeId}`, { headers, cache: 'no-store' })
+  if (!res.ok) return null
+  return res.json()
+}
+
 export async function getNextEpisodeId(seriesId: number): Promise<number | null> {
   const eps = await getEpisodes(seriesId)
   const now = Date.now()
