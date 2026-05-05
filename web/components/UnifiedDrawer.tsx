@@ -412,8 +412,10 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const qitem  = arr?.queueItem ?? null
   const pct    = qbit ? qbit.progress * 100 : (qitem && qitem.size > 0 ? ((qitem.size - qitem.sizeleft) / qitem.size) * 100 : 0)
 
-  const poster   = arr?.images?.find((i: any) => i.coverType === 'poster')?.remoteUrl
-                ?? (entry?.via === 'plex' ? (entry.thumb ? `/api/plex?thumb=${encodeURIComponent(entry.thumb)}` : null) : null)
+  const plexThumb = plex?.thumb ? `/api/plex?thumb=${encodeURIComponent(plex.thumb)}` : null
+  const poster   = plexThumb
+                ?? arr?.images?.find((i: any) => i.coverType === 'poster')?.remoteUrl
+                ?? (entry?.via === 'plex' && entry.thumb ? `/api/plex?thumb=${encodeURIComponent(entry.thumb)}` : null)
   const backdrop = arr?.images?.find((i: any) => i.coverType === 'fanart')?.remoteUrl
   const title    = arr?.title ?? entry?.title ?? '—'
   const year     = arr?.year
