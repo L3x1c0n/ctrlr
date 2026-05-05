@@ -38,6 +38,15 @@ interface PlexDetail {
   Writer?: { tag: string }[]
   Role?: { tag: string; role?: string }[]
   Guid?: { id: string }[]
+  Media?: {
+    videoResolution?: string
+    videoCodec?: string
+    audioCodec?: string
+    audioChannels?: number
+    bitrate?: number
+    container?: string
+    Part?: { file?: string; size?: number }[]
+  }[]
 }
 
 interface PlexChild {
@@ -518,6 +527,56 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                   <p className="text-[#bbb] text-xs leading-relaxed">{detail.summary}</p>
                 </div>
               )}
+
+              {/* file info */}
+              {detail.Media?.[0] && (() => {
+                const m = detail.Media![0]
+                const fmtRes = (r?: string) => r ? (r === '4k' ? '4K' : `${r}p`) : null
+                const fmtBitrate = (b?: number) => b ? `${(b / 1000).toFixed(1)} Mbps` : null
+                const fmtSize = (s?: number) => !s ? null : s < 1e9 ? `${(s / 1e6).toFixed(0)} MB` : `${(s / 1e9).toFixed(2)} GB`
+                const res     = fmtRes(m.videoResolution)
+                const bitrate = fmtBitrate(m.bitrate)
+                const size    = fmtSize(m.Part?.[0]?.size)
+                const codecs  = [m.videoCodec, m.audioCodec].filter(Boolean).join(' / ')
+                if (!res && !codecs && !bitrate) return null
+                return (
+                  <div className="mb-6">
+                    <p className="text-[#7070a8] text-xs mb-2">{`/* file */`}</p>
+                    <div className="space-y-1 text-xs">
+                      {res && (
+                        <div className="flex gap-2">
+                          <span className="text-[#bbb] w-20">resolution:</span>
+                          <span className="text-green-300">{res}</span>
+                        </div>
+                      )}
+                      {codecs && (
+                        <div className="flex gap-2">
+                          <span className="text-[#bbb] w-20">codec:</span>
+                          <span className="text-[#ccc]">{codecs}</span>
+                        </div>
+                      )}
+                      {m.container && (
+                        <div className="flex gap-2">
+                          <span className="text-[#bbb] w-20">container:</span>
+                          <span className="text-[#ccc]">{m.container}</span>
+                        </div>
+                      )}
+                      {bitrate && (
+                        <div className="flex gap-2">
+                          <span className="text-[#bbb] w-20">bitrate:</span>
+                          <span className="text-[#ccc]">{bitrate}</span>
+                        </div>
+                      )}
+                      {size && (
+                        <div className="flex gap-2">
+                          <span className="text-[#bbb] w-20">size:</span>
+                          <span className="text-[#ccc]">{size}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* seer */}
               {tmdbId && (

@@ -199,19 +199,30 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
               {profiles.length > 0 && (
                 <div className="mb-6">
                   <p className="text-[#7070a8] text-xs mb-2">{`/* config */`}</p>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[#bbb] text-xs w-20">quality:</span>
-                    <select
-                      value={detail.qualityProfileId}
-                      onChange={e => changeQuality(Number(e.target.value))}
-                      disabled={acting === 'quality'}
-                      className="bg-[#0f0f1a] border border-[#1a1a2e] text-white text-xs font-mono px-2 py-1 focus:outline-none focus:border-[#888] disabled:opacity-50"
-                    >
-                      {profiles.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                    {acting === 'quality' && <span className="text-[#bbb] text-xs">...</span>}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[#bbb] text-xs w-20">profile:</span>
+                      <select
+                        value={detail.qualityProfileId}
+                        onChange={e => changeQuality(Number(e.target.value))}
+                        disabled={acting === 'quality'}
+                        className="bg-[#0f0f1a] border border-[#1a1a2e] text-white text-xs font-mono px-2 py-1 focus:outline-none focus:border-[#888] disabled:opacity-50"
+                      >
+                        {profiles.map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                      {acting === 'quality' && <span className="text-[#bbb] text-xs">...</span>}
+                    </div>
+                    {detail.movieFile?.quality?.quality?.name && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-[#bbb] text-xs w-20">file:</span>
+                        <span className="text-green-300 text-xs">{detail.movieFile.quality.quality.name}</span>
+                        {detail.movieFile.size && (
+                          <span className="text-[#999] text-xs">{fmtSize(detail.movieFile.size)}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -238,6 +249,12 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
                       <span className="text-[#bbb] w-20">protocol:</span>
                       <span className="text-[#ccc]">{item.protocol}</span>
                     </div>
+                    {item.quality?.quality?.name && (
+                      <div className="flex gap-2">
+                        <span className="text-[#bbb] w-20">quality:</span>
+                        <span className="text-green-300">{item.quality.quality.name}</span>
+                      </div>
+                    )}
                     {item.statusMessages?.flatMap(m => m.messages).slice(0, 3).map((msg, i) => (
                       <p key={i} className="text-[#ccc] pl-0">→ {msg}</p>
                     ))}

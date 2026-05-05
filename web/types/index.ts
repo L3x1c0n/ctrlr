@@ -44,6 +44,7 @@ export interface ArrQueueItem {
   movieId?: number
   seriesId?: number
   episodeId?: number
+  quality?: { quality: { name: string; resolution?: number } }
 }
 
 export interface QualityProfile {
@@ -62,6 +63,7 @@ export interface ArrMediaDetail {
   monitored: boolean
   status: string
   ratings?: Record<string, { value: number; votes?: number }>
+  movieFile?: { quality: { quality: { name: string; resolution?: number } }; size?: number }
 }
 
 export interface ArrQueue {
