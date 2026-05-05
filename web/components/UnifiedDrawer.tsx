@@ -643,7 +643,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   // Suppress series overview when entry is inherently episode-level.
   // Don't use selEpId here — it's async and causes a race with the pipeline render.
   const isEpisodeMode = entry?.via === 'sonarr'
-                     || entry?.via === 'qbit'
+                     || (entry?.via === 'qbit' && mediaType === 'tv')
                      || !!plexEpisode
   const isPaused = qbitData?.state?.toLowerCase().includes('paused')
 
