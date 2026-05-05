@@ -460,6 +460,27 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     resolve()
   }, [entry])
 
+  // ── step 1b: for qbit TV entries, parse S/E from torrent name and fetch episode synopsis ──
+
+  useEffect(() => {
+    const seriesId = (pipeline?.arr ?? arrDetail)?.id
+    if (entry?.via !== 'qbit' || mediaType !== 'tv' || !qbitDirect?.name || !seriesId || episodeSynopsis) return
+    const match = (qbitDirect.name as string).match(/[Ss](\d{1,2})[Ee](\d{1,2})/)
+    if (!match) return
+    const season  = parseInt(match[1])
+    const episode = parseInt(match[2])
+    fetch(`/api/sonarr?episodes=${seriesId}`)
+      .then(r => r.json())
+      .then((eps: SonarrEpisode[]) => {
+        const ep = eps.find(e => e.seasonNumber === season && e.episodeNumber === episode)
+        if (ep?.id) {
+          setSelEpId(ep.id)
+          if (ep.overview) setEpisodeSynopsis(ep.overview)
+        }
+      })
+      .catch(() => {})
+  }, [entry?.via, mediaType, qbitDirect?.name, (pipeline?.arr ?? arrDetail)?.id, episodeSynopsis]) // eslint-disable-line
+
   // ── step 2: fetch pipeline once tmdbId is known ─────────────────────────────
 
   const fetchPipeline = useCallback(async (id: number, mt: 'movie' | 'tv', attempt = 1) => {
