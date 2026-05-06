@@ -663,17 +663,15 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
         className={`fixed top-0 right-0 bottom-0 z-50 w-full md:w-[480px] bg-[#16162a] border-l-2 border-[#2a2a4a] shadow-[-8px_0_32px_rgba(0,0,0,0.6)] transition-[transform,visibility] duration-200 font-mono ${isOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}`}
       >
         {backdrop && (
-          <div className="absolute top-0 inset-x-0 h-72 overflow-hidden">
-            <div className="absolute inset-0 scale-110 bg-cover bg-center pointer-events-none" style={{ backgroundImage: `url(${backdrop})`, filter: 'none', opacity: 1, maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }} />
-            {plex?.ratingKey && (
-              <button
-                onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
-                className={`absolute bottom-2 right-2 z-20 text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
-              >
-                ✎ art
-              </button>
-            )}
-          </div>
+          <div className="absolute inset-0 bg-cover bg-center scale-110 pointer-events-none" style={{ backgroundImage: `url(${backdrop})`, filter: 'blur(24px)', opacity: 0.1 }} />
+        )}
+        {plex?.ratingKey && backdrop && (
+          <button
+            onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
+            className={`absolute bottom-2 right-2 z-20 text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
+          >
+            ✎ art
+          </button>
         )}
 
         <div className="relative z-10 overflow-y-auto h-full p-6">
