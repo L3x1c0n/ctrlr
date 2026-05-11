@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { TautulliActivity, TautulliSession } from '@/types'
 import ProgressBar from '@/components/ProgressBar'
 import Spinner from '@/components/Spinner'
@@ -105,24 +105,26 @@ export default function TautulliSection() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<TautulliSession | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tautulli')
+      const data = await res.json()
+      if (data.error) { setError(data.error); return }
+      setActivity(data)
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch('/api/tautulli')
-        const data = await res.json()
-        if (data.error) { setError(data.error); return }
-        setActivity(data)
-      } catch (e) {
-        setError(String(e))
-      } finally {
-        setLoading(false)
-      }
-    }
     load()
     const id = setInterval(load, 10000)
     return () => clearInterval(id)
-  }, [])
+  }, [load])
 
   return (
     <>
@@ -130,9 +132,12 @@ export default function TautulliSection() {
         <section id="tautulli">
           <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between">
             <span>function* <span className="text-white text-sm font-medium uppercase tracking-widest">T4utull1</span>(): AsyncIterable&lt;TautulliSession&gt; {'{'}</span>
-            {activity && activity.stream_count > 0 && (
-              <span className="text-green-400">{activity.stream_count} stream{activity.stream_count !== 1 ? 's' : ''}</span>
-            )}
+            <span className="flex items-center gap-3">
+              {activity && activity.stream_count > 0 && (
+                <span className="text-green-400">{activity.stream_count} stream{activity.stream_count !== 1 ? 's' : ''}</span>
+              )}
+              <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false) }} disabled={refreshing} className="btn-xs text-[#7070a8] hover:text-[#aaa]">{refreshing ? '...' : <><span className="hidden sm:inline">--refresh</span><span className="sm:hidden">↺</span></>}</button>
+            </span>
           </div>
           {error && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}
           {(!activity || activity.sessions.length === 0) && !error && (

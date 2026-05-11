@@ -148,6 +148,7 @@ export default function ArrSection({ service, label }: Props) {
     }
   }
   const [dismissed,      setDismissed]      = useState<Set<string>>(() => new Set())
+  const [refreshing,     setRefreshing]     = useState(false)
 
   // Track previous live row states to detect disappearances
   const prevRows = useRef<Map<string, { state: RowState; title: string; calendarId?: number; seriesId?: number }>>(new Map())
@@ -320,7 +321,10 @@ export default function ArrSection({ service, label }: Props) {
         {/* header */}
         <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between">
           <span>const <span className="text-white text-sm font-medium uppercase tracking-widest">{label}</span>: ArrQueueItem[] = [</span>
-          {monitored.length > 0 && <span className="text-[#888]">// {monitored.length} monitored</span>}
+          <span className="flex items-center gap-3">
+            {monitored.length > 0 && <span className="text-[#888]">// {monitored.length} monitored</span>}
+            <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false) }} disabled={refreshing} className="btn-xs text-[#7070a8] hover:text-[#aaa]">{refreshing ? '...' : <><span className="hidden sm:inline">--refresh</span><span className="sm:hidden">↺</span></>}</button>
+          </span>
         </div>
 
         {error   && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}

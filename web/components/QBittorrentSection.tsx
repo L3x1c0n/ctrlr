@@ -136,6 +136,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
   const [loading,    setLoading]    = useState(true)
   const [selected,   setSelected]   = useState<DrawerEntry | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [refreshing,    setRefreshing]    = useState(false)
 
   const fetch_ = useCallback(async () => {
     try {
@@ -182,13 +183,16 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
       <section id="qbittorrent">
         <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between">
           <span>const <span className="text-white text-sm font-medium uppercase tracking-widest">qB1tt0rr3nt</span>: QBTorrent[] = [</span>
-          {transfer && (
-            <span className="text-xs">
-              <span className="text-green-400">↓ {fmtSpeed(transfer.dl_info_speed)}</span>
-              <span className="mx-2 text-[#888]">·</span>
-              <span className="text-blue-400">↑ {fmtSpeed(transfer.up_info_speed)}</span>
-            </span>
-          )}
+          <span className="flex items-center gap-3">
+            {transfer && (
+              <span className="text-xs">
+                <span className="text-green-400">↓ {fmtSpeed(transfer.dl_info_speed)}</span>
+                <span className="mx-2 text-[#888]">·</span>
+                <span className="text-blue-400">↑ {fmtSpeed(transfer.up_info_speed)}</span>
+              </span>
+            )}
+            <button onClick={async () => { setRefreshing(true); await fetch_(); setRefreshing(false) }} disabled={refreshing} className="btn-xs text-[#7070a8] hover:text-[#aaa]">{refreshing ? '...' : <><span className="hidden sm:inline">--refresh</span><span className="sm:hidden">↺</span></>}</button>
+          </span>
         </div>
         {error && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}
         {torrents.length === 0 && !error && (

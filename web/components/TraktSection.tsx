@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useState, useEffect, useRef, useMemo } from 'react'
+import { Fragment, useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { TraktMovie, TraktEpisode } from '@/types'
 import Spinner from '@/components/Spinner'
 import { TraktSelectedItem } from '@/components/TraktDetailDrawer'
@@ -527,6 +527,7 @@ export default function TraktSection() {
   const [forecastOffset,     setForecastOffset]     = useState(0)
   const [agendaOffset,       setAgendaOffset]       = useState(0)
   const [isMobile,           setIsMobile]           = useState(false)
+  const [refreshing,         setRefreshing]         = useState(false)
 
   useEffect(() => {
     const mobile = window.innerWidth < 768
@@ -537,28 +538,29 @@ export default function TraktSection() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res  = await fetch('/api/trakt')
-        const data = await res.json()
-        if (data.error) { setError(data.error); return }
-        setMovies(data.movies ?? [])
-        setEpisodes(data.episodes ?? [])
-        setDownloadedMovies(new Set<number>(data.downloadedMovies ?? []))
-        setDownloadedEpisodes(new Set<string>(data.downloadedEpisodes ?? []))
-        setInArrMovies(new Set<number>(data.inArrMovies ?? []))
-        setInArrShows(new Set<number>(data.inArrShows ?? []))
-      } catch (e) {
-        setError(String(e))
-      } finally {
-        setLoading(false)
-      }
+  const load = useCallback(async () => {
+    try {
+      const res  = await fetch('/api/trakt')
+      const data = await res.json()
+      if (data.error) { setError(data.error); return }
+      setMovies(data.movies ?? [])
+      setEpisodes(data.episodes ?? [])
+      setDownloadedMovies(new Set<number>(data.downloadedMovies ?? []))
+      setDownloadedEpisodes(new Set<string>(data.downloadedEpisodes ?? []))
+      setInArrMovies(new Set<number>(data.inArrMovies ?? []))
+      setInArrShows(new Set<number>(data.inArrShows ?? []))
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setLoading(false)
     }
+  }, [])
+
+  useEffect(() => {
     load()
     const id = setInterval(load, 15 * 60 * 1000)
     return () => clearInterval(id)
-  }, [])
+  }, [load])
 
   const itemMap = useMemo(
     () => buildItemMap(episodes, movies, downloadedMovies, downloadedEpisodes, inArrMovies, inArrShows),
@@ -597,6 +599,7 @@ export default function TraktSection() {
               <span className="text-amber-400">‡</span> radarr
             </span>
             <ViewSwitcher view={view} onChange={setView} />
+            <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false) }} disabled={refreshing} className="btn-xs text-[#7070a8] hover:text-[#aaa]">{refreshing ? '...' : <><span className="hidden sm:inline">--refresh</span><span className="sm:hidden">↺</span></>}</button>
           </div>
         </div>
 

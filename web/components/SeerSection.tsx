@@ -34,6 +34,7 @@ export default function SeerSection() {
   const [selected, setSelected] = useState<DrawerEntry | null>(null)
   const [requestItem, setRequestItem] = useState<SeerSearchResult | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [page, setPage] = useState(0)
 
   const loadRequests = useCallback(async (): Promise<SeerRequest[] | null> => {
@@ -108,18 +109,21 @@ export default function SeerSection() {
       <section id="seer">
         <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between">
           <span>const <span className="text-white text-sm font-medium uppercase tracking-widest">S33r</span>: SeerRequest[] = [</span>
-          <button
-            onClick={async () => {
-              setSyncing(true)
-              await fetch('/api/seer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync' }) })
-              await loadRequests()
-              setSyncing(false)
-            }}
-            disabled={syncing}
-            className="btn-xs text-[#7070a8] hover:text-[#aaaadd] disabled:opacity-40"
-          >
-            {syncing ? '...' : '--sync-arrs'}
-          </button>
+          <span className="flex items-center gap-2">
+            <button onClick={async () => { setRefreshing(true); await loadRequests(); setRefreshing(false) }} disabled={refreshing} className="btn-xs text-[#7070a8] hover:text-[#aaa]">{refreshing ? '...' : <><span className="hidden sm:inline">--refresh</span><span className="sm:hidden">↺</span></>}</button>
+            <button
+              onClick={async () => {
+                setSyncing(true)
+                await fetch('/api/seer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync' }) })
+                await loadRequests()
+                setSyncing(false)
+              }}
+              disabled={syncing}
+              className="btn-xs text-[#7070a8] hover:text-[#aaaadd] disabled:opacity-40"
+            >
+              {syncing ? '...' : '--sync-arrs'}
+            </button>
+          </span>
         </div>
         {error && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}
 
