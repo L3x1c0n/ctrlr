@@ -997,11 +997,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           </button>
                         </div>
 
-                        {(showPosters || showArt) && (
-                          <button onClick={() => { setPendingKey(null); setArtworkVersion(v => v + 1) }}
-                            disabled={artworkSaving}
-                            className="btn-xs text-[#7070a8] hover:text-[#aaa]">↺</button>
-                        )}
                         {pendingKey && (
                           <button onClick={saveArtwork} disabled={artworkSaving}
                             className="btn-xs text-green-400 hover:text-green-300 disabled:opacity-50">
