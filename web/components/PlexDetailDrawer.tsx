@@ -337,6 +337,7 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
   const [tmdbId,       setTmdbId]       = useState<number | null>(null)
   const [seerType,     setSeerType]     = useState<'movie' | 'tv'>('movie')
   const [requestItem,  setRequestItem]  = useState<SeerSearchResult | null>(null)
+  const [artworkVersion, setArtworkVersion] = useState(0)
 
   // Reset panel state when the source item changes
   useEffect(() => {
@@ -413,8 +414,16 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
     }
   }
 
-  async function selectPoster(photoKey: string) { await doAction('setPoster', { photoKey }) }
-  async function selectArt(photoKey: string)    { await doAction('setArt',    { photoKey }) }
+  async function reloadDetail() {
+    if (!currentKey) return
+    const res  = await fetch(`/api/plex?ratingKey=${currentKey}`)
+    const data = await res.json()
+    if (data.detail) setDetail(data.detail)
+    setArtworkVersion(v => v + 1)
+  }
+
+  async function selectPoster(photoKey: string) { await doAction('setPoster', { photoKey }); await reloadDetail() }
+  async function selectArt(photoKey: string)    { await doAction('setArt',    { photoKey }); await reloadDetail() }
 
   const isEpisode  = detail?.type === 'episode'
   const mediaType  = isEpisode ? 'show' : 'movie'
@@ -626,10 +635,10 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                   </button>
                 </div>
                 {showPosters && (
-                  <ArtGrid ratingKey={currentKey} kind="posters" onSelect={selectPoster} />
+                  <ArtGrid key={`posters-${artworkVersion}`} ratingKey={currentKey} kind="posters" onSelect={selectPoster} />
                 )}
                 {showArt && (
-                  <ArtGrid ratingKey={currentKey} kind="arts" onSelect={selectArt} />
+                  <ArtGrid key={`arts-${artworkVersion}`} ratingKey={currentKey} kind="arts" onSelect={selectArt} />
                 )}
               </div>
 
