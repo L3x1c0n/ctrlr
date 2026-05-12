@@ -604,6 +604,10 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       })
       onRefresh()
       if (action === 'delete' && tmdbId) fetchPipeline(tmdbId, mediaType)
+      else if (action === 'refresh' && tmdbId) {
+        // Give Plex a moment to process the refresh before re-fetching pipeline
+        setTimeout(() => fetchPipeline(tmdbId, mediaType), 3000)
+      }
     } finally { setActing(null) }
   }
 
