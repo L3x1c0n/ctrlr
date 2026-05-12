@@ -166,12 +166,14 @@ function ArtGrid({
   kind: 'posters' | 'arts'
   onSelect: (key: string) => Promise<void>
 }) {
-  const [photos, setPhotos]   = useState<Photo[]>([])
-  const [loading, setLoading] = useState(true)
-  const [acting, setActing]   = useState<string | null>(null)
+  const [photos,     setPhotos]     = useState<Photo[]>([])
+  const [loading,    setLoading]    = useState(true)
+  const [saving,     setSaving]     = useState(false)
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
+    setPendingKey(null)
     fetch(`/api/plex?${kind}=${ratingKey}`)
       .then(r => r.json())
       .then(d => setPhotos(d.photos ?? []))
@@ -179,11 +181,16 @@ function ArtGrid({
       .finally(() => setLoading(false))
   }, [ratingKey, kind])
 
-  async function pick(photo: Photo) {
-    setActing(photo.key)
-    await onSelect(photo.key)
-    setPhotos(prev => prev.map(p => ({ ...p, selected: p.key === photo.key })))
-    setActing(null)
+  async function save() {
+    if (!pendingKey) return
+    setSaving(true)
+    try {
+      await onSelect(pendingKey)
+      setPhotos(prev => prev.map(p => ({ ...p, selected: p.key === pendingKey })))
+      setPendingKey(null)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const isPortrait = kind === 'posters'
@@ -201,38 +208,58 @@ function ArtGrid({
 
   return (
     <>
-      <p className="text-[#7070a8] text-xs font-mono mb-1.5">// {photos.length} available — click to set</p>
+      <div className="flex items-center gap-3 mb-1.5">
+        <p className="text-[#7070a8] text-xs font-mono">// {photos.length} available — click to select</p>
+        {pendingKey && (
+          <button
+            onClick={save}
+            disabled={saving}
+            className="btn-xs text-green-400 hover:text-green-300 disabled:opacity-50"
+          >
+            {saving ? '...' : '--save'}
+          </button>
+        )}
+      </div>
       <div className={`grid gap-2 ${isPortrait ? 'grid-cols-4' : 'grid-cols-3'}`}>
-        {photos.map((p, i) => (
-          <div key={i} className="flex flex-col gap-0.5">
-            <button
-              onClick={() => pick(p)}
-              disabled={!!acting}
-              className={`relative overflow-hidden border ${p.selected ? 'border-white' : 'border-[#2a2a4a] hover:border-[#7070a8]'} ${acting === p.key ? 'opacity-40' : ''}`}
-              style={{ aspectRatio: isPortrait ? '2/3' : '16/9' }}
-            >
-              <img
-                src={`/api/plex?thumb=${encodeURIComponent(p.thumb)}`}
-                alt=""
-                className="w-full h-full object-cover"
-              />
-              {p.selected && (
-                <div className="absolute inset-0 flex items-end justify-start p-0.5 bg-gradient-to-t from-black/60 to-transparent">
-                  <span className="text-[7px] font-mono text-green-400 leading-none">✓ set</span>
-                </div>
-              )}
-              {acting === p.key && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                  <span className="text-[8px] font-mono text-white">...</span>
-                </div>
-              )}
-            </button>
-            <div className="flex justify-between items-center px-0.5">
-              <span className="text-[7px] font-mono text-[#7070a8] tabular-nums">[{i}]</span>
-              <span className="text-[7px] font-mono text-[#888]">{srcLabel(p.key)}</span>
+        {photos.map((p, i) => {
+          const isPending  = pendingKey === p.key
+          const isSelected = p.selected && !pendingKey
+          return (
+            <div key={i} className="flex flex-col gap-0.5">
+              <button
+                onClick={() => setPendingKey(p.key === pendingKey ? null : p.key)}
+                disabled={saving}
+                className={`relative overflow-hidden border ${isPending ? 'border-green-400' : isSelected ? 'border-white' : 'border-[#2a2a4a] hover:border-[#7070a8]'}`}
+                style={{ aspectRatio: isPortrait ? '2/3' : '16/9' }}
+              >
+                <img
+                  src={`/api/plex?thumb=${encodeURIComponent(p.thumb)}`}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+                {isPending && (
+                  <div className="absolute inset-0 flex items-end justify-start p-0.5 bg-gradient-to-t from-black/60 to-transparent">
+                    <span className="text-[7px] font-mono text-green-400 leading-none">● selected</span>
+                  </div>
+                )}
+                {isSelected && (
+                  <div className="absolute inset-0 flex items-end justify-start p-0.5 bg-gradient-to-t from-black/60 to-transparent">
+                    <span className="text-[7px] font-mono text-white leading-none">✓ set</span>
+                  </div>
+                )}
+                {saving && isPending && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <span className="text-[8px] font-mono text-white">...</span>
+                  </div>
+                )}
+              </button>
+              <div className="flex justify-between items-center px-0.5">
+                <span className="text-[7px] font-mono text-[#7070a8] tabular-nums">[{i}]</span>
+                <span className="text-[7px] font-mono text-[#888]">{srcLabel(p.key)}</span>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </>
   )
