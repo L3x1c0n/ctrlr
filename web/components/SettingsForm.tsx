@@ -17,12 +17,15 @@ const FIELDS = [
 const SECRET_KEYS = new Set(['RADARR_API_KEY', 'SONARR_API_KEY', 'SEER_API_KEY', 'PLEX_TOKEN', 'TAUTULLI_API_KEY', 'PROWLARR_API_KEY', 'TRAKT_CLIENT_SECRET'])
 
 type TraktState = 'idle' | 'waiting' | 'done' | 'error'
+type ScanState = 'idle' | 'scanning' | 'done' | 'error'
 
 export default function SettingsForm({ initial }: { initial: Record<string, string> }) {
   const [values, setValues] = useState(initial)
   const [saved, setSaved] = useState(false)
   const [restarting, setRestarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [radarrScan, setRadarrScan] = useState<ScanState>('idle')
+  const [sonarrScan, setSonarrScan] = useState<ScanState>('idle')
 
   const [traktState, setTraktState] = useState<TraktState>('idle')
   const [traktCode, setTraktCode] = useState<string | null>(null)
@@ -42,6 +45,24 @@ export default function SettingsForm({ initial }: { initial: Record<string, stri
       setSaved(true)
     } catch (e) {
       setError(String(e))
+    }
+  }
+
+  async function rescan(service: 'radarr' | 'sonarr') {
+    const set = service === 'radarr' ? setRadarrScan : setSonarrScan
+    set('scanning')
+    try {
+      const res = await fetch(`/api/${service}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'rescan' }),
+      })
+      const data = await res.json()
+      set(data.error ? 'error' : 'done')
+      setTimeout(() => set('idle'), 3000)
+    } catch {
+      set('error')
+      setTimeout(() => set('idle'), 3000)
     }
   }
 
@@ -148,6 +169,26 @@ export default function SettingsForm({ initial }: { initial: Record<string, stri
           )}
         </div>
       ))}
+
+      <div>
+        <h2 className="text-[#999] font-mono text-xs uppercase tracking-wider mb-3">Manual Scan</h2>
+        <div className="flex gap-3">
+          {(['radarr', 'sonarr'] as const).map((svc) => {
+            const state = svc === 'radarr' ? radarrScan : sonarrScan
+            return (
+              <button
+                key={svc}
+                onClick={() => rescan(svc)}
+                disabled={state === 'scanning'}
+                className="bg-[#1a1a2e] text-[#7070a8] font-mono text-sm px-4 py-2 hover:bg-[#252540] disabled:opacity-50"
+              >
+                {state === 'scanning' ? `${svc} scanning...` : state === 'done' ? `${svc} // queued` : state === 'error' ? `${svc} // error` : `rescan ${svc}`}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-[#555] font-mono text-xs mt-2">Triggers a full filesystem rescan in each service. Use when files are missing or not importing.</p>
+      </div>
 
       <div className="flex gap-3">
         <button onClick={save} className="bg-[#1a1a2e] text-white font-mono text-sm px-6 py-2 hover:bg-[#252540]">

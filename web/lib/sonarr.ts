@@ -30,6 +30,15 @@ export async function triggerSearch(id: number): Promise<void> {
   })
 }
 
+export async function rescanLibrary(): Promise<void> {
+  await fetch(`${BASE}/api/v3/command`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'RescanSeries' }),
+    cache: 'no-store',
+  })
+}
+
 export async function getSeriesDetail(seriesId: number) {
   const res = await fetch(`${BASE}/api/v3/series/${seriesId}`, { headers, cache: 'no-store' })
   return res.json()

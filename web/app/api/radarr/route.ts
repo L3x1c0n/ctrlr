@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getQueue, deleteQueueItem, triggerSearch, getMovieDetail, getQualityProfiles, updateMovie, getHealth, getMonitored, getCalendarToday, searchReleases, grabRelease, findByTmdb, searchMovie, getRecentlyAdded } from '@/lib/radarr'
+import { getQueue, deleteQueueItem, triggerSearch, getMovieDetail, getQualityProfiles, updateMovie, getHealth, getMonitored, getCalendarToday, searchReleases, grabRelease, findByTmdb, searchMovie, getRecentlyAdded, rescanLibrary } from '@/lib/radarr'
 
 export async function GET(req: NextRequest) {
   try {
@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     else if (action === 'toggleMonitor') await updateMovie(movieId, { monitored })
     else if (action === 'grab')          await grabRelease(guid, indexerId)
     else if (action === 'searchMovie')   await searchMovie(body.movieId)
+    else if (action === 'rescan')        await rescanLibrary()
     else return NextResponse.json({ error: 'unknown action' }, { status: 400 })
     return NextResponse.json({ ok: true })
   } catch (e) {
