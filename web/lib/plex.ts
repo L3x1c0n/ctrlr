@@ -183,8 +183,20 @@ export const getPosters = (ratingKey: string) => getPhotos(ratingKey, 'posters')
 export const getArts    = (ratingKey: string) => getPhotos(ratingKey, 'arts')
 
 export async function selectPhoto(ratingKey: string, kind: 'poster' | 'art', photoKey: string): Promise<void> {
-  const url = `${PLEX_URL}/library/metadata/${ratingKey}/${kind}?url=${encodeURIComponent(photoKey)}`
-  await fetch(url, { method: 'PUT', headers, cache: 'no-store' })
+  const kindPlural = kind === 'poster' ? 'posters' : 'arts'
+  if (photoKey.startsWith('http')) {
+    // External URL (TMDB, Fanart, etc): POST to the plural endpoint with the URL.
+    // Plex downloads the image, stores it as an upload:// bundle entry, and selects it —
+    // this persists through metadata agent refreshes unlike the PUT ?url= approach.
+    await fetch(`${PLEX_URL}/library/metadata/${ratingKey}/${kindPlural}?url=${encodeURIComponent(photoKey)}`, {
+      method: 'POST', headers, cache: 'no-store',
+    })
+  } else {
+    // Plex-internal key (metadata:// bundle): PUT with URL reference — sticks natively
+    await fetch(`${PLEX_URL}/library/metadata/${ratingKey}/${kind}?url=${encodeURIComponent(photoKey)}`, {
+      method: 'PUT', headers, cache: 'no-store',
+    })
+  }
 }
 
 // ── metadata refresh ──────────────────────────────────────────────────────────
