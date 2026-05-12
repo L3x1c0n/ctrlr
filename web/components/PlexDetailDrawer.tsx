@@ -160,38 +160,25 @@ function SeriesBrowser({
 // ── artwork grid ──────────────────────────────────────────────────────────────
 
 function ArtGrid({
-  ratingKey, kind, onSelect,
+  ratingKey, kind, pendingKey, onPick, saving,
 }: {
   ratingKey: string
   kind: 'posters' | 'arts'
-  onSelect: (key: string) => Promise<void>
+  pendingKey: string | null
+  onPick: (key: string) => void
+  saving: boolean
 }) {
-  const [photos,     setPhotos]     = useState<Photo[]>([])
-  const [loading,    setLoading]    = useState(true)
-  const [saving,     setSaving]     = useState(false)
-  const [pendingKey, setPendingKey] = useState<string | null>(null)
+  const [photos,  setPhotos]  = useState<Photo[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setLoading(true)
-    setPendingKey(null)
     fetch(`/api/plex?${kind}=${ratingKey}`)
       .then(r => r.json())
       .then(d => setPhotos(d.photos ?? []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [ratingKey, kind])
-
-  async function save() {
-    if (!pendingKey) return
-    setSaving(true)
-    try {
-      await onSelect(pendingKey)
-      setPhotos(prev => prev.map(p => ({ ...p, selected: p.key === pendingKey })))
-      setPendingKey(null)
-    } finally {
-      setSaving(false)
-    }
-  }
 
   const isPortrait = kind === 'posters'
 
@@ -208,18 +195,7 @@ function ArtGrid({
 
   return (
     <>
-      <div className="flex items-center gap-3 mb-1.5">
-        <p className="text-[#7070a8] text-xs font-mono">// {photos.length} available — click to select</p>
-        {pendingKey && (
-          <button
-            onClick={save}
-            disabled={saving}
-            className="btn-xs text-green-400 hover:text-green-300 disabled:opacity-50"
-          >
-            {saving ? '...' : '--save'}
-          </button>
-        )}
-      </div>
+      <p className="text-[#7070a8] text-xs font-mono mb-1.5">// {photos.length} available — click to select, then --save</p>
       <div className={`grid gap-2 ${isPortrait ? 'grid-cols-4' : 'grid-cols-3'}`}>
         {photos.map((p, i) => {
           const isPending  = pendingKey === p.key
@@ -227,16 +203,12 @@ function ArtGrid({
           return (
             <div key={i} className="flex flex-col gap-0.5">
               <button
-                onClick={() => setPendingKey(p.key === pendingKey ? null : p.key)}
+                onClick={() => onPick(p.key)}
                 disabled={saving}
                 className={`relative overflow-hidden border ${isPending ? 'border-green-400' : isSelected ? 'border-white' : 'border-[#2a2a4a] hover:border-[#7070a8]'}`}
                 style={{ aspectRatio: isPortrait ? '2/3' : '16/9' }}
               >
-                <img
-                  src={`/api/plex?thumb=${encodeURIComponent(p.thumb)}`}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
+                <img src={`/api/plex?thumb=${encodeURIComponent(p.thumb)}`} alt="" className="w-full h-full object-cover" />
                 {isPending && (
                   <div className="absolute inset-0 flex items-end justify-start p-0.5 bg-gradient-to-t from-black/60 to-transparent">
                     <span className="text-[7px] font-mono text-green-400 leading-none">● selected</span>
@@ -365,6 +337,8 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
   const [seerType,     setSeerType]     = useState<'movie' | 'tv'>('movie')
   const [requestItem,  setRequestItem]  = useState<SeerSearchResult | null>(null)
   const [artworkVersion, setArtworkVersion] = useState(0)
+  const [pendingKey,     setPendingKey]     = useState<string | null>(null)
+  const [artworkSaving,  setArtworkSaving]  = useState(false)
 
   // Reset panel state when the source item changes
   useEffect(() => {
@@ -376,6 +350,7 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
     setSeerStatus(null)
     setSeerPoster(null)
     setTmdbId(null)
+    setPendingKey(null)
   }, [item])
 
   // Fetch detail whenever the active key changes
@@ -449,24 +424,23 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
     setArtworkVersion(v => v + 1)
   }
 
-  async function selectArtwork(action: 'setPoster' | 'setArt', photoKey: string) {
-    if (!currentKey) return
-    setActing(action)
+  async function saveArtwork() {
+    if (!currentKey || !pendingKey) return
+    const action = showPosters ? 'setPoster' : 'setArt'
+    setArtworkSaving(true)
     try {
       await fetch('/api/plex', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ratingKey: currentKey, photoKey }),
+        body: JSON.stringify({ action, ratingKey: currentKey, photoKey: pendingKey }),
       })
       await reloadDetail()
+      setPendingKey(null)
       onRefresh()
     } finally {
-      setActing(null)
+      setArtworkSaving(false)
     }
   }
-
-  async function selectPoster(photoKey: string) { await selectArtwork('setPoster', photoKey) }
-  async function selectArt(photoKey: string)    { await selectArtwork('setArt',    photoKey) }
 
   const isEpisode  = detail?.type === 'episode'
   const mediaType  = isEpisode ? 'show' : 'movie'
@@ -665,23 +639,32 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                 <div className="flex items-center gap-3 mb-2">
                   <p className="text-[#7070a8] text-xs">{`/* artwork */`}</p>
                   <button
-                    onClick={() => { setShowPosters(v => !v); setShowArt(false) }}
+                    onClick={() => { setShowPosters(v => !v); setShowArt(false); setPendingKey(null) }}
                     className={`btn-xs ${showPosters ? 'text-white' : 'text-[#999]'}`}
                   >
                     --posters
                   </button>
                   <button
-                    onClick={() => { setShowArt(v => !v); setShowPosters(false) }}
+                    onClick={() => { setShowArt(v => !v); setShowPosters(false); setPendingKey(null) }}
                     className={`btn-xs ${showArt ? 'text-white' : 'text-[#999]'}`}
                   >
                     --art
                   </button>
+                  {pendingKey && (
+                    <button
+                      onClick={saveArtwork}
+                      disabled={artworkSaving}
+                      className="btn-xs text-green-400 hover:text-green-300 disabled:opacity-50"
+                    >
+                      {artworkSaving ? '...' : '--save'}
+                    </button>
+                  )}
                 </div>
                 {showPosters && (
-                  <ArtGrid key={`posters-${artworkVersion}`} ratingKey={currentKey} kind="posters" onSelect={selectPoster} />
+                  <ArtGrid key={`posters-${artworkVersion}`} ratingKey={currentKey} kind="posters" pendingKey={pendingKey} onPick={setPendingKey} saving={artworkSaving} />
                 )}
                 {showArt && (
-                  <ArtGrid key={`arts-${artworkVersion}`} ratingKey={currentKey} kind="arts" onSelect={selectArt} />
+                  <ArtGrid key={`arts-${artworkVersion}`} ratingKey={currentKey} kind="arts" pendingKey={pendingKey} onPick={setPendingKey} saving={artworkSaving} />
                 )}
               </div>
 
