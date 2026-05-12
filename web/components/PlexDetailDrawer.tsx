@@ -422,8 +422,24 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
     setArtworkVersion(v => v + 1)
   }
 
-  async function selectPoster(photoKey: string) { await doAction('setPoster', { photoKey }); await reloadDetail() }
-  async function selectArt(photoKey: string)    { await doAction('setArt',    { photoKey }); await reloadDetail() }
+  async function selectArtwork(action: 'setPoster' | 'setArt', photoKey: string) {
+    if (!currentKey) return
+    setActing(action)
+    try {
+      await fetch('/api/plex', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ratingKey: currentKey, photoKey }),
+      })
+      await reloadDetail()
+      onRefresh()
+    } finally {
+      setActing(null)
+    }
+  }
+
+  async function selectPoster(photoKey: string) { await selectArtwork('setPoster', photoKey) }
+  async function selectArt(photoKey: string)    { await selectArtwork('setArt',    photoKey) }
 
   const isEpisode  = detail?.type === 'episode'
   const mediaType  = isEpisode ? 'show' : 'movie'
