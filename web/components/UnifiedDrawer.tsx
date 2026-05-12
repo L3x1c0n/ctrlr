@@ -321,6 +321,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const [artworkSaving, setArtworkSaving] = useState(false)
   const [artworkVersion, setArtworkVersion] = useState(0)
   const [imgBust,       setImgBust]       = useState(0)
+  const [plexImgData,   setPlexImgData]   = useState<{thumb?: string; art?: string} | null>(null)
   const [showMatch,   setShowMatch]   = useState(false)
   const [showSeries,  setShowSeries]  = useState(false)
 
@@ -547,16 +548,16 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const qitem  = arr?.queueItem ?? null
   const pct    = qbitData ? (qbitData.progress ?? 0) * 100 : (qitem && qitem.size > 0 ? ((qitem.size - qitem.sizeleft) / qitem.size) * 100 : 0)
 
-  const plexThumb = plex?.thumb ? `/api/plex?thumb=${encodeURIComponent(plex.thumb)}&v=${imgBust}` : null
+  const liveThumb = plexImgData?.thumb ?? plex?.thumb
+  const liveArt   = plexImgData?.art   ?? plex?.art
+  const plexThumb = liveThumb ? `/api/plex?thumb=${encodeURIComponent(liveThumb)}&v=${imgBust}` : null
   const poster   = plexThumb
                 ?? arr?.images?.find((i: any) => i.coverType === 'poster')?.remoteUrl
                 ?? (entry?.via === 'plex'  && entry.thumb     ? `/api/plex?thumb=${encodeURIComponent(entry.thumb)}` : null)
                 ?? (entry?.via === 'qbit'  && entry.posterUrl ? entry.posterUrl : null)
-  // Backdrop: prefer Radarr/Sonarr fanart (direct HTTPS URL, no proxy needed for CSS bg-image)
-  // Fall back to Plex art via proxy if no arr fanart available
   const arrFanart = arr?.images?.find((i: any) => i.coverType === 'fanart')?.remoteUrl ?? null
-  const backdrop  = arrFanart
-    ?? (plex?.art ? `/api/plex?thumb=${encodeURIComponent(plex.art)}&v=${imgBust}` : null)
+  const backdrop  = (liveArt ? `/api/plex?thumb=${encodeURIComponent(liveArt)}&v=${imgBust}` : null)
+    ?? arrFanart
   const title    = arr?.title ?? entry?.title ?? '—'
   const year     = arr?.year
   const imdbRating = arr?.ratings?.imdb?.value ?? arr?.ratings?.movieDb?.value ?? null
@@ -624,6 +625,11 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       })
       setPendingKey(null)
       setArtworkVersion(v => v + 1)
+      if (plex?.ratingKey) {
+        const res  = await fetch(`/api/plex?ratingKey=${plex.ratingKey}`)
+        const data = await res.json()
+        if (data.detail) setPlexImgData({ thumb: data.detail.thumb, art: data.detail.art })
+      }
       setImgBust(v => v + 1)
       onRefresh()
       if (tmdbId) fetchPipeline(tmdbId, mediaType)
@@ -699,7 +705,13 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
           {plex?.ratingKey && (
             <div className="pointer-events-auto absolute bottom-2 right-2 flex gap-1">
               <button
-                onClick={() => { setImgBust(v => v + 1); if (tmdbId) fetchPipeline(tmdbId, mediaType) }}
+                onClick={async () => {
+                  if (!plex?.ratingKey) return
+                  const res  = await fetch(`/api/plex?ratingKey=${plex.ratingKey}`)
+                  const data = await res.json()
+                  if (data.detail) setPlexImgData({ thumb: data.detail.thumb, art: data.detail.art })
+                  setImgBust(v => v + 1)
+                }}
                 className="text-[9px] font-mono px-1.5 py-0.5 border border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc] transition-colors"
               >
                 ↺
