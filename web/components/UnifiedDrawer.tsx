@@ -92,23 +92,18 @@ function PlexSeriesBrowser({ showKey }: { showKey: string }) {
   )
 }
 
-function PlexArtGrid({ ratingKey, kind, onSelect }: { ratingKey: string; kind: 'posters' | 'arts'; onSelect: (key: string) => Promise<void> }) {
+function PlexArtGrid({ ratingKey, kind, pendingKey, onPick, saving }: {
+  ratingKey: string; kind: 'posters' | 'arts'
+  pendingKey: string | null; onPick: (key: string) => void; saving: boolean
+}) {
   const [photos,  setPhotos]  = useState<PlexPhoto[]>([])
   const [loading, setLoading] = useState(true)
-  const [acting,  setActing]  = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
     fetch(`/api/plex?${kind}=${ratingKey}`)
       .then(r => r.json()).then(d => setPhotos(d.photos ?? [])).catch(() => {}).finally(() => setLoading(false))
   }, [ratingKey, kind])
-
-  async function pick(p: PlexPhoto) {
-    setActing(p.key)
-    await onSelect(p.key)
-    setPhotos(prev => prev.map(x => ({ ...x, selected: x.key === p.key })))
-    setActing(null)
-  }
 
   function srcLabel(key: string) {
     if (key.startsWith('tmdb://'))   return 'tmdb'
@@ -123,31 +118,40 @@ function PlexArtGrid({ ratingKey, kind, onSelect }: { ratingKey: string; kind: '
   if (!photos.length) return <p className="text-[#999] text-xs">// none available</p>
   return (
     <>
-      <p className="text-[#7070a8] text-xs mb-1.5">// {photos.length} available — click to set</p>
+      <p className="text-[#7070a8] text-xs mb-1.5">// {photos.length} available — click to select, then --save</p>
       <div className={`grid gap-2 ${isPortrait ? 'grid-cols-4' : 'grid-cols-3'}`}>
-        {photos.map((p, i) => (
-          <div key={i} className="flex flex-col gap-0.5">
-            <button onClick={() => pick(p)} disabled={!!acting}
-              className={`relative overflow-hidden border ${p.selected ? 'border-white' : 'border-[#2a2a4a] hover:border-[#7070a8]'} ${acting === p.key ? 'opacity-40' : ''}`}
-              style={{ aspectRatio: isPortrait ? '2/3' : '16/9' }}>
-              <img src={`/api/plex?thumb=${encodeURIComponent(p.thumb)}`} alt="" className="w-full h-full object-cover" />
-              {p.selected && (
-                <div className="absolute inset-0 flex items-end justify-start p-0.5 bg-gradient-to-t from-black/60 to-transparent">
-                  <span className="text-[7px] font-mono text-green-400 leading-none">✓ set</span>
-                </div>
-              )}
-              {acting === p.key && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                  <span className="text-[8px] font-mono text-white">...</span>
-                </div>
-              )}
-            </button>
-            <div className="flex justify-between items-center px-0.5">
-              <span className="text-[7px] font-mono text-[#7070a8]">[{i}]</span>
-              <span className="text-[7px] font-mono text-[#888]">{srcLabel(p.key)}</span>
+        {photos.map((p, i) => {
+          const isPending  = pendingKey === p.key
+          const isSelected = p.selected && !pendingKey
+          return (
+            <div key={i} className="flex flex-col gap-0.5">
+              <button onClick={() => onPick(p.key)} disabled={saving}
+                className={`relative overflow-hidden border ${isPending ? 'border-green-400' : isSelected ? 'border-white' : 'border-[#2a2a4a] hover:border-[#7070a8]'}`}
+                style={{ aspectRatio: isPortrait ? '2/3' : '16/9' }}>
+                <img src={`/api/plex?thumb=${encodeURIComponent(p.thumb)}`} alt="" className="w-full h-full object-cover" />
+                {isPending && (
+                  <div className="absolute inset-0 flex items-end justify-start p-0.5 bg-gradient-to-t from-black/60 to-transparent">
+                    <span className="text-[7px] font-mono text-green-400 leading-none">● selected</span>
+                  </div>
+                )}
+                {isSelected && (
+                  <div className="absolute inset-0 flex items-end justify-start p-0.5 bg-gradient-to-t from-black/60 to-transparent">
+                    <span className="text-[7px] font-mono text-white leading-none">✓ set</span>
+                  </div>
+                )}
+                {saving && isPending && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <span className="text-[8px] font-mono text-white">...</span>
+                  </div>
+                )}
+              </button>
+              <div className="flex justify-between items-center px-0.5">
+                <span className="text-[7px] font-mono text-[#7070a8]">[{i}]</span>
+                <span className="text-[7px] font-mono text-[#888]">{srcLabel(p.key)}</span>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </>
   )
@@ -311,8 +315,10 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const [plexEpisode, setPlexEpisode] = useState<{ showTitle: string; season: number; episode: number; title: string } | null>(null)
 
   // plex panels
-  const [showPosters, setShowPosters] = useState(false)
-  const [showArt,     setShowArt]     = useState(false)
+  const [showPosters,   setShowPosters]   = useState(false)
+  const [showArt,       setShowArt]       = useState(false)
+  const [pendingKey,    setPendingKey]    = useState<string | null>(null)
+  const [artworkSaving, setArtworkSaving] = useState(false)
   const [showMatch,   setShowMatch]   = useState(false)
   const [showSeries,  setShowSeries]  = useState(false)
 
@@ -330,7 +336,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
     setTmdbId(null); setArrDetail(null); setProfiles([]); setPipeline(null)
     setReleases(null); setRelError(null); setEpisodes(null); setSelEpId(null)
-    setShowPosters(false); setShowArt(false); setShowMatch(false); setShowSeries(false)
+    setShowPosters(false); setShowArt(false); setShowMatch(false); setShowSeries(false); setPendingKey(null)
     setPlexEpisode(null); setQbitDirect(null); setEpisodeSynopsis(null)
     setResolving(true)
 
@@ -600,6 +606,22 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     } finally { setActing(null) }
   }
 
+  async function saveArtwork() {
+    if (!plex?.ratingKey || !pendingKey) return
+    const action = showPosters ? 'setPoster' : 'setArt'
+    setArtworkSaving(true)
+    try {
+      await fetch('/api/plex', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ratingKey: plex.ratingKey, photoKey: pendingKey }),
+      })
+      setPendingKey(null)
+      onRefresh()
+      if (tmdbId) fetchPipeline(tmdbId, mediaType)
+    } finally { setArtworkSaving(false) }
+  }
+
   async function changeQuality(qualityProfileId: number) {
     const svc = mediaType === 'movie' ? 'radarr' : 'sonarr'
     const idField = mediaType === 'movie' ? { movieId: arr?.id } : { seriesId: arr?.id }
@@ -662,17 +684,19 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       <div
         className={`fixed top-0 right-0 bottom-0 z-50 w-full md:w-[480px] bg-[#16162a] border-l-2 border-[#2a2a4a] shadow-[-8px_0_32px_rgba(0,0,0,0.6)] transition-[transform,visibility] duration-200 font-mono ${isOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}`}
       >
-        {backdrop && (
-          <div className="absolute inset-0 bg-cover bg-center scale-110 pointer-events-none" style={{ backgroundImage: `url(${backdrop})`, filter: 'blur(24px)', opacity: 0.1 }} />
-        )}
-        {plex?.ratingKey && backdrop && (
-          <button
-            onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
-            className={`absolute bottom-2 right-2 z-20 text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
-          >
-            ✎ art
-          </button>
-        )}
+        <div className="absolute top-0 left-0 right-0 h-80 z-20 pointer-events-none">
+          {backdrop && (
+            <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${backdrop})`, filter: 'blur(2px)', opacity: 0.35, maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)' }} />
+          )}
+          {plex?.ratingKey && (
+            <button
+              onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
+              className={`pointer-events-auto absolute bottom-2 right-2 text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
+            >
+              ✎ art
+            </button>
+          )}
+        </div>
 
         <div className="relative z-10 overflow-y-auto h-full p-6">
           {/* header */}
@@ -933,7 +957,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           <button onClick={() => plexAction('refresh')} disabled={!!acting} className="btn-xs text-blue-400">
                             {acting === 'plex-refresh' ? '...' : '--refresh'}
                           </button>
-                          <button onClick={() => { setShowMatch(v => !v); setShowPosters(false); setShowArt(false) }}
+                          <button onClick={() => { setShowMatch(v => !v); setShowPosters(false); setShowArt(false); setPendingKey(null) }}
                             className={`btn-xs ${showMatch ? 'text-white' : 'text-[#999]'}`}>--fix-match</button>
                           {mediaType === 'tv' && (
                             <button onClick={() => setShowSeries(v => !v)}
@@ -945,16 +969,22 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           </button>
                         </div>
 
+                        {pendingKey && (
+                          <button onClick={saveArtwork} disabled={artworkSaving}
+                            className="btn-xs text-green-400 hover:text-green-300 disabled:opacity-50">
+                            {artworkSaving ? '...' : '--save'}
+                          </button>
+                        )}
                         {showPosters && (
                           <div className="mt-2">
                             <PlexArtGrid ratingKey={plex.ratingKey} kind="posters"
-                              onSelect={async key => { await plexAction('setPoster', { photoKey: key }) }} />
+                              pendingKey={pendingKey} onPick={setPendingKey} saving={artworkSaving} />
                           </div>
                         )}
                         {showArt && (
                           <div className="mt-2">
                             <PlexArtGrid ratingKey={plex.ratingKey} kind="arts"
-                              onSelect={async key => { await plexAction('setArt', { photoKey: key }) }} />
+                              pendingKey={pendingKey} onPick={setPendingKey} saving={artworkSaving} />
                           </div>
                         )}
                         {showMatch && (
