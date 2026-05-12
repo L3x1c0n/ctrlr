@@ -319,6 +319,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const [showArt,       setShowArt]       = useState(false)
   const [pendingKey,    setPendingKey]    = useState<string | null>(null)
   const [artworkSaving, setArtworkSaving] = useState(false)
+  const [artworkVersion, setArtworkVersion] = useState(0)
   const [showMatch,   setShowMatch]   = useState(false)
   const [showSeries,  setShowSeries]  = useState(false)
 
@@ -617,6 +618,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
         body: JSON.stringify({ action, ratingKey: plex.ratingKey, photoKey: pendingKey }),
       })
       setPendingKey(null)
+      setArtworkVersion(v => v + 1)
       onRefresh()
       if (tmdbId) fetchPipeline(tmdbId, mediaType)
     } finally { setArtworkSaving(false) }
@@ -969,6 +971,11 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           </button>
                         </div>
 
+                        {(showPosters || showArt) && (
+                          <button onClick={() => { setPendingKey(null); setArtworkVersion(v => v + 1) }}
+                            disabled={artworkSaving}
+                            className="btn-xs text-[#7070a8] hover:text-[#aaa]">↺</button>
+                        )}
                         {pendingKey && (
                           <button onClick={saveArtwork} disabled={artworkSaving}
                             className="btn-xs text-green-400 hover:text-green-300 disabled:opacity-50">
@@ -977,13 +984,13 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                         )}
                         {showPosters && (
                           <div className="mt-2">
-                            <PlexArtGrid ratingKey={plex.ratingKey} kind="posters"
+                            <PlexArtGrid key={`posters-${artworkVersion}`} ratingKey={plex.ratingKey} kind="posters"
                               pendingKey={pendingKey} onPick={setPendingKey} saving={artworkSaving} />
                           </div>
                         )}
                         {showArt && (
                           <div className="mt-2">
-                            <PlexArtGrid ratingKey={plex.ratingKey} kind="arts"
+                            <PlexArtGrid key={`arts-${artworkVersion}`} ratingKey={plex.ratingKey} kind="arts"
                               pendingKey={pendingKey} onPick={setPendingKey} saving={artworkSaving} />
                           </div>
                         )}
