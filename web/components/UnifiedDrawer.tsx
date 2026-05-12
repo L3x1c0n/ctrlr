@@ -320,6 +320,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const [pendingKey,    setPendingKey]    = useState<string | null>(null)
   const [artworkSaving, setArtworkSaving] = useState(false)
   const [artworkVersion, setArtworkVersion] = useState(0)
+  const [imgBust,       setImgBust]       = useState(0)
   const [showMatch,   setShowMatch]   = useState(false)
   const [showSeries,  setShowSeries]  = useState(false)
 
@@ -546,7 +547,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const qitem  = arr?.queueItem ?? null
   const pct    = qbitData ? (qbitData.progress ?? 0) * 100 : (qitem && qitem.size > 0 ? ((qitem.size - qitem.sizeleft) / qitem.size) * 100 : 0)
 
-  const plexThumb = plex?.thumb ? `/api/plex?thumb=${encodeURIComponent(plex.thumb)}` : null
+  const plexThumb = plex?.thumb ? `/api/plex?thumb=${encodeURIComponent(plex.thumb)}&v=${imgBust}` : null
   const poster   = plexThumb
                 ?? arr?.images?.find((i: any) => i.coverType === 'poster')?.remoteUrl
                 ?? (entry?.via === 'plex'  && entry.thumb     ? `/api/plex?thumb=${encodeURIComponent(entry.thumb)}` : null)
@@ -555,7 +556,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   // Fall back to Plex art via proxy if no arr fanart available
   const arrFanart = arr?.images?.find((i: any) => i.coverType === 'fanart')?.remoteUrl ?? null
   const backdrop  = arrFanart
-    ?? (plex?.art ? `/api/plex?thumb=${encodeURIComponent(plex.art)}` : null)
+    ?? (plex?.art ? `/api/plex?thumb=${encodeURIComponent(plex.art)}&v=${imgBust}` : null)
   const title    = arr?.title ?? entry?.title ?? '—'
   const year     = arr?.year
   const imdbRating = arr?.ratings?.imdb?.value ?? arr?.ratings?.movieDb?.value ?? null
@@ -623,6 +624,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       })
       setPendingKey(null)
       setArtworkVersion(v => v + 1)
+      setImgBust(v => v + 1)
       onRefresh()
       if (tmdbId) fetchPipeline(tmdbId, mediaType)
     } finally { setArtworkSaving(false) }
@@ -697,7 +699,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
           {plex?.ratingKey && (
             <div className="pointer-events-auto absolute bottom-2 right-2 flex gap-1">
               <button
-                onClick={() => tmdbId && fetchPipeline(tmdbId, mediaType)}
+                onClick={() => { setImgBust(v => v + 1); if (tmdbId) fetchPipeline(tmdbId, mediaType) }}
                 className="text-[9px] font-mono px-1.5 py-0.5 border border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc] transition-colors"
               >
                 ↺
