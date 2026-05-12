@@ -698,33 +698,34 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       <div
         className={`fixed top-0 right-0 bottom-0 z-50 w-full md:w-[480px] bg-[#16162a] border-l-2 border-[#2a2a4a] shadow-[-8px_0_32px_rgba(0,0,0,0.6)] transition-[transform,visibility] duration-200 font-mono ${isOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}`}
       >
-        <div className="absolute top-0 left-0 right-0 h-80 z-20 pointer-events-none">
-          {backdrop && (
+        {backdrop && (
+          <div className="absolute top-0 left-0 right-0 h-80 pointer-events-none" style={{ zIndex: 0 }}>
             <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${backdrop})`, filter: 'blur(2px)', opacity: 0.35, maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)' }} />
-          )}
-          {plex?.ratingKey && (
-            <div className="pointer-events-auto absolute bottom-2 right-2 flex gap-1">
-              <button
-                onClick={async () => {
-                  if (!plex?.ratingKey) return
-                  const res  = await fetch(`/api/plex?ratingKey=${plex.ratingKey}`)
-                  const data = await res.json()
-                  if (data.detail) setPlexImgData({ thumb: data.detail.thumb, art: data.detail.art })
-                  setImgBust(v => v + 1)
-                }}
-                className="text-[9px] font-mono px-1.5 py-0.5 border border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc] transition-colors"
-              >
-                ↺
-              </button>
-              <button
-                onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
-                className={`text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
-              >
-                ✎ art
-              </button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {plex?.ratingKey && (
+          <div className="absolute flex gap-1" style={{ top: '312px', right: '8px', zIndex: 30 }}>
+            <button
+              onClick={async () => {
+                if (!plex?.ratingKey) return
+                const res  = await fetch(`/api/plex?ratingKey=${plex.ratingKey}`)
+                const data = await res.json()
+                if (data.detail) setPlexImgData({ thumb: data.detail.thumb, art: data.detail.art })
+                setImgBust(v => v + 1)
+              }}
+              className="text-[9px] font-mono px-1.5 py-0.5 border border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc] transition-colors"
+            >
+              ↺
+            </button>
+            <button
+              onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
+              className={`text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
+            >
+              ✎ art
+            </button>
+          </div>
+        )}
 
         <div className="relative z-10 overflow-y-auto h-full p-6">
           {/* header */}
