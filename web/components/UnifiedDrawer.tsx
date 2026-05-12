@@ -695,12 +695,20 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
             <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${backdrop})`, filter: 'blur(2px)', opacity: 0.35, maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)' }} />
           )}
           {plex?.ratingKey && (
-            <button
-              onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
-              className={`pointer-events-auto absolute bottom-2 right-2 text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
-            >
-              ✎ art
-            </button>
+            <div className="pointer-events-auto absolute bottom-2 right-2 flex gap-1">
+              <button
+                onClick={() => tmdbId && fetchPipeline(tmdbId, mediaType)}
+                className="text-[9px] font-mono px-1.5 py-0.5 border border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc] transition-colors"
+              >
+                ↺
+              </button>
+              <button
+                onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
+                className={`text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
+              >
+                ✎ art
+              </button>
+            </div>
           )}
         </div>
 
