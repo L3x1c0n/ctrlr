@@ -740,7 +740,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
               {/* media header */}
               <div className="flex gap-4 mb-6">
                 {poster && (
-                  <div className="relative flex-shrink-0">
+                  <div className="relative flex-shrink-0 z-30">
                     <img src={poster} alt={title} className="w-36 aspect-[2/3] object-cover border border-[#1a1a2e]" />
                     {plex?.ratingKey && (
                       <button
