@@ -613,6 +613,34 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     } finally { setActing(null) }
   }
 
+  async function deleteChain() {
+    if (!confirm(`Delete ${title}? Files will be permanently removed.`)) return
+    setActing('plex-delete')
+    try {
+      // Step 1: Arr deletes entry + files
+      if (arr?.id) {
+        const svc    = mediaType === 'movie' ? 'radarr' : 'sonarr'
+        const action = mediaType === 'movie' ? 'deleteMovie' : 'deleteSeries'
+        const idField = mediaType === 'movie' ? { movieId: arr.id } : { seriesId: arr.id }
+        await fetch(`/api/${svc}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, ...idField }),
+        })
+      }
+      // Step 2: Plex deletes — succeeds if file still there, fine if already gone
+      if (plex?.ratingKey) {
+        await fetch('/api/plex', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', ratingKey: plex.ratingKey }),
+        }).catch(() => {})
+      }
+      onRefresh()
+      onClose()
+    } finally { setActing(null) }
+  }
+
   async function saveArtwork() {
     if (!plex?.ratingKey || !pendingKey) return
     const action = showPosters ? 'setPoster' : 'setArt'
@@ -992,7 +1020,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                             <button onClick={() => setShowSeries(v => !v)}
                               className={`btn-xs ${showSeries ? 'text-white' : 'text-[#999]'}`}>--series</button>
                           )}
-                          <button onClick={() => { if (confirm(`Delete from Plex?`)) plexAction('delete') }}
+                          <button onClick={deleteChain}
                             disabled={!!acting} className="btn-xs text-red-400">
                             {acting === 'plex-delete' ? '...' : '--rm'}
                           </button>

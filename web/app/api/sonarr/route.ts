@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getQueue, deleteQueueItem, triggerSearch, getSeriesDetail, getQualityProfiles, updateSeries, getHealth, getMonitored, getCalendarToday, searchReleases, grabRelease, findByTvdb, findEpisodeId, searchEpisode, getNextEpisodeId, getEpisodes, getEpisodeById, getRecentlyAdded, lookupSeries, updateEpisodeMonitoring, ensureHoldTag, ensureHoldDelayProfile, applyHoldTag, releaseHoldTag, rescanLibrary } from '@/lib/sonarr'
+import { getQueue, deleteQueueItem, triggerSearch, getSeriesDetail, getQualityProfiles, updateSeries, getHealth, getMonitored, getCalendarToday, searchReleases, grabRelease, findByTvdb, findEpisodeId, searchEpisode, getNextEpisodeId, getEpisodes, getEpisodeById, getRecentlyAdded, lookupSeries, updateEpisodeMonitoring, ensureHoldTag, ensureHoldDelayProfile, applyHoldTag, releaseHoldTag, rescanLibrary, deleteSeries } from '@/lib/sonarr'
 
 export async function GET(req: NextRequest) {
   try {
@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
     else if (action === 'updateEpisodeMonitor') await updateEpisodeMonitoring(body.episodeIds, body.monitored)
     else if (action === 'applyHold')   await applyHoldTag(body.seriesId, body.tagId)
     else if (action === 'releaseHold') await releaseHoldTag(body.seriesId, body.tagId)
-    else if (action === 'rescan')      await rescanLibrary()
+    else if (action === 'rescan')        await rescanLibrary()
+    else if (action === 'deleteSeries')  await deleteSeries(body.seriesId)
     else return NextResponse.json({ error: 'unknown action' }, { status: 400 })
     return NextResponse.json({ ok: true })
   } catch (e) {

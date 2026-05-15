@@ -13,6 +13,12 @@ export async function getQueue(): Promise<ArrQueue> {
   return res.json()
 }
 
+export async function deleteSeries(id: number): Promise<void> {
+  await fetch(`${BASE}/api/v3/series/${id}?deleteFiles=true`, {
+    method: 'DELETE', headers, cache: 'no-store',
+  })
+}
+
 export async function deleteQueueItem(id: number, blacklist = false): Promise<void> {
   await fetch(`${BASE}/api/v3/queue/${id}?blacklist=${blacklist}&removeFromClient=true`, {
     method: 'DELETE',
