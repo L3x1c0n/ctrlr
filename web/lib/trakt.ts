@@ -81,12 +81,12 @@ async function refreshAccessToken(): Promise<void> {
   console.log('[trakt] access token refreshed, expires', new Date(expiresAt * 1000).toISOString())
 }
 
-async function ensureFreshToken(): Promise<void> {
+export async function ensureFreshToken(): Promise<void> {
   const { expiresAt } = getCredentials()
   if (!expiresAt) return
   const nowSec = Math.floor(Date.now() / 1000)
-  // Refresh if less than 24 hours remaining
-  if (nowSec < expiresAt - 86400) return
+  // Refresh if less than 3 days remaining
+  if (nowSec < expiresAt - 259200) return
   if (!refreshPromise) {
     refreshPromise = refreshAccessToken().finally(() => { refreshPromise = null })
   }

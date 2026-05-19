@@ -40,6 +40,7 @@ export function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/login') ||
     pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/trakt/refresh') ||
     pathname.startsWith('/_next')
   ) {
     return withSecurityHeaders(NextResponse.next())
