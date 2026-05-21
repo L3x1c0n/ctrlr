@@ -52,6 +52,21 @@ export default function SystemStatus() {
   const [data, setData]       = useState<SystemData | null>(null)
   const [open, setOpen]       = useState(false)
   const [loading, setLoading] = useState(true)
+  const [restarting, setRestarting] = useState<string | null>(null)
+
+  async function restart(key: string) {
+    setRestarting(key)
+    try {
+      await fetch('/api/system/restart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key }),
+      })
+      setTimeout(load, 3000)
+    } finally {
+      setRestarting(null)
+    }
+  }
 
   async function load() {
     try {
@@ -124,7 +139,15 @@ export default function SystemStatus() {
                   <span className="text-[#555] w-[56px] shrink-0 text-right tabular-nums">
                     {s.latency != null ? `${s.latency}ms` : '—'}
                   </span>
-                  <span className="text-[#666] shrink-0">{s.version ?? ''}</span>
+                  <span className="text-[#666] flex-1 shrink-0">{s.version ?? ''}</span>
+                  <button
+                    onClick={() => restart(s.key)}
+                    disabled={restarting === s.key}
+                    className="text-[#555] hover:text-[#f87171] transition-colors disabled:opacity-40 shrink-0"
+                    title={`restart ${s.name}`}
+                  >
+                    {restarting === s.key ? '...' : '↺'}
+                  </button>
                 </div>
               ))}
             </div>
