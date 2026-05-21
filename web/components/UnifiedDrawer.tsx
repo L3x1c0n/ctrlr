@@ -308,9 +308,17 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
     { label: 'plex',    state: plexNode },
   ]
 
-  function nodeColor(s: NodeState) {
+  function nodeFill(s: NodeState) {
+    if (s === 'done')    return '#4a7a5a'
+    if (s === 'active')  return '#ffffff'
+    if (s === 'warn')    return '#facc15'
+    if (s === 'error')   return '#f87171'
+    if (s === 'na')      return '#444444'
+    return '#555555'
+  }
+  function nodeTextClass(s: NodeState) {
     if (s === 'done')    return 'text-[#4a7a5a]'
-    if (s === 'active')  return 'text-white'
+    if (s === 'active')  return 'text-white font-bold'
     if (s === 'warn')    return 'text-yellow-400'
     if (s === 'error')   return 'text-red-400'
     if (s === 'na')      return 'text-[#444]'
@@ -329,11 +337,13 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
     <div className="flex items-center justify-between w-full">
       {nodes.map((n, i) => (
         <span key={n.label} className="flex items-center">
-          <span className={`${nodeColor(n.state)} ${n.state === 'active' ? 'font-bold' : ''}`}>
+          <span className={nodeTextClass(n.state)}>
             [{n.label} {nodeSymbol(n.state)}]
           </span>
           {i < nodes.length - 1 && (
-            <span className="text-[#333] mx-1">──►</span>
+            <svg viewBox="0 0 10 18" className="mx-1 shrink-0" style={{ width: 10, height: 18 }}>
+              <polygon points="0,0 10,9 0,18" fill={nodeFill(n.state)} opacity={n.state === 'pending' || n.state === 'na' ? 0.25 : 0.6} />
+            </svg>
           )}
         </span>
       ))}
