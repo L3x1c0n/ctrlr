@@ -308,7 +308,7 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
     : seer ? (seerStatus >= 2 ? 'done' : 'active') : (arr || plex ? 'done' : 'pending')
 
   const arrNode: NodeState = plexOnly ? 'na'
-    : arr?.hasFile ? 'done'
+    : (arr?.hasFile || !!plex) ? 'done'
     : arrTracked === 'error'   ? 'error'
     : arrTracked === 'warning' ? 'warn'
     : arr ? 'active'
@@ -317,11 +317,10 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   const qbitWarn  = /^(stalledDL|stalledUP)$/.test(qbitState)
   const qbitError = /^(error|missingFiles)$/.test(qbitState)
   const qbitNode: NodeState = plexOnly ? 'na'
-    : arr?.hasFile ? 'done'
+    : (arr?.hasFile || !!plex) ? 'done'
     : qbitError ? 'error'
     : qbitWarn  ? 'warn'
     : qbit && qbit.progress < 1 ? 'active'
-    : (arr?.hasFile || plex) ? 'done'
     : 'pending'
 
   const plexNode: NodeState = plex ? 'active' : 'pending'
