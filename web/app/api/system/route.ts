@@ -38,6 +38,7 @@ export interface SystemInfo {
   cpuCount:     number
   diskUsed:     number
   diskTotal:    number
+  ioWaitPct:    number
   processes:    ProcessMem[]
 }
 
@@ -105,6 +106,17 @@ async function checkAutobrr(): Promise<ServiceStatus> {
   return { name: 'autobrr', key: 'autobrr', status: ok ? 'up' : 'down', latency, version: null }
 }
 
+// module-level cache for iowait delta
+let prevCpuStat: { total: number; iowait: number } | null = null
+
+function readCpuStat(): { total: number; iowait: number } {
+  const line = readFileSync('/proc/stat', 'utf8').split('\n')[0]
+  const nums = line.trim().split(/\s+/).slice(1).map(Number)
+  const total   = nums.reduce((a, b) => a + b, 0)
+  const iowait  = nums[4] ?? 0
+  return { total, iowait }
+}
+
 function readSystem(): SystemInfo {
   // /proc/meminfo
   const memRaw = readFileSync('/proc/meminfo', 'utf8')
@@ -120,6 +132,18 @@ function readSystem(): SystemInfo {
   // /proc/loadavg
   const loadRaw  = readFileSync('/proc/loadavg', 'utf8')
   const cpuLoad1 = parseFloat(loadRaw.split(' ')[0])
+
+  // iowait % — delta from previous poll
+  let ioWaitPct = 0
+  try {
+    const cur = readCpuStat()
+    if (prevCpuStat) {
+      const dTotal  = cur.total   - prevCpuStat.total
+      const dIowait = cur.iowait  - prevCpuStat.iowait
+      ioWaitPct = dTotal > 0 ? Math.round((dIowait / dTotal) * 100) : 0
+    }
+    prevCpuStat = cur
+  } catch {}
 
   // cpu count for load normalisation
   let cpuCount = 1
@@ -167,6 +191,7 @@ function readSystem(): SystemInfo {
     cpuCount,
     diskUsed,
     diskTotal,
+    ioWaitPct,
     processes,
   }
 }

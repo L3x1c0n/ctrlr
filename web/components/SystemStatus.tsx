@@ -71,10 +71,11 @@ export default function SystemStatus() {
   const sys = data?.system
   const kb  = 1024
 
-  const memPct  = sys ? Math.round((1 - sys.memAvailable / sys.memTotal) * 100) : 0
-  const swapPct = sys && sys.swapTotal > 0 ? Math.round((sys.swapUsed / sys.swapTotal) * 100) : 0
-  const diskPct = sys && sys.diskTotal > 0 ? Math.round((sys.diskUsed / sys.diskTotal) * 100) : 0
-  const cpuPct  = sys ? Math.min(Math.round((sys.cpuLoad1 / (sys.cpuCount || 1)) * 100), 100) : 0
+  const memPct    = sys ? Math.round((1 - sys.memAvailable / sys.memTotal) * 100) : 0
+  const swapPct   = sys && sys.swapTotal > 0 ? Math.round((sys.swapUsed / sys.swapTotal) * 100) : 0
+  const diskPct   = sys && sys.diskTotal > 0 ? Math.round((sys.diskUsed / sys.diskTotal) * 100) : 0
+  const cpuPct    = sys ? Math.min(Math.round((sys.cpuLoad1 / (sys.cpuCount || 1)) * 100), 100) : 0
+  const iowaitPct = sys?.ioWaitPct ?? 0
 
   return (
     <div className="border border-[#1a1a2e] mt-4">
@@ -155,6 +156,11 @@ export default function SystemStatus() {
                   pct={diskPct}
                   label="disk /"
                   sub={`${fmtBytes(sys.diskUsed)} / ${fmtBytes(sys.diskTotal)}`}
+                />
+                <Bar
+                  pct={iowaitPct}
+                  label="iowait"
+                  sub={`${iowaitPct}%`}
                 />
               </div>
 
