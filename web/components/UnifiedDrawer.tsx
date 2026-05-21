@@ -326,18 +326,18 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   }
 
   return (
-    <div className="flex items-center gap-0 mt-2 font-mono text-[10px] flex-wrap">
+    <div className="flex items-center justify-between w-full">
       {nodes.map((n, i) => (
-        <span key={n.label} className="flex items-center gap-0">
+        <span key={n.label} className="flex items-center">
           <span className={`${nodeColor(n.state)} ${n.state === 'active' ? 'font-bold' : ''}`}>
             [{n.label} {nodeSymbol(n.state)}]
           </span>
           {i < nodes.length - 1 && (
-            <span className="text-[#333] mx-0.5">──►</span>
+            <span className="text-[#333] mx-1">──►</span>
           )}
         </span>
       ))}
-      {loading && <span className="text-[#444] ml-2">...</span>}
+      {loading && <span className="text-[#444] text-[10px]">...</span>}
     </div>
   )
 }
@@ -882,10 +882,14 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                   {imdbRating && (
                     <p className="text-[#999] text-xs mt-0.5">imdb {imdbRating.toFixed(1)}</p>
                   )}
-                  <PipelineMiniMap
-                    arr={arr} qbit={qbitData} seer={seer} plex={plex}
-                    mediaType={mediaType} loading={pipelineLoading} />
                 </div>
+              </div>
+
+              {/* ── pipeline mini-map ── */}
+              <div className="flex items-center justify-between border-y border-[#2a2a4a] py-3 mb-6 font-mono text-xs">
+                <PipelineMiniMap
+                  arr={arr} qbit={qbitData} seer={seer} plex={plex}
+                  mediaType={mediaType} loading={pipelineLoading} />
               </div>
 
               {/* ── pipeline ── */}
