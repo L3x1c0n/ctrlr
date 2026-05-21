@@ -812,28 +812,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
           </div>
         )}
 
-        {plex?.ratingKey && (
-          <div className="absolute flex gap-1" style={{ top: '312px', right: '8px', zIndex: 30 }}>
-            <button
-              onClick={async () => {
-                if (!plex?.ratingKey) return
-                const res  = await fetch(`/api/plex?ratingKey=${plex.ratingKey}`)
-                const data = await res.json()
-                if (data.detail) setPlexImgData({ thumb: data.detail.thumb, art: data.detail.art })
-                setImgBust(v => v + 1)
-              }}
-              className="text-[9px] font-mono px-1.5 py-0.5 border border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc] transition-colors"
-            >
-              ↺
-            </button>
-            <button
-              onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
-              className={`text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
-            >
-              ✎ art
-            </button>
-          </div>
-        )}
 
         <div className="relative z-10 overflow-y-auto h-full p-6">
           {/* header */}
@@ -881,6 +859,28 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                   )}
                   {imdbRating && (
                     <p className="text-[#999] text-xs mt-0.5">imdb {imdbRating.toFixed(1)}</p>
+                  )}
+                  {plex?.ratingKey && (
+                    <div className="flex gap-1 mt-2">
+                      <button
+                        onClick={async () => {
+                          if (!plex?.ratingKey) return
+                          const res  = await fetch(`/api/plex?ratingKey=${plex.ratingKey}`)
+                          const data = await res.json()
+                          if (data.detail) setPlexImgData({ thumb: data.detail.thumb, art: data.detail.art })
+                          setImgBust(v => v + 1)
+                        }}
+                        className="text-[9px] font-mono px-1.5 py-0.5 border border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc] transition-colors"
+                      >
+                        ↺
+                      </button>
+                      <button
+                        onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
+                        className={`text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
+                      >
+                        ✎ art
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
