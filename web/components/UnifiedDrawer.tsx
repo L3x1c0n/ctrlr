@@ -7,6 +7,7 @@ import ReleaseSearchResults, { Release } from '@/components/ReleaseSearchResults
 import { SonarrEpisode } from '@/lib/sonarr'
 import RequestModal from '@/components/RequestModal'
 import { SeerSearchResult } from '@/types'
+import { THEMES, DEFAULT_THEME } from '@/lib/themes'
 
 // ── entry point union ─────────────────────────────────────────────────────────
 
@@ -266,7 +267,9 @@ const stageColor: Record<Stage, string> = {
 
 const PIPE_H = 22
 const PIPE_CHEV_W = 11
-const PIPE_BG = '#16162a'  // drawer background
+
+// Map pipeline stages to TopBar segment indices: seer=5, arr=3, qbit=2, plex=6
+const PIPE_SEG_IDX = [5, 3, 2, 6]
 
 type NodeState = 'done' | 'active' | 'warn' | 'error' | 'pending' | 'na'
 
@@ -287,6 +290,13 @@ function PipeChev({ segBg, nextBg }: { segBg: string; nextBg: string }) {
 function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   arr: any; qbit: any; seer: any; plex: any; mediaType: 'movie' | 'tv'; loading: boolean
 }) {
+  const [themeKey, setThemeKey] = useState(DEFAULT_THEME)
+  useEffect(() => {
+    const saved = localStorage.getItem('ctrlr-theme')
+    if (saved && THEMES[saved]) setThemeKey(saved)
+  }, [])
+  const theme = THEMES[themeKey]
+
   const qitem = arr?.queueItem ?? null
   const plexOnly = !arr && !qbit && !seer && !!plex
 
@@ -297,12 +307,10 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   const seerNode: NodeState  = plexOnly ? 'na'
     : seer ? (seerStatus >= 2 ? 'done' : 'active') : (arr || plex ? 'done' : 'pending')
 
-  const arrTrackedWarn  = arrTracked === 'warning'
-  const arrTrackedError = arrTracked === 'error'
   const arrNode: NodeState = plexOnly ? 'na'
     : arr?.hasFile ? 'done'
-    : arrTrackedError ? 'error'
-    : arrTrackedWarn  ? 'warn'
+    : arrTracked === 'error'   ? 'error'
+    : arrTracked === 'warning' ? 'warn'
     : arr ? 'active'
     : 'pending'
 
@@ -326,46 +334,39 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
     { label: 'plex',   state: plexNode },
   ]
 
-  function nodeBg(s: NodeState) {
-    if (s === 'done')   return '#1a3028'
-    if (s === 'active') return '#2a2a50'
-    if (s === 'warn')   return '#2a2200'
-    if (s === 'error')  return '#2a1010'
-    return '#1e1e30'
+  function nodeIndicator(s: NodeState) {
+    if (s === 'active') return ' ●'
+    if (s === 'warn')   return ' !'
+    if (s === 'error')  return ' ✗'
+    return ''
   }
-  function nodeFg(s: NodeState) {
-    if (s === 'done')   return '#6a9a7a'
-    if (s === 'active') return '#ffffff'
-    if (s === 'warn')   return '#facc15'
-    if (s === 'error')  return '#f87171'
-    return '#444455'
-  }
-  function nodeSymbol(s: NodeState) {
-    if (s === 'done')   return '✓'
-    if (s === 'active') return '●'
-    if (s === 'warn')   return '!'
-    if (s === 'error')  return '✗'
-    if (s === 'na')     return '–'
-    return '·'
+  function indicatorColor(s: NodeState) {
+    if (s === 'warn')  return '#facc15'
+    if (s === 'error') return '#f87171'
+    return ''  // inherit fg
   }
 
   return (
-    <div className="flex items-stretch w-full overflow-hidden font-mono text-[10px]" style={{ height: PIPE_H, background: PIPE_BG }}>
+    <div className="flex items-stretch w-full overflow-hidden font-mono text-[10px]" style={{ height: PIPE_H }}>
       {nodes.map((n, i) => {
-        const bg   = nodeBg(n.state)
-        const fg   = nodeFg(n.state)
+        const seg  = theme.segments[PIPE_SEG_IDX[i]]
         const next = nodes[i + 1]
+        const ind  = nodeIndicator(n.state)
+        const indColor = indicatorColor(n.state)
         return (
           <div key={n.label} className="flex items-stretch flex-1">
-            <div className="flex-1 flex items-center justify-center font-bold" style={{ background: bg, color: fg }}>
-              {n.label}&nbsp;{nodeSymbol(n.state)}
+            <div className="flex-1 flex items-center justify-center" style={{ background: seg.bg, color: seg.fg }}>
+              {n.label}
+              {ind && (
+                <span style={indColor ? { color: indColor } : {}}>{ind}</span>
+              )}
             </div>
-            {next && <PipeChev segBg={bg} nextBg={nodeBg(next.state)} />}
+            {next && <PipeChev segBg={seg.bg} nextBg={theme.segments[PIPE_SEG_IDX[i + 1]].bg} />}
           </div>
         )
       })}
       {loading && (
-        <div className="flex items-center px-2" style={{ color: '#444', background: PIPE_BG }}>...</div>
+        <div className="flex items-center px-2 text-[#444]">...</div>
       )}
     </div>
   )
