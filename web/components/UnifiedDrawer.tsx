@@ -324,7 +324,7 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
     : (arr?.hasFile || plex) ? 'done'
     : 'pending'
 
-  const plexNode: NodeState = plex ? 'done' : 'pending'
+  const plexNode: NodeState = plex ? 'active' : 'pending'
 
   const arrLabel = mediaType === 'movie' ? 'radarr' : 'sonarr'
   const nodes: { label: string; state: NodeState }[] = [
@@ -335,9 +335,9 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   ]
 
   function nodeIndicator(s: NodeState) {
-    if (s === 'active') return ' ●'
-    if (s === 'warn')   return ' !'
-    if (s === 'error')  return ' ✗'
+    if (s === 'active') return '  ●'
+    if (s === 'warn')   return '  !'
+    if (s === 'error')  return '  ✗'
     return ''
   }
   function indicatorColor(s: NodeState) {
