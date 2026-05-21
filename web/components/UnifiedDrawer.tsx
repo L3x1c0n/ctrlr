@@ -361,7 +361,7 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
                 <span style={indColor ? { color: indColor } : {}}>{ind}</span>
               )}
             </div>
-            {next && <PipeChev segBg={seg.bg} nextBg={theme.segments[PIPE_SEG_IDX[i + 1]].bg} />}
+            <PipeChev segBg={seg.bg} nextBg={next ? theme.segments[PIPE_SEG_IDX[i + 1]].bg : '#16162a'} />
           </div>
         )
       })}
