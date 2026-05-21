@@ -355,10 +355,10 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
         const indColor = indicatorColor(n.state)
         return (
           <div key={n.label} className="flex items-stretch flex-1">
-            <div className="flex-1 flex items-center justify-center" style={{ background: seg.bg, color: seg.fg }}>
-              {n.label}
+            <div className="flex-1 flex items-center justify-center gap-1.5" style={{ background: seg.bg, color: seg.fg }}>
+              <span>{n.label}</span>
               {ind && (
-                <span style={indColor ? { color: indColor } : {}}>{ind}</span>
+                <span style={indColor ? { color: indColor } : {}}>{ind.trim()}</span>
               )}
             </div>
             <PipeChev segBg={seg.bg} nextBg={next ? theme.segments[PIPE_SEG_IDX[i + 1]].bg : '#16162a'} />
