@@ -143,10 +143,9 @@ export default function SystemStatus() {
                   <button
                     onClick={() => restart(s.key)}
                     disabled={restarting === s.key}
-                    className="text-[#555] hover:text-[#f87171] transition-colors disabled:opacity-40 shrink-0"
-                    title={`restart ${s.name}`}
+                    className="btn-xs text-[#555] hover:text-[#f87171] disabled:opacity-40 shrink-0"
                   >
-                    {restarting === s.key ? '...' : '↺'}
+                    {restarting === s.key ? '...' : '--restart'}
                   </button>
                 </div>
               ))}
