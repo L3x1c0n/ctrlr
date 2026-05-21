@@ -860,6 +860,11 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                   {imdbRating && (
                     <p className="text-[#999] text-xs mt-0.5">imdb {imdbRating.toFixed(1)}</p>
                   )}
+                  {(episodeSynopsis || (!isEpisodeMode && arr?.overview)) && (
+                    <p className="text-[#999] text-[10px] leading-relaxed mt-2 line-clamp-5">
+                      {episodeSynopsis || arr?.overview}
+                    </p>
+                  )}
                   {plex?.ratingKey && (
                     <div className="flex gap-1 mt-2">
                       <button
@@ -1191,14 +1196,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
                 </div>
               </div>
-
-              {/* overview — episode synopsis when available; series overview only for movie/seer/trakt entries */}
-              {(episodeSynopsis || (!isEpisodeMode && arr?.overview)) && (
-                <div className="mb-6">
-                  <SectionHeader label="overview" />
-                  <p className="text-[#bbb] text-xs leading-relaxed">{episodeSynopsis || arr?.overview}</p>
-                </div>
-              )}
 
               {/* release search results */}
               <ReleaseSearchResults
