@@ -262,6 +262,86 @@ const stageColor: Record<Stage, string> = {
   unknown:     'text-[#666]',
 }
 
+// ── pipeline mini-map ─────────────────────────────────────────────────────────
+
+type NodeState = 'done' | 'active' | 'warn' | 'error' | 'pending' | 'na'
+
+function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
+  arr: any; qbit: any; seer: any; plex: any; mediaType: 'movie' | 'tv'; loading: boolean
+}) {
+  const qitem = arr?.queueItem ?? null
+  const plexOnly = !arr && !qbit && !seer && !!plex
+
+  const seerStatus = seer?.mediaInfo?.status ?? 0
+  const arrTracked = qitem?.trackedDownloadStatus
+  const qbitState  = qbit?.state ?? ''
+
+  const seerNode: NodeState  = plexOnly ? 'na'
+    : seer ? (seerStatus >= 2 ? 'done' : 'active') : (arr || plex ? 'done' : 'pending')
+
+  const arrTrackedWarn  = arrTracked === 'warning'
+  const arrTrackedError = arrTracked === 'error'
+  const arrNode: NodeState = plexOnly ? 'na'
+    : arr?.hasFile ? 'done'
+    : arrTrackedError ? 'error'
+    : arrTrackedWarn  ? 'warn'
+    : arr ? 'active'
+    : 'pending'
+
+  const qbitWarn  = /^(stalledDL|stalledUP)$/.test(qbitState)
+  const qbitError = /^(error|missingFiles)$/.test(qbitState)
+  const qbitNode: NodeState = plexOnly ? 'na'
+    : arr?.hasFile ? 'done'
+    : qbitError ? 'error'
+    : qbitWarn  ? 'warn'
+    : qbit && qbit.progress < 1 ? 'active'
+    : (arr?.hasFile || plex) ? 'done'
+    : 'pending'
+
+  const plexNode: NodeState = plex ? 'done' : 'pending'
+
+  const arrLabel  = mediaType === 'movie' ? 'radarr' : 'sonarr'
+  const nodes: { label: string; state: NodeState }[] = [
+    { label: 'seer',    state: seerNode },
+    { label: arrLabel,  state: arrNode  },
+    { label: 'qbit',    state: qbitNode },
+    { label: 'plex',    state: plexNode },
+  ]
+
+  function nodeColor(s: NodeState) {
+    if (s === 'done')    return 'text-[#4a7a5a]'
+    if (s === 'active')  return 'text-white'
+    if (s === 'warn')    return 'text-yellow-400'
+    if (s === 'error')   return 'text-red-400'
+    if (s === 'na')      return 'text-[#444]'
+    return 'text-[#555]'
+  }
+  function nodeSymbol(s: NodeState) {
+    if (s === 'done')   return '✓'
+    if (s === 'active') return '●'
+    if (s === 'warn')   return '!'
+    if (s === 'error')  return '✗'
+    if (s === 'na')     return '–'
+    return '·'
+  }
+
+  return (
+    <div className="flex items-center gap-0 mt-2 font-mono text-[10px] flex-wrap">
+      {nodes.map((n, i) => (
+        <span key={n.label} className="flex items-center gap-0">
+          <span className={`${nodeColor(n.state)} ${n.state === 'active' ? 'font-bold' : ''}`}>
+            [{n.label} {nodeSymbol(n.state)}]
+          </span>
+          {i < nodes.length - 1 && (
+            <span className="text-[#333] mx-0.5">──►</span>
+          )}
+        </span>
+      ))}
+      {loading && <span className="text-[#444] ml-2">...</span>}
+    </div>
+  )
+}
+
 // ── section header ────────────────────────────────────────────────────────────
 
 function SectionHeader({ label }: { label: string }) {
@@ -802,11 +882,9 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                   {imdbRating && (
                     <p className="text-[#999] text-xs mt-0.5">imdb {imdbRating.toFixed(1)}</p>
                   )}
-                  {/* stage pill */}
-                  <p className={`text-xs mt-2 font-mono ${stageColor[stage]}`}>
-                    ● {stage}
-                    {pipelineLoading && <span className="text-[#555] ml-2">...</span>}
-                  </p>
+                  <PipelineMiniMap
+                    arr={arr} qbit={qbitData} seer={seer} plex={plex}
+                    mediaType={mediaType} loading={pipelineLoading} />
                 </div>
               </div>
 
