@@ -264,7 +264,25 @@ const stageColor: Record<Stage, string> = {
 
 // ── pipeline mini-map ─────────────────────────────────────────────────────────
 
+const PIPE_H = 22
+const PIPE_CHEV_W = 11
+const PIPE_BG = '#16162a'  // drawer background
+
 type NodeState = 'done' | 'active' | 'warn' | 'error' | 'pending' | 'na'
+
+function PipeChev({ segBg, nextBg }: { segBg: string; nextBg: string }) {
+  return (
+    <div style={{ background: nextBg, flexShrink: 0 }} className="flex items-center">
+      <svg
+        viewBox={`0 0 ${PIPE_CHEV_W} ${PIPE_H}`}
+        preserveAspectRatio="none"
+        style={{ flexShrink: 0, marginLeft: -1, width: PIPE_CHEV_W, height: PIPE_H }}
+      >
+        <polygon points={`0,0 ${PIPE_CHEV_W},${PIPE_H / 2} 0,${PIPE_H}`} fill={segBg} />
+      </svg>
+    </div>
+  )
+}
 
 function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   arr: any; qbit: any; seer: any; plex: any; mediaType: 'movie' | 'tv'; loading: boolean
@@ -300,31 +318,27 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
 
   const plexNode: NodeState = plex ? 'done' : 'pending'
 
-  const arrLabel  = mediaType === 'movie' ? 'radarr' : 'sonarr'
+  const arrLabel = mediaType === 'movie' ? 'radarr' : 'sonarr'
   const nodes: { label: string; state: NodeState }[] = [
-    { label: 'seer',    state: seerNode },
-    { label: arrLabel,  state: arrNode  },
-    { label: 'qbit',    state: qbitNode },
-    { label: 'plex',    state: plexNode },
+    { label: 'seer',   state: seerNode },
+    { label: arrLabel, state: arrNode  },
+    { label: 'qbit',   state: qbitNode },
+    { label: 'plex',   state: plexNode },
   ]
 
-  const SEG_H = 24
-  const CHEV_W = 10
-
   function nodeBg(s: NodeState) {
-    if (s === 'done')    return '#1a3028'
-    if (s === 'active')  return '#2a2a50'
-    if (s === 'warn')    return '#2a2200'
-    if (s === 'error')   return '#2a1010'
-    return '#1a1a2a'
+    if (s === 'done')   return '#1a3028'
+    if (s === 'active') return '#2a2a50'
+    if (s === 'warn')   return '#2a2200'
+    if (s === 'error')  return '#2a1010'
+    return '#1e1e30'
   }
-  function nodeTextClass(s: NodeState) {
-    if (s === 'done')    return 'text-[#6a9a7a]'
-    if (s === 'active')  return 'text-white font-bold'
-    if (s === 'warn')    return 'text-yellow-400'
-    if (s === 'error')   return 'text-red-400'
-    if (s === 'na')      return 'text-[#444]'
-    return 'text-[#555]'
+  function nodeFg(s: NodeState) {
+    if (s === 'done')   return '#6a9a7a'
+    if (s === 'active') return '#ffffff'
+    if (s === 'warn')   return '#facc15'
+    if (s === 'error')  return '#f87171'
+    return '#444455'
   }
   function nodeSymbol(s: NodeState) {
     if (s === 'done')   return '✓'
@@ -336,26 +350,23 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   }
 
   return (
-    <div className="flex items-stretch w-full overflow-hidden" style={{ height: SEG_H }}>
-      {nodes.map((n, i) => (
-        <div key={n.label} className="flex items-stretch" style={{ flex: 1 }}>
-          {/* segment */}
-          <div
-            className={`flex items-center justify-center flex-1 font-mono text-[10px] px-1 ${nodeTextClass(n.state)}`}
-            style={{ background: nodeBg(n.state) }}
-          >
-            {n.label}&nbsp;{nodeSymbol(n.state)}
+    <div className="flex items-stretch w-full overflow-hidden font-mono text-[10px]" style={{ height: PIPE_H, background: PIPE_BG }}>
+      {nodes.map((n, i) => {
+        const bg   = nodeBg(n.state)
+        const fg   = nodeFg(n.state)
+        const next = nodes[i + 1]
+        return (
+          <div key={n.label} className="flex items-stretch flex-1">
+            <div className="flex-1 flex items-center justify-center font-bold" style={{ background: bg, color: fg }}>
+              {n.label}&nbsp;{nodeSymbol(n.state)}
+            </div>
+            {next && <PipeChev segBg={bg} nextBg={nodeBg(next.state)} />}
           </div>
-          {/* powerline chevron separator */}
-          {i < nodes.length - 1 && (
-            <svg viewBox={`0 0 ${CHEV_W} ${SEG_H}`} style={{ width: CHEV_W, height: SEG_H, flexShrink: 0 }} preserveAspectRatio="none">
-              <rect x="0" y="0" width={CHEV_W} height={SEG_H} fill={nodeBg(n.state)} />
-              <polygon points={`0,0 ${CHEV_W},${SEG_H / 2} 0,${SEG_H}`} fill={nodeBg(nodes[i + 1].state)} />
-            </svg>
-          )}
-        </div>
-      ))}
-      {loading && <span className="text-[#444] text-[10px]">...</span>}
+        )
+      })}
+      {loading && (
+        <div className="flex items-center px-2" style={{ color: '#444', background: PIPE_BG }}>...</div>
+      )}
     </div>
   )
 }
