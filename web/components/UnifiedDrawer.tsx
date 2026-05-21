@@ -308,16 +308,18 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
     { label: 'plex',    state: plexNode },
   ]
 
-  function nodeFill(s: NodeState) {
-    if (s === 'done')    return '#4a7a5a'
-    if (s === 'active')  return '#ffffff'
-    if (s === 'warn')    return '#facc15'
-    if (s === 'error')   return '#f87171'
-    if (s === 'na')      return '#444444'
-    return '#555555'
+  const SEG_H = 24
+  const CHEV_W = 10
+
+  function nodeBg(s: NodeState) {
+    if (s === 'done')    return '#1a3028'
+    if (s === 'active')  return '#2a2a50'
+    if (s === 'warn')    return '#2a2200'
+    if (s === 'error')   return '#2a1010'
+    return '#1a1a2a'
   }
   function nodeTextClass(s: NodeState) {
-    if (s === 'done')    return 'text-[#4a7a5a]'
+    if (s === 'done')    return 'text-[#6a9a7a]'
     if (s === 'active')  return 'text-white font-bold'
     if (s === 'warn')    return 'text-yellow-400'
     if (s === 'error')   return 'text-red-400'
@@ -334,18 +336,24 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   }
 
   return (
-    <div className="flex items-center justify-between w-full">
+    <div className="flex items-stretch w-full overflow-hidden" style={{ height: SEG_H }}>
       {nodes.map((n, i) => (
-        <span key={n.label} className="flex items-center">
-          <span className={nodeTextClass(n.state)}>
-            [{n.label} {nodeSymbol(n.state)}]
-          </span>
+        <div key={n.label} className="flex items-stretch" style={{ flex: 1 }}>
+          {/* segment */}
+          <div
+            className={`flex items-center justify-center flex-1 font-mono text-[10px] px-1 ${nodeTextClass(n.state)}`}
+            style={{ background: nodeBg(n.state) }}
+          >
+            {n.label}&nbsp;{nodeSymbol(n.state)}
+          </div>
+          {/* powerline chevron separator */}
           {i < nodes.length - 1 && (
-            <svg viewBox="0 0 10 18" className="mx-1 shrink-0" style={{ width: 10, height: 18 }}>
-              <polygon points="0,0 10,9 0,18" fill={nodeFill(n.state)} opacity={n.state === 'pending' || n.state === 'na' ? 0.25 : 0.6} />
+            <svg viewBox={`0 0 ${CHEV_W} ${SEG_H}`} style={{ width: CHEV_W, height: SEG_H, flexShrink: 0 }} preserveAspectRatio="none">
+              <rect x="0" y="0" width={CHEV_W} height={SEG_H} fill={nodeBg(n.state)} />
+              <polygon points={`0,0 ${CHEV_W},${SEG_H / 2} 0,${SEG_H}`} fill={nodeBg(nodes[i + 1].state)} />
             </svg>
           )}
-        </span>
+        </div>
       ))}
       {loading && <span className="text-[#444] text-[10px]">...</span>}
     </div>
@@ -901,7 +909,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
               </div>
 
               {/* ── pipeline mini-map ── */}
-              <div className="flex items-center justify-between border-y border-[#2a2a4a] py-3 mb-6 font-mono text-xs">
+              <div className="mb-6 overflow-hidden">
                 <PipelineMiniMap
                   arr={arr} qbit={qbitData} seer={seer} plex={plex}
                   mediaType={mediaType} loading={pipelineLoading} />
