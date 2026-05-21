@@ -340,7 +340,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     setTmdbId(null); setArrDetail(null); setProfiles([]); setPipeline(null)
     setReleases(null); setRelError(null); setEpisodes(null); setSelEpId(null)
     setShowPosters(false); setShowArt(false); setShowMatch(false); setShowSeries(false); setPendingKey(null)
-    setPlexEpisode(null); setQbitDirect(null); setEpisodeSynopsis(null)
+    setPlexEpisode(null); setQbitDirect(null); setEpisodeSynopsis(null); setPlexImgData(null)
     setResolving(true)
 
     async function resolve() {
