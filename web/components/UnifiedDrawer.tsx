@@ -653,7 +653,12 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   // qbitData: prefer pipeline result, fall back to direct fetch (has QBTorrent fields)
   const qbitData = qbit ?? qbitDirect ?? null
 
-  const stage  = detectStage(arr, qbitData, seer, plex)
+  // For TV: use Sonarr's per-episode hasFile as ground truth.
+  // plex returns the series (not the episode), so suppress it when the selected episode isn't imported yet.
+  const selEp = episodes?.find(e => e.id === selEpId) ?? null
+  const plexForStage = (mediaType === 'tv' && selEp && !selEp.hasFile) ? null : plex
+
+  const stage  = detectStage(arr, qbitData, seer, plexForStage)
   const qitem  = arr?.queueItem ?? null
   const pct    = qbitData ? (qbitData.progress ?? 0) * 100 : (qitem && qitem.size > 0 ? ((qitem.size - qitem.sizeleft) / qitem.size) * 100 : 0)
 
@@ -922,7 +927,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
               {/* ── pipeline mini-map ── */}
               <div className="mb-6 overflow-hidden">
                 <PipelineMiniMap
-                  arr={arr} qbit={qbitData} seer={seer} plex={plex}
+                  arr={arr} qbit={qbitData} seer={seer} plex={plexForStage}
                   mediaType={mediaType} loading={pipelineLoading} />
               </div>
 
