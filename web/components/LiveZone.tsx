@@ -11,8 +11,8 @@ function fmtSpeed(bps: number): string {
 
 function Bar({ pct, color }: { pct: number; color: string }) {
   return (
-    <div className="w-full mb-3" style={{ height: '2px', background: 'var(--border-hi)', borderRadius: '1px' }}>
-      <div style={{ width: `${Math.min(pct, 100)}%`, height: '100%', background: color, borderRadius: '1px', transition: 'width 0.4s ease' }} />
+    <div className="w-full mb-3" style={{ height: '4px', background: 'var(--border-hi)', borderRadius: '2px' }}>
+      <div style={{ width: `${Math.min(pct, 100)}%`, height: '100%', background: color, borderRadius: '2px', transition: 'width 0.4s ease' }} />
     </div>
   )
 }
