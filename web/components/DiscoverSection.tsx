@@ -6,7 +6,6 @@ import Spinner from '@/components/Spinner'
 import DiscoverDetailDrawer from '@/components/DiscoverDetailDrawer'
 
 const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${path}`
-const PLEX_ORANGE = '#E5A00D'
 
 const PROVIDER_MAP: Record<string, { abbr: string; color: string }> = {
   'netflix':             { abbr: 'NF', color: '#E50914' },
@@ -17,8 +16,8 @@ const PROVIDER_MAP: Record<string, { abbr: string; color: string }> = {
   'hulu':                { abbr: 'HU', color: '#1CE783' },
   'max':                 { abbr: 'MX', color: '#002BE7' },
   'hbo max':             { abbr: 'MX', color: '#002BE7' },
-  'apple tv+':           { abbr: 'AT', color: '#888888' },
-  'apple tv plus':       { abbr: 'AT', color: '#888888' },
+  'apple tv+':           { abbr: 'AT', color: '#555555' },
+  'apple tv plus':       { abbr: 'AT', color: '#555555' },
   'peacock':             { abbr: 'PC', color: '#0066FF' },
   'paramount+':          { abbr: 'P+', color: '#0064FF' },
   'paramount plus':      { abbr: 'P+', color: '#0064FF' },
@@ -27,7 +26,7 @@ const PROVIDER_MAP: Record<string, { abbr: string; color: string }> = {
 }
 
 function providerInfo(name: string): { abbr: string; color: string } {
-  return PROVIDER_MAP[name.toLowerCase()] ?? { abbr: name.slice(0, 2).toUpperCase(), color: '#666688' }
+  return PROVIDER_MAP[name.toLowerCase()] ?? { abbr: name.slice(0, 2).toUpperCase(), color: '#96969a' }
 }
 
 function tracked(item: SeerSearchResult): boolean {
@@ -54,9 +53,9 @@ function fmtFree(bytes: number): string {
 
 function diskColor(bytes: number): string {
   const gb = bytes / 1024 ** 3
-  if (gb < 50)  return '#f43f5e'
-  if (gb < 200) return '#fbbf24'
-  return '#4ade80'
+  if (gb < 50)  return '#CC1A1A'
+  if (gb < 200) return '#D4A800'
+  return '#1A9A3C'
 }
 
 function isUltraHD(name: string): boolean {
@@ -64,7 +63,7 @@ function isUltraHD(name: string): boolean {
   return n.includes('ultra') || n.includes('2160') || n.includes('4k') || n.includes('uhd')
 }
 
-// ── list row (desktop) ─────────────────────────────────────────────────────────
+// ── list row ───────────────────────────────────────────────────────────────────
 
 function ListRow({ item, index, isActive, onHover, onClick, provider }: {
   item: SeerSearchResult
@@ -82,21 +81,22 @@ function ListRow({ item, index, isActive, onHover, onClick, provider }: {
     <div
       onMouseEnter={onHover}
       onClick={onClick}
-      className={`flex items-center gap-2 px-3 py-1.5 cursor-default select-none border-l-2 font-mono text-xs transition-colors ${
-        isActive
-          ? 'border-[#4a4a7a] bg-[#0d0d1a] text-white'
-          : 'border-transparent text-[#bbb] hover:bg-[#0a0a14] hover:text-white'
-      }`}
+      className="flex items-center gap-2 px-3 py-1.5 cursor-default select-none border-l-2 text-xs transition-colors"
+      style={{
+        borderLeftColor: isActive ? 'var(--s-seer)' : 'transparent',
+        background:      isActive ? 'var(--bg-inset)' : 'transparent',
+        color:           isActive ? 'var(--text)' : 'var(--text-dim)',
+      }}
     >
-      <span className="text-[#666] w-4 tabular-nums text-right shrink-0">{index + 1}</span>
+      <span className="w-4 tabular-nums text-right shrink-0" style={{ color: 'var(--dimmer)' }}>{index + 1}</span>
       <span className="flex-1 truncate">{title}</span>
-      {pInfo && <span className="shrink-0 font-mono text-[10px]" style={{ color: pInfo.color }}>[{pInfo.abbr}]</span>}
-      {year && <span className="text-[#888] shrink-0">{year}</span>}
+      {pInfo && <span className="shrink-0 text-[10px]" style={{ color: pInfo.color }}>[{pInfo.abbr}]</span>}
+      {year  && <span className="shrink-0" style={{ color: 'var(--dim)' }}>{year}</span>}
     </div>
   )
 }
 
-// ── list panel (desktop) ───────────────────────────────────────────────────────
+// ── list panel ─────────────────────────────────────────────────────────────────
 
 function ListPanel({ label, items, loading, activeId, onActivate, onHoverActivate, onLoadMore, loadingMore, providerMap }: {
   label: string
@@ -111,8 +111,8 @@ function ListPanel({ label, items, loading, activeId, onActivate, onHoverActivat
 }) {
   return (
     <div className="flex flex-col min-h-0">
-      <div className="font-mono text-xs text-[#6a9a7a] px-3 py-1.5 border-b border-[#1a1a2e] shrink-0">
-        // {label}
+      <div className="text-[10px] uppercase tracking-widest px-3 py-1.5 shrink-0" style={{ color: 'var(--dim)', borderBottom: '1px solid var(--border)' }}>
+        {label}
       </div>
       <div className="overflow-y-auto flex-1">
         {loading
@@ -133,9 +133,12 @@ function ListPanel({ label, items, loading, activeId, onActivate, onHoverActivat
           <button
             onClick={onLoadMore}
             disabled={loadingMore}
-            className="w-full text-center font-mono text-xs text-[#555] hover:text-[#888] py-2 border-t border-[#0f0f1a] disabled:opacity-40"
+            className="w-full text-center text-xs py-2 disabled:opacity-40 transition-colors"
+            style={{ color: 'var(--dim)', borderTop: '1px solid var(--border)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-dim)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--dim)')}
           >
-            {loadingMore ? '...' : '--more'}
+            {loadingMore ? '...' : 'more'}
           </button>
         )}
       </div>
@@ -147,9 +150,9 @@ function ListPanel({ label, items, loading, activeId, onActivate, onHoverActivat
 
 function MetaRow({ label, value, lines = 1 }: { label: string; value: string; lines?: 1 | 2 }) {
   return (
-    <p className="flex gap-2 overflow-hidden">
-      <span className="text-[#6a9a7a] shrink-0 whitespace-nowrap w-[72px]">// {label}</span>
-      <span className={`text-[#ccc] min-w-0 ${lines === 2 ? 'line-clamp-2' : 'truncate'}`}>{value}</span>
+    <p className="flex gap-2 overflow-hidden text-xs">
+      <span className="shrink-0 whitespace-nowrap w-[56px]" style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</span>
+      <span className={`min-w-0 ${lines === 2 ? 'line-clamp-2' : 'truncate'}`} style={{ color: 'rgba(255,255,255,0.80)' }}>{value}</span>
     </p>
   )
 }
@@ -173,18 +176,16 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
   plexFileInfo: PlexFileInfo | null
   provider?: { name: string; logo: string | null }
 }) {
-  const [reqState,      setReqState]      = useState<ReqState>('idle')
-  const [profileId,     setProfileId]     = useState<number | null>(null)
-  const [rootFolder,    setRootFolder]    = useState<string | null>(null)
+  const [reqState,        setReqState]        = useState<ReqState>('idle')
+  const [profileId,       setProfileId]       = useState<number | null>(null)
+  const [rootFolder,      setRootFolder]      = useState<string | null>(null)
   const [selectedSeasons, setSelectedSeasons] = useState<Set<number>>(new Set())
 
-  // Reset request state when item changes
   useEffect(() => {
     setReqState('idle')
     setSelectedSeasons(new Set())
   }, [item?.id, item?.mediaType])
 
-  // Set defaults when profiles/folders arrive
   useEffect(() => {
     const def = profiles.find(p => isUltraHD(p.name)) ?? profiles[0]
     setProfileId(def?.id ?? null)
@@ -193,8 +194,8 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
 
   if (!item) {
     return (
-      <div className="flex items-center justify-center h-full border border-[#1a1a2e] font-mono text-xs text-[#333]">
-        // hover a title
+      <div className="flex items-center justify-center h-full text-xs" style={{ border: '1px solid var(--border)', color: 'var(--dimmer)' }}>
+        Select a title
       </div>
     )
   }
@@ -216,13 +217,11 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
   const inPlex      = status === 5
   const isRequested = status != null && status >= 2 && status <= 4
   const canRequest  = !inPlex && !isRequested && reqState !== 'done'
-
   const totalSeasons = item?.mediaType === 'tv' ? (detail?.numberOfSeasons ?? 0) : 0
 
   function handleRequestClick() {
     if (!item) return
     if (item.mediaType === 'tv' && totalSeasons > 0) {
-      // Pre-select all seasons
       setSelectedSeasons(new Set(Array.from({ length: totalSeasons }, (_, i) => i + 1)))
       setReqState('picking')
     } else {
@@ -266,16 +265,16 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
   }
 
   return (
-    <div className="flex flex-col border border-[#1a1a2e] overflow-hidden md:h-full md:overflow-hidden overflow-y-auto">
+    <div className="flex flex-col overflow-hidden md:h-full md:overflow-hidden overflow-y-auto" style={{ border: '1px solid var(--border)' }}>
 
       {/* backdrop */}
       <div className="relative shrink-0 w-full" style={{ aspectRatio: '16/9' }}>
         {backdrop
-          ? <img src={TMDB_W(780, backdrop)} alt="" className="w-full h-full object-cover" style={{ filter: 'blur(2px) brightness(0.8)' }} />
-          : <div className="w-full h-full bg-[#080810]" />
+          ? <img src={TMDB_W(780, backdrop)} alt="" className="w-full h-full object-cover" style={{ filter: 'blur(2px) brightness(0.75)' }} />
+          : <div className="w-full h-full" style={{ background: 'var(--bg-inset)' }} />
         }
-        <div className="absolute inset-0 bg-[#0A0A0F]/30" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/20 to-transparent" />
+        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.25)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.15) 50%, transparent 100%)' }} />
 
         {poster && (
           <img
@@ -295,24 +294,24 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
           className="absolute flex flex-col overflow-hidden"
           style={{ bottom: 0, left: poster ? 137 : 12, right: 8, height: 188, paddingTop: 4 }}
         >
-          <p className="text-white text-sm font-mono font-medium leading-tight line-clamp-2 shrink-0">{title}</p>
-          <div className="flex flex-wrap items-center gap-x-2 mt-0.5 mb-1.5 font-mono text-xs text-[#888] shrink-0">
+          <p className="text-sm font-medium leading-tight line-clamp-2 shrink-0" style={{ color: 'rgba(255,255,255,0.95)' }}>{title}</p>
+          <div className="flex flex-wrap items-center gap-x-2 mt-0.5 mb-1.5 text-xs shrink-0" style={{ color: 'rgba(255,255,255,0.50)' }}>
             {year    && <span>{year}</span>}
             {runtime && <span>{runtime}m</span>}
             {seasons && <span>{seasons} seasons</span>}
             {rating != null && rating > 0 && <span>★ {rating.toFixed(1)}</span>}
           </div>
           {detailLoading && !detail ? (
-            <span className="text-[#555] font-mono text-xs">// loading...</span>
+            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.30)' }}>loading...</span>
           ) : (
-            <div className="space-y-0.5 font-mono text-xs overflow-hidden">
+            <div className="space-y-0.5 overflow-hidden">
               {genres   && <MetaRow label="genre"  value={genres}   />}
               {director && <MetaRow label="dir"    value={director} />}
               {cast     && <MetaRow label="cast"   value={cast}   lines={2} />}
               {studio   && <MetaRow label="studio" value={studio} lines={2} />}
               {provider?.logo && (
                 <div className="flex items-center gap-2 overflow-hidden">
-                  <span className="text-[#6a9a7a] shrink-0 whitespace-nowrap w-[72px]">// stream</span>
+                  <span className="shrink-0 whitespace-nowrap w-[56px] text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>stream</span>
                   <img
                     src={TMDB_W(45, provider.logo)}
                     alt={provider.name}
@@ -327,49 +326,44 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
       </div>
 
       {/* overview */}
-      <div className="md:flex-1 md:overflow-y-auto px-3 py-2 font-mono text-xs">
-        {overview ? (
-          <>
-            <p className="text-[#6a9a7a] mb-1">{'/*'}</p>
-            <p className="text-[#999] leading-relaxed pl-2">{overview}</p>
-            <p className="text-[#6a9a7a] mt-1">{'*/'}</p>
-          </>
-        ) : (
-          <span className="text-[#444]">// no synopsis</span>
-        )}
+      <div className="md:flex-1 md:overflow-y-auto px-3 py-2 text-xs" style={{ color: 'var(--text-dim)' }}>
+        {overview
+          ? <p className="leading-relaxed">{overview}</p>
+          : <span style={{ color: 'var(--dimmer)' }}>No synopsis available</span>
+        }
       </div>
 
       {/* status / request area */}
-      <div className="shrink-0 border-t border-[#1a1a2e] px-3 py-2.5 font-mono text-xs">
+      <div className="shrink-0 px-3 py-2.5 text-xs" style={{ borderTop: '1px solid var(--border)' }}>
         {inPlex && (
           <div className="space-y-1.5">
             <span
-              className="inline-block px-2.5 py-1 text-xs font-mono"
-              style={{ color: PLEX_ORANGE, background: 'rgba(229,160,13,0.12)', border: `1px solid rgba(229,160,13,0.35)` }}
+              className="inline-block px-2.5 py-1 text-xs"
+              style={{ color: 'var(--s-dl)', background: 'rgba(232,104,10,0.10)', border: '1px solid rgba(232,104,10,0.30)' }}
             >
-              ✦ in plex
+              In Plex
             </span>
             {plexFileInfo && (
-              <div className="space-y-0.5 font-mono text-xs">
+              <div className="space-y-0.5 text-xs">
                 <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                   {plexFileInfo.videoResolution && (
-                    <span style={{ color: PLEX_ORANGE }}>{plexFileInfo.videoResolution.toUpperCase()}</span>
+                    <span style={{ color: 'var(--s-dl)' }}>{plexFileInfo.videoResolution.toUpperCase()}</span>
                   )}
                   {plexFileInfo.videoCodec && (
-                    <span className="text-[#888]">{plexFileInfo.videoCodec.toUpperCase()}</span>
+                    <span style={{ color: 'var(--dim)' }}>{plexFileInfo.videoCodec.toUpperCase()}</span>
                   )}
                   {plexFileInfo.audioCodec && (
-                    <span className="text-[#888]">{plexFileInfo.audioCodec.toUpperCase()}</span>
+                    <span style={{ color: 'var(--dim)' }}>{plexFileInfo.audioCodec.toUpperCase()}</span>
                   )}
                   {plexFileInfo.container && (
-                    <span className="text-[#666]">.{plexFileInfo.container}</span>
+                    <span style={{ color: 'var(--dimmer)' }}>.{plexFileInfo.container}</span>
                   )}
                   {plexFileInfo.size > 0 && (
-                    <span className="text-[#888]">{fmtSize(plexFileInfo.size)}</span>
+                    <span style={{ color: 'var(--dim)' }}>{fmtSize(plexFileInfo.size)}</span>
                   )}
                 </div>
                 {plexFileInfo.file && (
-                  <p className="text-[#555] truncate" title={plexFileInfo.file}>{plexFileInfo.file}</p>
+                  <p className="truncate" style={{ color: 'var(--dimmer)' }} title={plexFileInfo.file}>{plexFileInfo.file}</p>
                 )}
               </div>
             )}
@@ -377,21 +371,20 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
         )}
         {(isRequested || reqState === 'done') && (
           <span
-            className="inline-block px-2.5 py-1 text-xs font-mono text-blue-400"
-            style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)' }}
+            className="inline-block px-2.5 py-1 text-xs"
+            style={{ color: 'var(--s-sonarr)', background: 'rgba(43,108,181,0.10)', border: '1px solid rgba(43,108,181,0.30)' }}
           >
-            ✦ requested
+            Requested
           </span>
         )}
         {canRequest && (
           <div className="space-y-2">
-            {/* season picker */}
             {reqState === 'picking' && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[#6a9a7a] text-xs font-mono">// select seasons</span>
-                  <button onClick={toggleAll} className="btn-xs text-[#888]">
-                    {selectedSeasons.size === totalSeasons ? '--none' : '--all'}
+                  <span className="text-xs" style={{ color: 'var(--text-dim)' }}>Select seasons</span>
+                  <button onClick={toggleAll} className="btn-xs">
+                    {selectedSeasons.size === totalSeasons ? 'none' : 'all'}
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-1">
@@ -399,11 +392,11 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
                     <button
                       key={n}
                       onClick={() => toggleSeason(n)}
-                      className="font-mono text-xs px-2 py-0.5 border transition-colors"
+                      className="text-xs px-2 py-0.5 border transition-colors"
                       style={{
-                        borderColor: selectedSeasons.has(n) ? '#4a4a7a' : '#1a1a2e',
-                        color:       selectedSeasons.has(n) ? '#fff'    : '#555',
-                        background:  selectedSeasons.has(n) ? '#0d0d1a' : 'transparent',
+                        borderColor: selectedSeasons.has(n) ? 'var(--border-hi)' : 'var(--border)',
+                        color:       selectedSeasons.has(n) ? 'var(--text)'      : 'var(--dim)',
+                        background:  selectedSeasons.has(n) ? 'var(--bg-inset)'  : 'transparent',
                       }}
                     >
                       S{String(n).padStart(2, '0')}
@@ -413,7 +406,6 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
               </div>
             )}
 
-            {/* profile + folder dropdowns */}
             {reqState !== 'picking' && (
               <>
                 {profiles.length > 0 && folders.length > 0 ? (
@@ -421,7 +413,8 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
                     <select
                       value={profileId ?? ''}
                       onChange={e => setProfileId(Number(e.target.value))}
-                      className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
+                      className="flex-1 px-2 py-1 text-xs focus:outline-none min-w-0"
+                      style={{ background: 'var(--bg-inset)', border: '1px solid var(--border)', color: 'var(--text)' }}
                     >
                       {profiles.map(p => (
                         <option key={p.id} value={p.id}>{p.name}{isUltraHD(p.name) ? ' ✦' : ''}</option>
@@ -430,7 +423,8 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
                     <select
                       value={rootFolder ?? ''}
                       onChange={e => setRootFolder(e.target.value)}
-                      className="flex-1 bg-[#0d0d1a] border border-[#2a2a4a] text-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#4a4a7a] min-w-0"
+                      className="flex-1 px-2 py-1 text-xs focus:outline-none min-w-0"
+                      style={{ background: 'var(--bg-inset)', border: '1px solid var(--border)', color: 'var(--text)' }}
                     >
                       {folders.map(f => (
                         <option key={f.path} value={f.path}>{f.path}</option>
@@ -438,24 +432,21 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
                     </select>
                   </div>
                 ) : (
-                  <span className="text-[#555] text-xs">// loading options...</span>
+                  <span className="text-xs" style={{ color: 'var(--dimmer)' }}>Loading options...</span>
                 )}
                 {(() => {
                   const sel = folders.find(f => f.path === rootFolder)
                   if (!sel) return null
-                  const color = diskColor(sel.freeSpace)
+                  const color  = diskColor(sel.freeSpace)
                   const barPct = Math.min((sel.freeSpace / (4 * 1024 ** 3)) * 100, 100)
                   return (
                     <div>
-                      <div className="flex justify-between font-mono text-xs mb-0.5">
-                        <span className="text-[#555] truncate">{sel.path}</span>
+                      <div className="flex justify-between text-xs mb-0.5">
+                        <span className="truncate" style={{ color: 'var(--dimmer)' }}>{sel.path}</span>
                         <span style={{ color }}>{fmtFree(sel.freeSpace)} free</span>
                       </div>
-                      <div className="h-1 bg-[#1a1a2e] overflow-hidden">
-                        <div
-                          className="h-full transition-all duration-500"
-                          style={{ width: `${barPct}%`, background: color, boxShadow: `0 0 4px ${color}88` }}
-                        />
+                      <div className="h-1 overflow-hidden" style={{ background: 'var(--border-hi)' }}>
+                        <div className="h-full transition-all duration-500" style={{ width: `${barPct}%`, background: color }} />
                       </div>
                     </div>
                   )
@@ -469,24 +460,21 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
                   <button
                     onClick={() => submit()}
                     disabled={selectedSeasons.size === 0}
-                    className="btn-xs text-blue-400 disabled:opacity-40"
+                    className="btn-xs disabled:opacity-40"
+                    style={{ color: 'var(--s-sonarr)' }}
                   >
-                    {`--confirm (${selectedSeasons.size})`}
+                    {`confirm (${selectedSeasons.size})`}
                   </button>
-                  <button
-                    onClick={() => setReqState('idle')}
-                    className="btn-xs text-[#555]"
-                  >
-                    --cancel
-                  </button>
+                  <button onClick={() => setReqState('idle')} className="btn-xs">cancel</button>
                 </>
               ) : (
                 <button
                   onClick={handleRequestClick}
                   disabled={reqState === 'submitting' || profiles.length === 0}
-                  className="btn-xs text-blue-400 disabled:opacity-40"
+                  className="btn-xs disabled:opacity-40"
+                  style={{ color: 'var(--s-sonarr)' }}
                 >
-                  {reqState === 'submitting' ? '...' : '--request'}
+                  {reqState === 'submitting' ? '...' : 'request'}
                 </button>
               )}
             </div>
@@ -520,7 +508,6 @@ export default function DiscoverSection() {
   const [plexFileInfo,  setPlexFileInfo]  = useState<PlexFileInfo | null>(null)
   const [drawerItem,    setDrawerItem]    = useState<SeerSearchResult | null>(null)
 
-  // Mobile: quick-request state
   const [mobileReqItem,    setMobileReqItem]    = useState<SeerSearchResult | null>(null)
   const [mobileSubmitting, setMobileSubmitting] = useState(false)
   const [mobileDone,       setMobileDone]       = useState<Set<string>>(new Set())
@@ -534,8 +521,6 @@ export default function DiscoverSection() {
     tabItemsRef.current = tab === 'movie' ? movies : tvShows
   }, [tab, movies, tvShows])
 
-  // ── initial fetch ────────────────────────────────────────────────────────────
-
   useEffect(() => {
     fetch('/api/seer?action=discover&mediaType=movie&page=1')
       .then(r => r.json())
@@ -547,7 +532,6 @@ export default function DiscoverSection() {
       .finally(() => setTvLoading(false))
   }, [])
 
-  // Batch-fetch providers for newly seen items (ref prevents re-fetching on page appends)
   useEffect(() => {
     const newItems = movies.filter(m => !fetchedProviderIds.current.has(`movie-${m.id}`))
     if (newItems.length === 0) return
@@ -590,8 +574,6 @@ export default function DiscoverSection() {
     if (!activeItem && movies.length > 0) setActiveItem(movies[0])
   }, [movies, activeItem])
 
-  // ── detail fetch (debounced) — also captures profiles + folders ──────────────
-
   const fetchDetail = useCallback((item: SeerSearchResult) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
@@ -626,15 +608,11 @@ export default function DiscoverSection() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── tab switch ───────────────────────────────────────────────────────────────
-
   function switchTab(t: 'movie' | 'tv') {
     setTab(t)
     const firstItem = t === 'movie' ? movies[0] : tvShows[0]
     if (firstItem) activate(firstItem)
   }
-
-  // ── keyboard navigation ──────────────────────────────────────────────────────
 
   const activateRef = useRef(activate)
   useEffect(() => { activateRef.current = activate })
@@ -656,8 +634,6 @@ export default function DiscoverSection() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [activeItem])
 
-  // ── load more ────────────────────────────────────────────────────────────────
-
   async function loadMore(mediaType: 'movie' | 'tv') {
     const page    = mediaType === 'movie' ? moviesPage + 1 : tvPage + 1
     const setMore = mediaType === 'movie' ? setMoviesMore : setTvMore
@@ -674,8 +650,6 @@ export default function DiscoverSection() {
       setMore(false)
     }
   }
-
-  // ── mobile quick-request ─────────────────────────────────────────────────────
 
   async function mobileRequest(item: SeerSearchResult) {
     setMobileReqItem(item)
@@ -706,9 +680,9 @@ export default function DiscoverSection() {
 
   return (
     <>
-      <div className="mt-6 pt-4 border-t border-[#1a1a2e]">
-        <div className="font-mono text-xs text-[#6a9a7a] mb-3">
-          const <span className="text-white text-sm font-medium uppercase tracking-widest">D1sc0ver</span> = {'{'}
+      <div className="mt-6 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="section-label" style={{ color: 'var(--s-seer)' }}>Discover</h2>
         </div>
 
         {/* desktop split pane */}
@@ -716,26 +690,31 @@ export default function DiscoverSection() {
 
           {/* left: tabbed list */}
           <div
-            className="flex flex-col border border-[#1a1a2e] overflow-hidden"
+            className="flex flex-col overflow-hidden"
+            style={{ border: '1px solid var(--border)' }}
             onMouseEnter={() => { listHoveredRef.current = true }}
             onMouseLeave={() => { listHoveredRef.current = false }}
           >
-            <div className="flex shrink-0 border-b border-[#1a1a2e]">
+            <div className="flex shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
               {(['movie', 'tv'] as const).map(t => (
                 <button
                   key={t}
                   onClick={() => switchTab(t)}
-                  className={`px-4 py-1.5 font-mono text-xs border-r border-[#1a1a2e] transition-colors ${
-                    tab === t ? 'text-white bg-[#0d0d1a]' : 'text-[#555] hover:text-[#888]'
-                  }`}
+                  className="px-4 py-1.5 text-xs transition-colors"
+                  style={{
+                    borderRight:  '1px solid var(--border)',
+                    borderBottom: tab === t ? '2px solid var(--s-seer)' : '2px solid transparent',
+                    color:        tab === t ? 'var(--text)' : 'var(--dim)',
+                    marginBottom: '-1px',
+                  }}
                 >
-                  // {t === 'movie' ? 'movies' : 'tv'}
+                  {t === 'movie' ? 'Movies' : 'TV'}
                 </button>
               ))}
             </div>
             {tab === 'movie' ? (
               <ListPanel
-                label="trending :: movies"
+                label="Trending · Movies"
                 items={movies}
                 loading={moviesLoading}
                 activeId={activeId}
@@ -747,7 +726,7 @@ export default function DiscoverSection() {
               />
             ) : (
               <ListPanel
-                label="trending :: tv"
+                label="Trending · TV"
                 items={tvShows}
                 loading={tvLoading}
                 activeId={activeId}
@@ -772,10 +751,8 @@ export default function DiscoverSection() {
           />
         </div>
 
-        {/* mobile layout: preview on top, list on bottom */}
+        {/* mobile layout */}
         <div className="md:hidden flex flex-col gap-2">
-
-          {/* preview pane */}
           <PreviewPane
             item={activeItem}
             detail={detail}
@@ -786,18 +763,21 @@ export default function DiscoverSection() {
             provider={activeItem ? providerMap[String(activeItem.id)] : undefined}
           />
 
-          {/* list */}
-          <div className="flex flex-col border border-[#1a1a2e] overflow-hidden" style={{ height: 220 }}>
-            <div className="flex shrink-0 border-b border-[#1a1a2e]">
+          <div className="flex flex-col overflow-hidden" style={{ border: '1px solid var(--border)', height: 220 }}>
+            <div className="flex shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
               {(['movie', 'tv'] as const).map(t => (
                 <button
                   key={t}
                   onClick={() => switchTab(t)}
-                  className={`px-3 py-1.5 font-mono text-xs border-r border-[#1a1a2e] transition-colors ${
-                    tab === t ? 'text-white bg-[#0d0d1a]' : 'text-[#555] hover:text-[#888]'
-                  }`}
+                  className="px-3 py-1.5 text-xs transition-colors"
+                  style={{
+                    borderRight:  '1px solid var(--border)',
+                    borderBottom: tab === t ? '2px solid var(--s-seer)' : '2px solid transparent',
+                    color:        tab === t ? 'var(--text)' : 'var(--dim)',
+                    marginBottom: '-1px',
+                  }}
                 >
-                  // {t === 'movie' ? 'movies' : 'tv'}
+                  {t === 'movie' ? 'Movies' : 'TV'}
                 </button>
               ))}
             </div>
@@ -810,19 +790,20 @@ export default function DiscoverSection() {
                     <div
                       key={`${item.mediaType}-${item.id}`}
                       onClick={() => activate(item)}
-                      className={`flex items-center gap-1.5 px-2 py-1.5 cursor-default select-none border-l-2 font-mono text-xs transition-colors ${
-                        activeId === `${item.mediaType}-${item.id}`
-                          ? 'border-[#4a4a7a] bg-[#0d0d1a] text-white'
-                          : 'border-transparent text-[#bbb]'
-                      }`}
+                      className="flex items-center gap-1.5 px-2 py-1.5 cursor-default select-none border-l-2 text-xs transition-colors"
+                      style={{
+                        borderLeftColor: activeId === `${item.mediaType}-${item.id}` ? 'var(--s-seer)' : 'transparent',
+                        background:      activeId === `${item.mediaType}-${item.id}` ? 'var(--bg-inset)' : 'transparent',
+                        color:           activeId === `${item.mediaType}-${item.id}` ? 'var(--text)' : 'var(--text-dim)',
+                      }}
                     >
                       <span className="flex-1 truncate">{item.title ?? item.name}</span>
                       {providerMap[String(item.id)] && (() => {
                         const p = providerInfo(providerMap[String(item.id)].name)
-                        return <span className="shrink-0 font-mono text-[10px]" style={{ color: p.color }}>[{p.abbr}]</span>
+                        return <span className="shrink-0 text-[10px]" style={{ color: p.color }}>[{p.abbr}]</span>
                       })()}
                       {(item.releaseDate ?? item.firstAirDate) && (
-                        <span className="text-[#888] shrink-0 text-xs">
+                        <span className="shrink-0 text-xs" style={{ color: 'var(--dim)' }}>
                           {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
                         </span>
                       )}
@@ -831,17 +812,16 @@ export default function DiscoverSection() {
                   <button
                     onClick={() => loadMore(tab)}
                     disabled={tab === 'movie' ? moviesMore : tvMore}
-                    className="w-full text-center font-mono text-xs text-[#555] hover:text-[#888] py-2 border-t border-[#0f0f1a] disabled:opacity-40"
+                    className="w-full text-center text-xs py-2 disabled:opacity-40"
+                    style={{ color: 'var(--dim)', borderTop: '1px solid var(--border)' }}
                   >
-                    {(tab === 'movie' ? moviesMore : tvMore) ? '...' : '--more'}
+                    {(tab === 'movie' ? moviesMore : tvMore) ? '...' : 'more'}
                   </button>
                 </>
               )}
             </div>
           </div>
         </div>
-
-        <div className="font-mono text-xs text-[#6a9a7a] mt-3">{'}'}</div>
       </div>
 
       <DiscoverDetailDrawer
