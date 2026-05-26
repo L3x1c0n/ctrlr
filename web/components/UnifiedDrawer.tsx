@@ -246,9 +246,9 @@ type Stage = 'downloading' | 'available' | 'searching' | 'requested' | 'unknown'
 
 function detectStage(arr: any, qbit: any, seer: any, plex: any): Stage {
   if (qbit && qbit.progress < 1) return 'downloading'
+  if (arr?.queueItem) return 'downloading'
   if (plex) return 'available'
   if (arr?.hasFile) return 'available'
-  if (arr?.queueItem) return 'downloading'
   if (arr && !arr.hasFile) return 'searching'
   const seerStatus = seer?.mediaInfo?.status
   if (seerStatus && seerStatus >= 1 && seerStatus <= 5) return 'requested'
@@ -308,7 +308,7 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
     : seer ? (seerStatus >= 2 ? 'done' : 'active') : (arr || plex ? 'done' : 'pending')
 
   const arrNode: NodeState = plexOnly ? 'na'
-    : (arr?.hasFile || !!plex) ? 'done'
+    : (arr?.hasFile || (!!plex && !arr?.queueItem)) ? 'done'
     : arrTracked === 'error'   ? 'error'
     : arrTracked === 'warning' ? 'warn'
     : arr ? 'active'
@@ -317,13 +317,13 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   const qbitWarn  = /^(stalledDL|stalledUP)$/.test(qbitState)
   const qbitError = /^(error|missingFiles)$/.test(qbitState)
   const qbitNode: NodeState = plexOnly ? 'na'
-    : (arr?.hasFile || !!plex) ? 'done'
+    : (arr?.hasFile || (!!plex && !arr?.queueItem)) ? 'done'
     : qbitError ? 'error'
     : qbitWarn  ? 'warn'
     : qbit && qbit.progress < 1 ? 'active'
     : 'pending'
 
-  const plexNode: NodeState = plex ? 'active' : 'pending'
+  const plexNode: NodeState = (plex && !arr?.queueItem) ? 'active' : 'pending'
 
   const arrLabel = mediaType === 'movie' ? 'radarr' : 'sonarr'
   const nodes: { label: string; state: NodeState }[] = [
