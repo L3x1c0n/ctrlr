@@ -148,12 +148,12 @@ function ListPanel({ label, items, loading, activeId, onActivate, onHoverActivat
 
 // ── meta row ───────────────────────────────────────────────────────────────────
 
-function MetaRow({ label, value, lines = 1 }: { label: string; value: string; lines?: 1 | 2 }) {
+function SpecRow({ label, value, lines = 1 }: { label: string; value: string; lines?: 1 | 2 }) {
   return (
-    <p className="flex gap-2 overflow-hidden text-xs">
-      <span className="shrink-0 whitespace-nowrap w-[56px]" style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</span>
-      <span className={`min-w-0 ${lines === 2 ? 'line-clamp-2' : 'truncate'}`} style={{ color: 'rgba(255,255,255,0.80)' }}>{value}</span>
-    </p>
+    <div className="flex gap-3 px-4 py-[5px] text-xs" style={{ borderBottom: '1px solid var(--border)' }}>
+      <span className="shrink-0 w-10 uppercase tracking-wider font-medium" style={{ fontSize: 9, color: 'var(--dimmer)' }}>{label}</span>
+      <span className={`min-w-0 ${lines === 2 ? 'line-clamp-2' : 'truncate'}`} style={{ color: 'var(--text-dim)' }}>{value}</span>
+    </div>
   )
 }
 
@@ -264,222 +264,160 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
     setReqState('done')
   }
 
+  const pInfo = provider ? providerInfo(provider.name) : null
+
   return (
     <div className="flex flex-col overflow-hidden md:h-full md:overflow-hidden overflow-y-auto" style={{ border: '1px solid var(--border)' }}>
 
-      {/* backdrop */}
-      <div className="relative shrink-0 w-full" style={{ aspectRatio: '16/9' }}>
-        {backdrop
-          ? <img src={TMDB_W(780, backdrop)} alt="" className="w-full h-full object-cover" style={{ filter: 'blur(2px) brightness(0.75)' }} />
-          : <div className="w-full h-full" style={{ background: 'var(--bg-inset)' }} />
-        }
-        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.25)' }} />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.15) 50%, transparent 100%)' }} />
-
-        {poster && (
-          <img
-            src={TMDB_W(185, poster)}
-            alt=""
-            className="absolute bottom-0 left-0"
-            style={{
-              width: 125, height: 188, objectFit: 'cover',
-              boxShadow: '4px 0 24px rgba(0,0,0,0.85), 0 -4px 24px rgba(0,0,0,0.6)',
-              outline: '1px solid rgba(255,255,255,0.12)',
-              outlineOffset: '-1px',
-            }}
-          />
-        )}
-
-        <div
-          className="absolute flex flex-col overflow-hidden"
-          style={{ bottom: 0, left: poster ? 137 : 12, right: 8, height: 188, paddingTop: 4 }}
-        >
-          <p className="text-sm font-medium leading-tight line-clamp-2 shrink-0" style={{ color: 'rgba(255,255,255,0.95)' }}>{title}</p>
-          <div className="flex flex-wrap items-center gap-x-2 mt-0.5 mb-1.5 text-xs shrink-0" style={{ color: 'rgba(255,255,255,0.50)' }}>
-            {year    && <span>{year}</span>}
-            {runtime && <span>{runtime}m</span>}
-            {seasons && <span>{seasons} seasons</span>}
-            {rating != null && rating > 0 && <span>★ {rating.toFixed(1)}</span>}
-          </div>
-          {detailLoading && !detail ? (
-            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.30)' }}>loading...</span>
-          ) : (
-            <div className="space-y-0.5 overflow-hidden">
-              {genres   && <MetaRow label="genre"  value={genres}   />}
-              {director && <MetaRow label="dir"    value={director} />}
-              {cast     && <MetaRow label="cast"   value={cast}   lines={2} />}
-              {studio   && <MetaRow label="studio" value={studio} lines={2} />}
-              {provider?.logo && (
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <span className="shrink-0 whitespace-nowrap w-[56px] text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>stream</span>
-                  <img
-                    src={TMDB_W(45, provider.logo)}
-                    alt={provider.name}
-                    title={provider.name}
-                    className="h-6 w-6 rounded-md object-cover shrink-0"
-                  />
-                </div>
-              )}
-            </div>
-          )}
+      {/* poster + info split */}
+      <div className="flex shrink-0">
+        {/* poster */}
+        <div className="shrink-0" style={{ width: 185, height: 278, borderRight: '1px solid var(--border)', background: 'var(--bg-inset)', overflow: 'hidden' }}>
+          {poster && <img src={TMDB_W(185, poster)} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
         </div>
-      </div>
 
-      {/* overview */}
-      <div className="md:flex-1 md:overflow-y-auto px-3 py-2 text-xs" style={{ color: 'var(--text-dim)' }}>
-        {overview
-          ? <p className="leading-relaxed">{overview}</p>
-          : <span style={{ color: 'var(--dimmer)' }}>No synopsis available</span>
-        }
-      </div>
-
-      {/* status / request area */}
-      <div className="shrink-0 px-3 py-2.5 text-xs" style={{ borderTop: '1px solid var(--border)' }}>
-        {inPlex && (
-          <div className="space-y-1.5">
-            <span
-              className="inline-block px-2.5 py-1 text-xs"
-              style={{ color: 'var(--s-dl)', background: 'rgba(232,104,10,0.10)', border: '1px solid rgba(232,104,10,0.30)' }}
-            >
-              In Plex
-            </span>
-            {plexFileInfo && (
-              <div className="space-y-0.5 text-xs">
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                  {plexFileInfo.videoResolution && (
-                    <span style={{ color: 'var(--s-dl)' }}>{plexFileInfo.videoResolution.toUpperCase()}</span>
-                  )}
-                  {plexFileInfo.videoCodec && (
-                    <span style={{ color: 'var(--dim)' }}>{plexFileInfo.videoCodec.toUpperCase()}</span>
-                  )}
-                  {plexFileInfo.audioCodec && (
-                    <span style={{ color: 'var(--dim)' }}>{plexFileInfo.audioCodec.toUpperCase()}</span>
-                  )}
-                  {plexFileInfo.container && (
-                    <span style={{ color: 'var(--dimmer)' }}>.{plexFileInfo.container}</span>
-                  )}
-                  {plexFileInfo.size > 0 && (
-                    <span style={{ color: 'var(--dim)' }}>{fmtSize(plexFileInfo.size)}</span>
-                  )}
-                </div>
-                {plexFileInfo.file && (
-                  <p className="truncate" style={{ color: 'var(--dimmer)' }} title={plexFileInfo.file}>{plexFileInfo.file}</p>
-                )}
-              </div>
-            )}
+        {/* right panel */}
+        <div className="flex flex-col min-w-0 flex-1" style={{ height: 278 }}>
+          {/* title */}
+          <div className="px-4 py-3 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+            <p className="text-sm font-medium leading-snug" style={{ color: 'var(--text)' }}>{title}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--dim)' }}>
+              {[year, runtime ? `${runtime}m` : null, seasons ? `${seasons} seasons` : null, rating && rating > 0 ? `★ ${rating.toFixed(1)}` : null].filter(Boolean).join(' · ')}
+            </p>
           </div>
-        )}
-        {(isRequested || reqState === 'done') && (
-          <span
-            className="inline-block px-2.5 py-1 text-xs"
-            style={{ color: 'var(--s-sonarr)', background: 'rgba(43,108,181,0.10)', border: '1px solid rgba(43,108,181,0.30)' }}
-          >
-            Requested
-          </span>
-        )}
-        {canRequest && (
-          <div className="space-y-2">
-            {reqState === 'picking' && (
-              <div className="space-y-2">
+
+          {/* body: specs or request form */}
+          <div className="flex-1 overflow-hidden flex flex-col justify-center">
+            {reqState === 'idle' || reqState === 'done' ? (
+              <>
+                {detailLoading && !detail
+                  ? <p className="px-4 text-xs" style={{ color: 'var(--dimmer)' }}>loading...</p>
+                  : <>
+                      {genres   && <SpecRow label="Genre"  value={genres} />}
+                      {director && <SpecRow label="Dir"    value={director} />}
+                      {cast     && <SpecRow label="Cast"   value={cast} lines={2} />}
+                      {studio   && <SpecRow label="Studio" value={studio} />}
+                    </>
+                }
+              </>
+            ) : reqState === 'picking' ? (
+              <div className="px-4 py-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs" style={{ color: 'var(--text-dim)' }}>Select seasons</span>
-                  <button onClick={toggleAll} className="btn-xs">
-                    {selectedSeasons.size === totalSeasons ? 'none' : 'all'}
-                  </button>
+                  <button onClick={toggleAll} className="btn-xs">{selectedSeasons.size === totalSeasons ? 'none' : 'all'}</button>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {Array.from({ length: totalSeasons }, (_, i) => i + 1).map(n => (
-                    <button
-                      key={n}
-                      onClick={() => toggleSeason(n)}
-                      className="text-xs px-2 py-0.5 border transition-colors"
-                      style={{
-                        borderColor: selectedSeasons.has(n) ? 'var(--border-hi)' : 'var(--border)',
-                        color:       selectedSeasons.has(n) ? 'var(--text)'      : 'var(--dim)',
-                        background:  selectedSeasons.has(n) ? 'var(--bg-inset)'  : 'transparent',
-                      }}
-                    >
+                    <button key={n} onClick={() => toggleSeason(n)} className="text-xs px-2 py-0.5 border transition-colors"
+                      style={{ borderColor: selectedSeasons.has(n) ? 'var(--border-hi)' : 'var(--border)', color: selectedSeasons.has(n) ? 'var(--text)' : 'var(--dim)', background: selectedSeasons.has(n) ? 'var(--bg-inset)' : 'transparent' }}>
                       S{String(n).padStart(2, '0')}
                     </button>
                   ))}
                 </div>
               </div>
-            )}
-
-            {reqState !== 'picking' && (
-              <>
+            ) : (
+              /* submitting/request form */
+              <div className="px-4 py-3 space-y-2.5">
                 {profiles.length > 0 && folders.length > 0 ? (
-                  <div className="flex gap-2">
-                    <select
-                      value={profileId ?? ''}
-                      onChange={e => setProfileId(Number(e.target.value))}
-                      className="flex-1 px-2 py-1 text-xs focus:outline-none min-w-0"
-                      style={{ background: 'var(--bg-inset)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                    >
-                      {profiles.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}{isUltraHD(p.name) ? ' ✦' : ''}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={rootFolder ?? ''}
-                      onChange={e => setRootFolder(e.target.value)}
-                      className="flex-1 px-2 py-1 text-xs focus:outline-none min-w-0"
-                      style={{ background: 'var(--bg-inset)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                    >
-                      {folders.map(f => (
-                        <option key={f.path} value={f.path}>{f.path}</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <span className="text-xs" style={{ color: 'var(--dimmer)' }}>Loading options...</span>
-                )}
-                {(() => {
-                  const sel = folders.find(f => f.path === rootFolder)
-                  if (!sel) return null
-                  const color  = diskColor(sel.freeSpace)
-                  const barPct = Math.min((sel.freeSpace / (4 * 1024 ** 3)) * 100, 100)
-                  return (
+                  <>
                     <div>
-                      <div className="flex justify-between text-xs mb-0.5">
-                        <span className="truncate" style={{ color: 'var(--dimmer)' }}>{sel.path}</span>
-                        <span style={{ color }}>{fmtFree(sel.freeSpace)} free</span>
-                      </div>
-                      <div className="h-1 overflow-hidden" style={{ background: 'var(--border-hi)' }}>
-                        <div className="h-full transition-all duration-500" style={{ width: `${barPct}%`, background: color }} />
-                      </div>
+                      <p className="text-[9px] uppercase tracking-wider font-medium mb-1" style={{ color: 'var(--dim)' }}>Quality</p>
+                      <select value={profileId ?? ''} onChange={e => setProfileId(Number(e.target.value))}
+                        className="w-full px-2 py-1.5 text-xs focus:outline-none"
+                        style={{ background: 'var(--bg-inset)', border: '1px solid var(--border-hi)', color: 'var(--text)' }}>
+                        {profiles.map(p => <option key={p.id} value={p.id}>{p.name}{isUltraHD(p.name) ? ' ✦' : ''}</option>)}
+                      </select>
                     </div>
-                  )
-                })()}
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider font-medium mb-1" style={{ color: 'var(--dim)' }}>Location</p>
+                      <select value={rootFolder ?? ''} onChange={e => setRootFolder(e.target.value)}
+                        className="w-full px-2 py-1.5 text-xs focus:outline-none"
+                        style={{ background: 'var(--bg-inset)', border: '1px solid var(--border-hi)', color: 'var(--text)' }}>
+                        {folders.map(f => <option key={f.path} value={f.path}>{f.path}</option>)}
+                      </select>
+                    </div>
+                    {(() => {
+                      const sel = folders.find(f => f.path === rootFolder)
+                      if (!sel) return null
+                      const color  = diskColor(sel.freeSpace)
+                      const barPct = Math.min((sel.freeSpace / (4 * 1024 ** 3)) * 100, 100)
+                      return (
+                        <div>
+                          <div className="flex justify-between text-[9px] mb-1" style={{ color: 'var(--dim)' }}>
+                            <span className="truncate">{sel.path}</span>
+                            <span className="shrink-0 ml-2" style={{ color }}>{fmtFree(sel.freeSpace)} free</span>
+                          </div>
+                          <div className="overflow-hidden" style={{ height: 3, background: 'var(--border-hi)' }}>
+                            <div style={{ width: `${barPct}%`, height: '100%', background: color, transition: 'width 0.5s ease' }} />
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </>
+                ) : (
+                  <p className="text-xs" style={{ color: 'var(--dimmer)' }}>Loading options...</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* footer */}
+          <div className="shrink-0 flex items-center gap-2 px-4 py-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+            {/* status badges */}
+            {inPlex && (
+              <span className="text-[10px] px-2 py-0.5" style={{ color: 'var(--s-dl)', background: 'rgba(232,104,10,0.10)', border: '1px solid rgba(232,104,10,0.25)' }}>
+                In Plex
+              </span>
+            )}
+            {(isRequested || reqState === 'done') && (
+              <span className="text-[10px] px-2 py-0.5" style={{ color: 'var(--s-sonarr)', background: 'rgba(43,108,181,0.10)', border: '1px solid rgba(43,108,181,0.25)' }}>
+                Requested
+              </span>
+            )}
+            {/* provider */}
+            {pInfo && (
+              <span className="text-[10px] font-medium" style={{ color: pInfo.color }}>{pInfo.abbr}</span>
+            )}
+            <span className="flex-1" />
+            {/* actions */}
+            {reqState === 'picking' && (
+              <>
+                <button onClick={() => setReqState('idle')} className="btn-xs">cancel</button>
+                <button onClick={() => submit()} disabled={selectedSeasons.size === 0} className="btn-xs disabled:opacity-40" style={{ color: 'var(--s-sonarr)' }}>
+                  confirm ({selectedSeasons.size})
+                </button>
               </>
             )}
-
-            <div className="flex gap-3">
-              {reqState === 'picking' ? (
-                <>
-                  <button
-                    onClick={() => submit()}
-                    disabled={selectedSeasons.size === 0}
-                    className="btn-xs disabled:opacity-40"
-                    style={{ color: 'var(--s-sonarr)' }}
-                  >
-                    {`confirm (${selectedSeasons.size})`}
-                  </button>
-                  <button onClick={() => setReqState('idle')} className="btn-xs">cancel</button>
-                </>
-              ) : (
-                <button
-                  onClick={handleRequestClick}
-                  disabled={reqState === 'submitting' || profiles.length === 0}
-                  className="btn-xs disabled:opacity-40"
-                  style={{ color: 'var(--s-sonarr)' }}
-                >
-                  {reqState === 'submitting' ? '...' : 'request'}
-                </button>
-              )}
-            </div>
+            {reqState === 'idle' && canRequest && (
+              <button onClick={handleRequestClick} disabled={profiles.length === 0} className="btn-xs disabled:opacity-40" style={{ color: 'var(--s-sonarr)' }}>
+                request
+              </button>
+            )}
+            {reqState === 'submitting' && (
+              <>
+                <button onClick={() => setReqState('idle')} className="btn-xs">cancel</button>
+                <button disabled className="btn-xs opacity-40" style={{ color: 'var(--s-sonarr)' }}>...</button>
+              </>
+            )}
           </div>
-        )}
+        </div>
+      </div>
+
+      {/* plex file info */}
+      {inPlex && plexFileInfo && (
+        <div className="px-4 py-2 text-xs flex flex-wrap gap-x-3 gap-y-0.5" style={{ borderTop: '1px solid var(--border)', color: 'var(--dim)' }}>
+          {plexFileInfo.videoResolution && <span style={{ color: 'var(--s-dl)' }}>{plexFileInfo.videoResolution.toUpperCase()}</span>}
+          {plexFileInfo.videoCodec  && <span>{plexFileInfo.videoCodec.toUpperCase()}</span>}
+          {plexFileInfo.audioCodec  && <span>{plexFileInfo.audioCodec.toUpperCase()}</span>}
+          {plexFileInfo.container   && <span style={{ color: 'var(--dimmer)' }}>.{plexFileInfo.container}</span>}
+          {plexFileInfo.size > 0    && <span>{fmtSize(plexFileInfo.size)}</span>}
+          {plexFileInfo.file && <p className="w-full truncate" style={{ color: 'var(--dimmer)' }} title={plexFileInfo.file}>{plexFileInfo.file}</p>}
+        </div>
+      )}
+
+      {/* overview */}
+      <div className="md:flex-1 md:overflow-y-auto px-4 py-3 text-xs leading-relaxed" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-dim)' }}>
+        {overview ?? <span style={{ color: 'var(--dimmer)' }}>No synopsis available</span>}
       </div>
     </div>
   )
