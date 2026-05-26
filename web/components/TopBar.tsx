@@ -13,10 +13,10 @@ interface Props {
 }
 
 const SEG = 'flex items-center gap-2 px-4 text-xs font-mono whitespace-nowrap border-r'
-const SEG_STYLE = { borderColor: 'rgba(255,255,255,0.06)', color: '#706050' }
-const VAL = { color: '#a09070' }
-const LBL = { color: '#504840' }
-const BAR = { background: '#252018', borderBottom: '1px solid rgba(0,0,0,0.30)' }
+const SEG_STYLE = { borderColor: 'rgba(255,255,255,0.12)', color: '#b0b8c0' }
+const VAL = { color: '#e8eaec' }
+const LBL = { color: '#8890a0' }
+const BAR = { background: '#4a5056', borderBottom: '1px solid rgba(0,0,0,0.20)' }
 
 export default function TopBar({ transfer }: Props) {
   const [time, setTime] = useState('')
@@ -39,7 +39,7 @@ export default function TopBar({ transfer }: Props) {
     <div className="fixed top-0 left-0 right-0 z-50 flex items-stretch overflow-hidden" style={{ height: 36, ...BAR }}>
 
       {/* Brand */}
-      <a href="/settings" className={SEG} style={{ ...SEG_STYLE, color: '#c8b898', fontWeight: 600, letterSpacing: '0.08em', textDecoration: 'none' }}>
+      <a href="/settings" className={SEG} style={{ ...SEG_STYLE, color: '#f0f2f4', fontWeight: 600, letterSpacing: '0.08em', textDecoration: 'none' }}>
         CTRLr
       </a>
 
@@ -65,7 +65,7 @@ export default function TopBar({ transfer }: Props) {
       </div>
 
       {/* Clock */}
-      <div className="ml-auto flex items-center px-4 text-xs font-mono border-l" style={{ borderColor: 'rgba(255,255,255,0.06)', color: '#504840' }}>
+      <div className="ml-auto flex items-center px-4 text-xs font-mono border-l" style={{ borderColor: 'rgba(255,255,255,0.12)', color: '#b0b8c0' }}>
         {time}
       </div>
     </div>

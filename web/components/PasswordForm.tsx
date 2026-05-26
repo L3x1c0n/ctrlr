@@ -56,7 +56,7 @@ export default function PasswordForm() {
           {status === 'saving' ? '...' : '--set-password'}
         </button>
         {msg && (
-          <span className={`font-mono text-xs ${status === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
+          <span className={`font-mono text-xs ${status === 'ok' ? 'text-green-400' : 'text-danger'}`}>
             {msg}
           </span>
         )}

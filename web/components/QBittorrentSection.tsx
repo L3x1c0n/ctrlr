@@ -110,16 +110,16 @@ function fmtEta(seconds: number): string {
 }
 
 const stateColor: Record<string, string> = {
-  downloading: 'text-green-400',
-  seeding: 'text-blue-400',
-  pausedDL: 'text-yellow-400',
-  pausedUP: 'text-yellow-400',
-  stalledDL: 'text-orange-400',
-  stalledUP: 'text-orange-400',
-  error: 'text-red-400',
-  missingFiles: 'text-red-400',
-  checkingDL: 'text-purple-400',
-  checkingUP: 'text-purple-400',
+  downloading: 'var(--s-dl)',
+  seeding:     'var(--s-play)',
+  pausedDL:    'var(--s-today)',
+  pausedUP:    'var(--s-today)',
+  stalledDL:   'var(--s-today)',
+  stalledUP:   'var(--s-today)',
+  error:       'var(--s-danger)',
+  missingFiles:'var(--s-danger)',
+  checkingDL:  'var(--dim)',
+  checkingUP:  'var(--dim)',
 }
 
 interface Props {
@@ -181,63 +181,68 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
   return (
     <>
       <section id="qbittorrent">
-        <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between">
-          <span>const <span className="text-white text-sm font-medium uppercase tracking-widest">qB1tt0rr3nt</span>: QBTorrent[] = [</span>
-          <span className="flex items-center gap-3">
-            {transfer && (
-              <span className="text-xs">
-                <span className="text-green-400">↓ {fmtSpeed(transfer.dl_info_speed)}</span>
-                <span className="mx-2 text-[#888]">·</span>
-                <span className="text-blue-400">↑ {fmtSpeed(transfer.up_info_speed)}</span>
-              </span>
+        <div className="module-panel">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-label">qBittorrent</h2>
+            <div className="flex items-center gap-3">
+              {transfer && (
+                <span className="font-mono text-[10px]" style={{ color: 'var(--dim)' }}>
+                  <span style={{ color: 'var(--s-dl)' }}>↓ {fmtSpeed(transfer.dl_info_speed)}</span>
+                  <span className="mx-2">·</span>
+                  <span style={{ color: 'var(--s-play)' }}>↑ {fmtSpeed(transfer.up_info_speed)}</span>
+                </span>
+              )}
+              <button onClick={async () => { setRefreshing(true); await fetch_(); setRefreshing(false) }} disabled={refreshing} className="btn-xs">
+                {refreshing ? '...' : '↺'}
+              </button>
+            </div>
+          </div>
+
+          {error && <p className="text-danger font-mono text-xs mb-3">{error}</p>}
+
+          <div className="inset-panel">
+            {torrents.length === 0 && !error && (
+              <div className="px-4 py-3">
+                {loading ? <Spinner /> : <p className="font-mono text-xs" style={{ color: 'var(--dim)' }}>no torrents</p>}
+              </div>
             )}
-            <button onClick={async () => { setRefreshing(true); await fetch_(); setRefreshing(false) }} disabled={refreshing} className="btn-xs text-[#7070a8] hover:text-[#aaa]">{refreshing ? '...' : <><span className="hidden sm:inline">--refresh</span><span className="sm:hidden">↺</span></>}</button>
-          </span>
-        </div>
-        {error && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}
-        {torrents.length === 0 && !error && (
-          loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono">No torrents</p>
-        )}
-        {torrents.length > 0 && (
-          <div className="font-mono text-xs overflow-x-auto">
-{torrents.map((t, i) => (
-              <div key={t.hash} className="flex items-center gap-3 border-b border-[#0f0f1a] py-1">
-                <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums select-none">{i + 1}</span>
+            {torrents.map((t, i) => (
+              <div key={t.hash} className="flex items-center gap-3 px-4 py-2.5 font-mono text-xs" style={{ borderBottom: i < torrents.length - 1 ? '1px solid var(--border)' : undefined }}>
+                <span className="w-5 shrink-0 text-right tabular-nums select-none" style={{ color: 'var(--dim)' }}>{i + 1}</span>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <button onClick={() => setSelected({ via: 'qbit', hash: t.hash, tmdbId: tmdbIds[t.hash], mediaType: mediaTypes[t.hash], title: t.name, posterUrl: posters[t.hash] })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
+                  <button onClick={() => setSelected({ via: 'qbit', hash: t.hash, tmdbId: tmdbIds[t.hash], mediaType: mediaTypes[t.hash], title: t.name, posterUrl: posters[t.hash] })} className="btn-xs shrink-0">↗</button>
                   <MarqueeText className="min-w-0">
                     <ScrambledName name={t.name} active={t.state === 'downloading'} />
                   </MarqueeText>
                 </div>
-                <span className="hidden md:block shrink-0 w-[64px] text-right text-[#888] whitespace-nowrap tabular-nums">{fmtSize(t.size)}</span>
+                <span className="hidden md:block shrink-0 w-[64px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtSize(t.size)}</span>
                 <div className="hidden md:flex items-center justify-end gap-1.5 shrink-0 w-[100px]">
                   <ProgressBar pct={t.progress * 100} width={8} label={false} />
-                  <span className="text-[#999] tabular-nums w-[32px] text-right">{Math.round(t.progress * 100)}%</span>
+                  <span className="tabular-nums w-[32px] text-right" style={{ color: 'var(--dim)' }}>{Math.round(t.progress * 100)}%</span>
                 </div>
-                <span className="hidden md:block shrink-0 w-[72px] text-right text-green-400 whitespace-nowrap tabular-nums">{fmtSpeed(t.dlspeed)}</span>
-                <span className="hidden md:block shrink-0 w-[52px] text-right text-[#888] whitespace-nowrap tabular-nums">{fmtEta(t.eta)}</span>
-                <span className={`shrink-0 w-[88px] whitespace-nowrap ${stateColor[t.state] ?? 'text-[#888]'}`}>{t.state}</span>
-                <div className="shrink-0 flex gap-2">
+                <span className="hidden md:block shrink-0 w-[72px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--s-dl)' }}>{fmtSpeed(t.dlspeed)}</span>
+                <span className="hidden md:block shrink-0 w-[52px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtEta(t.eta)}</span>
+                <span className="shrink-0 w-[88px] whitespace-nowrap text-[10px]" style={{ color: stateColor[t.state] ?? 'var(--dim)' }}>{t.state}</span>
+                <div className="shrink-0 flex gap-1.5">
                   {t.state.includes('paused') || t.state.includes('Paused') ? (
-                    <button onClick={() => action('resume', t.hash)} className="btn-xs text-green-400">--resume</button>
+                    <button onClick={() => action('resume', t.hash)} className="btn-xs">resume</button>
                   ) : (
-                    <button onClick={() => action('pause', t.hash)} className="btn-xs text-yellow-400">--pause</button>
+                    <button onClick={() => action('pause', t.hash)} className="btn-xs">pause</button>
                   )}
                   {pendingDelete === t.hash ? (
                     <>
-                      <button onClick={() => { setPendingDelete(null); action('delete', t.hash, { deleteFiles: false }) }} className="btn-xs text-red-400">--torrent</button>
-                      <button onClick={() => { if (confirm(`Delete ${t.name} AND files?`)) { setPendingDelete(null); action('delete', t.hash, { deleteFiles: true }) } }} className="btn-xs text-red-600">--files</button>
-                      <button onClick={() => setPendingDelete(null)} className="btn-xs text-[#888]">×</button>
+                      <button onClick={() => { setPendingDelete(null); action('delete', t.hash, { deleteFiles: false }) }} className="btn-xs danger">torrent</button>
+                      <button onClick={() => { if (confirm(`Delete ${t.name} AND files?`)) { setPendingDelete(null); action('delete', t.hash, { deleteFiles: true }) } }} className="btn-xs danger">+ files</button>
+                      <button onClick={() => setPendingDelete(null)} className="btn-xs">×</button>
                     </>
                   ) : (
-                    <button onClick={() => setPendingDelete(t.hash)} className="btn-xs text-red-400">--rm</button>
+                    <button onClick={() => setPendingDelete(t.hash)} className="btn-xs danger">remove</button>
                   )}
                 </div>
               </div>
             ))}
           </div>
-        )}
-        <div className="font-mono text-xs text-[#6a9a7a] mt-1">] // {torrents.length} active</div>
+        </div>
       </section>
 
       <UnifiedDrawer entry={selected} onClose={() => setSelected(null)} onRefresh={fetch_} />

@@ -8,7 +8,9 @@ interface WatchProvider { id: number; name: string; logoPath: string }
 function extractWatchProviders(media: object | null): WatchProvider[] {
   if (!media) return []
   const rawProviders: any[] = (media as any)?.watchProviders ?? []
-  const countryData = rawProviders.find((p: any) => p.iso_3166_1 === 'US') ?? rawProviders[0] ?? null
+  const countryData = rawProviders.find((p: any) => p.iso_3166_1 === 'TH')
+    ?? rawProviders.find((p: any) => p.iso_3166_1 === 'US')
+    ?? null
   if (!countryData) return []
   return (countryData.flatrate ?? [])
     .filter((p: any) => p.logoPath)

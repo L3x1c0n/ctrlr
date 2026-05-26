@@ -41,7 +41,8 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/login') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/trakt/refresh') ||
-    pathname.startsWith('/_next')
+    pathname.startsWith('/_next') ||
+    pathname === '/mockup.html'
   ) {
     return withSecurityHeaders(NextResponse.next())
   }

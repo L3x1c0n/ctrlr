@@ -141,7 +141,7 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
         <div className="relative z-10 overflow-y-auto h-full p-6">
           <div className="flex justify-between items-center mb-6">
             <span className="text-[#7070a8] text-xs">{`/* ${service} -- detail */`}</span>
-            <button onClick={onClose} className="btn-xs text-[#ccc] hover:text-white">--close</button>
+            <button onClick={onClose} className="btn-xs">close</button>
           </div>
 
           {loading && <Spinner />}
@@ -334,16 +334,16 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
                       <button
                         onClick={() => { if (confirm(`Remove ${detail.title} from queue?`)) act('delete') }}
                         disabled={!!acting}
-                        className="btn-xs text-red-400"
+                        className="btn-xs danger"
                       >
-                        {acting === 'delete' ? '...' : '--rm'}
+                        {acting === 'delete' ? '...' : 'remove'}
                       </button>
                       <button
                         onClick={() => { if (confirm(`Remove and blacklist ${detail.title}?`)) act('delete', { blacklist: true }) }}
                         disabled={!!acting}
-                        className="btn-xs text-red-600"
+                        className="btn-xs danger"
                       >
-                        --blacklist --rm
+                        blacklist
                       </button>
                     </>
                   )}

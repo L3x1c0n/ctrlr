@@ -373,7 +373,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
                     {(() => {
                       const sel = folders.find(f => f.path === rootFolder)
                       if (!sel) return null
-                      const color = sel.freeSpace < 10 * 1024 ** 3 ? 'text-red-400' : sel.freeSpace < 50 * 1024 ** 3 ? 'text-yellow-400' : 'text-green-400'
+                      const color = sel.freeSpace < 10 * 1024 ** 3 ? 'text-danger' : sel.freeSpace < 50 * 1024 ** 3 ? 'text-yellow-400' : 'text-green-400'
                       return <p className={`text-xs mt-1 ${color}`}>{fmtFree(sel.freeSpace)}</p>
                     })()}
                   </div>
@@ -505,7 +505,7 @@ export default function RequestModal({ item, onClose, onDone }: Props) {
 
                   {submitError && (
                     <div className="space-y-1.5">
-                      <p className="text-red-400 text-xs">{`2> ${submitError}`}</p>
+                      <p className="text-danger text-xs">{`2> ${submitError}`}</p>
                       <button onClick={submit} disabled={submitting} className="btn-xs text-blue-400 disabled:opacity-40">
                         {submitting ? (submitStatus || '...') : '--retry'}
                       </button>

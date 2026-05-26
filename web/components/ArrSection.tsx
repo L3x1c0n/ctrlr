@@ -65,23 +65,23 @@ function normalizeState(status: string): RowState {
 }
 
 const stateColor: Record<RowState, string> = {
-  pending:     'text-[#888]',
-  delay:       'text-amber-400',
-  queued:      'text-[#999]',
-  downloading: 'text-green-400',
-  paused:      'text-yellow-400',
-  warning:     'text-yellow-400',
-  completed:   'text-blue-400',
-  failed:      'text-red-400',
-  imported:    'text-[#6a9a7a]',
-  missing:     'text-orange-400',
+  pending:     'var(--dim)',
+  delay:       'var(--s-today)',
+  queued:      'var(--dim)',
+  downloading: 'var(--s-dl)',
+  paused:      'var(--s-today)',
+  warning:     'var(--s-today)',
+  completed:   'var(--s-play)',
+  failed:      'var(--s-danger)',
+  imported:    'var(--s-play)',
+  missing:     'var(--s-today)',
 }
 
 const healthColor: Record<string, string> = {
-  error:   'text-red-400',
-  warning: 'text-yellow-400',
-  notice:  'text-[#888]',
-  ok:      'text-green-400',
+  error:   'var(--s-danger)',
+  warning: 'var(--s-today)',
+  notice:  'var(--dim)',
+  ok:      'var(--s-play)',
 }
 
 const DISMISS_KEY = (service: string) => `ctrlr-health-dismissed-${service}`
@@ -318,200 +318,153 @@ export default function ArrSection({ service, label }: Props) {
   return (
     <>
       <section id={service}>
-        {/* header */}
-        <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between">
-          <span>const <span className="text-white text-sm font-medium uppercase tracking-widest">{label}</span>: ArrQueueItem[] = [</span>
-          <span className="flex items-center gap-3">
-            {monitored.length > 0 && <span className="text-[#888]">// {monitored.length} monitored</span>}
-            <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false) }} disabled={refreshing} className="btn-xs text-[#7070a8] hover:text-[#aaa]">{refreshing ? '...' : <><span className="hidden sm:inline">--refresh</span><span className="sm:hidden">↺</span></>}</button>
-          </span>
-        </div>
+        <div className="module-panel">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-label">{label}</h2>
+            <div className="flex items-center gap-3">
+              {monitored.length > 0 && (
+                <span className="font-mono text-[10px]" style={{ color: 'var(--dim)' }}>{monitored.length} monitored</span>
+              )}
+              <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false) }} disabled={refreshing} className="btn-xs">
+                {refreshing ? '...' : '↺'}
+              </button>
+            </div>
+          </div>
 
-        {error   && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}
-        {loading && <Spinner />}
+          {error   && <p className="text-danger font-mono text-xs mb-3">{error}</p>}
+          {loading && <Spinner />}
 
-        {/* health */}
-        {health.filter(h => !dismissed.has(h.message)).length > 0 && (
-          <div className="mb-4">
-            <p className="text-[#7070a8] text-xs mb-1">{`/* health */`}</p>
-            <div className="space-y-0.5">
+          {health.filter(h => !dismissed.has(h.message)).length > 0 && (
+            <div className="mb-4 space-y-1">
               {health.filter(h => !dismissed.has(h.message)).map((h, i) => (
-                <div key={i} className={`flex items-start gap-2 font-mono text-xs ${healthColor[h.type.toLowerCase()] ?? 'text-[#888]'}`}>
-                  <span className="text-[#888] select-none shrink-0">⚠ </span>
+                <div key={i} className="flex items-start gap-2 font-mono text-xs" style={{ color: healthColor[h.type.toLowerCase()] ?? 'var(--dim)' }}>
+                  <span className="select-none shrink-0">⚠</span>
                   <span className="flex-1">{h.message}</span>
-                  <button onClick={() => dismissHealth(h.message)} className="text-[#999] hover:text-[#888] shrink-0 leading-none">×</button>
+                  <button onClick={() => dismissHealth(h.message)} className="shrink-0 leading-none btn-xs">×</button>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* queue + recently added */}
-        {(() => {
-          const queueRows    = rows.slice(0, QUEUE_CAP)
-          const recentSlot   = Math.max(0, QUEUE_CAP - rows.length)
-          const recentRows   = recentlyAdded.slice(0, recentSlot)
-          const isEmpty      = rows.length === 0 && recentlyAdded.length === 0
-          if (isEmpty && !error && !loading) return (
-            <p className="text-[#999] text-sm font-mono mb-4">queue empty</p>
-          )
-          return (
-            <div className="mb-4">
-              {/* active queue rows */}
-              {queueRows.length > 0 && (
-                <table className="w-full text-xs font-mono table-fixed md:table-auto mb-0">
-                  <thead>
-                    <tr className="text-[#999] text-xs uppercase border-b border-[#1a1a2e]">
-                      <th className="py-1 pr-3 w-6"></th>
-                      <th className="text-left py-1 pr-4">Title</th>
-                      <th className="text-right pr-4 w-24 md:w-auto">Status</th>
-                      <th className="text-right w-20 md:w-auto">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {queueRows.map((row, i) => {
-                      const q = row.queueItem
-                      return (
-                        <tr key={row.key} className="border-b border-[#0f0f1a]">
-                          <td className="py-1 pr-3 text-right text-[#7070a8] tabular-nums select-none text-xs w-6">{i + 1}</td>
-                          <td className="py-1 pr-4 max-w-xs text-white text-xs">
-                            <div className="flex items-center gap-2">
-                              {q ? (
-                                <button onClick={() => openArr(q)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
-                              ) : row.calendarId ? (
-                                <button
-                                  onClick={() => setSelected(
-                                    service === 'sonarr'
-                                      ? { via: 'sonarr', seriesId: row.seriesId!, episodeId: row.calendarId, title: row.title }
-                                      : { via: 'radarr', movieId: row.calendarId!, title: row.title }
-                                  )}
-                                  className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0"
-                                >--info</button>
-                              ) : null}
-                              <span className="truncate">{row.title}</span>
-                            </div>
-                          </td>
-                          <td className={`text-right pr-4 transition-colors duration-500 ${stateColor[row.state]}`}>
-                            {row.state}
-                          </td>
-                          <td className="text-right">
-                            <div className="flex gap-2 justify-end">
-                              {(row.state === 'pending' || row.state === 'missing') && row.calendarId && (
-                                <button onClick={() => searchCalendar(row.calendarId!)} className="btn-xs text-violet-400">grep</button>
-                              )}
-                              {row.state === 'failed' && q && (
-                                <>
-                                  <button onClick={() => queueAction('search', q.id)} className="btn-xs text-blue-400">--retry</button>
-                                  <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id, { blacklist: true }) }} className="btn-xs text-red-400">--rm</button>
-                                </>
-                              )}
-                              {row.state === 'completed' && q && (
-                                <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id) }} className="btn-xs text-red-400">--rm</button>
-                              )}
-                              {(['delay', 'queued', 'downloading', 'paused', 'warning'] as RowState[]).includes(row.state) && q && (
-                                <>
-                                  <button onClick={() => queueAction('search', q.id)} className="btn-xs text-violet-400">grep</button>
-                                  <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id) }} className="btn-xs text-red-400">--rm</button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              )}
-
-              {/* divider + recently added */}
-              {recentRows.length > 0 && (
-                <>
-                  {queueRows.length > 0 && <div className="border-t border-[#1a1a2e] my-2" />}
-                  <div className="space-y-px">
-                    {recentRows.map((r, i) => {
-                      const isEp = 'seriesTitle' in r
-                      const ep   = isEp ? r as RecentEpisode : null
-                      const mv   = isEp ? null : r as RecentMovie
-                      const ago  = fmtRelDate(isEp ? ep!.dateAdded : mv!.dateAdded)
-                      return (
-                        <div key={i} className="flex items-center gap-2 font-mono text-xs py-0.5 border-b border-[#0a0a14]">
-                          <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0">{rows.length + i + 1}</span>
-                          {isEp ? (
+          {/* queue + recently added — inset display window */}
+          {(() => {
+            const queueRows  = rows.slice(0, QUEUE_CAP)
+            const recentSlot = Math.max(0, QUEUE_CAP - rows.length)
+            const recentRows = recentlyAdded.slice(0, recentSlot)
+            const isEmpty    = rows.length === 0 && recentlyAdded.length === 0
+            return (
+              <div className="mb-4">
+                <p className="font-mono text-[9px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--dimmer)' }}>queue</p>
+                <div className="inset-panel">
+                  {isEmpty && !error && !loading && (
+                    <p className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--dim)' }}>empty</p>
+                  )}
+                  {queueRows.map((row, i) => {
+                    const q = row.queueItem
+                    const isLast = i === queueRows.length - 1 && recentRows.length === 0
+                    return (
+                      <div key={row.key} className="flex items-center gap-2 font-mono text-xs px-4 py-2.5" style={{ borderBottom: isLast ? undefined : '1px solid var(--border)' }}>
+                        <span className="tabular-nums select-none w-4 text-right shrink-0" style={{ color: 'var(--dim)' }}>{i + 1}</span>
+                        {q ? (
+                          <button onClick={() => openArr(q)} className="btn-xs shrink-0">↗</button>
+                        ) : row.calendarId ? (
+                          <button onClick={() => setSelected(service === 'sonarr' ? { via: 'sonarr', seriesId: row.seriesId!, episodeId: row.calendarId, title: row.title } : { via: 'radarr', movieId: row.calendarId!, title: row.title })} className="btn-xs shrink-0">↗</button>
+                        ) : null}
+                        <span className="flex-1 truncate" style={{ color: 'var(--text)' }}>{row.title}</span>
+                        <span className="shrink-0 tabular-nums text-[10px] transition-colors duration-500" style={{ color: stateColor[row.state] }}>{row.state}</span>
+                        <div className="flex gap-1.5 shrink-0">
+                          {(row.state === 'pending' || row.state === 'missing') && row.calendarId && (
+                            <button onClick={() => searchCalendar(row.calendarId!)} className="btn-xs">search</button>
+                          )}
+                          {row.state === 'failed' && q && (
                             <>
-                              <button onClick={() => setSelected({ via: 'sonarr', seriesId: ep!.seriesId, title: ep!.seriesTitle })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
-                              <span className="flex-1 text-white truncate">{ep!.seriesTitle}</span>
-                              <span className="text-[#888] shrink-0 tabular-nums">S{String(ep!.seasonNumber).padStart(2,'0')}E{String(ep!.episodeNumber).padStart(2,'0')}</span>
-                            </>
-                          ) : (
-                            <>
-                              <button onClick={() => setSelected({ via: 'radarr', movieId: mv!.id, title: mv!.title })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
-                              <span className="flex-1 text-white truncate">{mv!.title}</span>
-                              <span className="text-[#888] shrink-0">{mv!.year}</span>
+                              <button onClick={() => queueAction('search', q.id)} className="btn-xs">retry</button>
+                              <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id, { blacklist: true }) }} className="btn-xs danger">remove</button>
                             </>
                           )}
-                          <span className="text-[#6a9a7a] shrink-0 tabular-nums">{ago}</span>
+                          {row.state === 'completed' && q && (
+                            <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id) }} className="btn-xs danger">remove</button>
+                          )}
+                          {(['delay', 'queued', 'downloading', 'paused', 'warning'] as RowState[]).includes(row.state) && q && (
+                            <>
+                              <button onClick={() => queueAction('search', q.id)} className="btn-xs">search</button>
+                              <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id) }} className="btn-xs danger">remove</button>
+                            </>
+                          )}
                         </div>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-          )
-        })()}
-
-        {/* upcoming releases */}
-        {monitored.length > 0 && (
-          <div className="mb-2">
-            <p className="text-[#7070a8] text-xs mb-1">{`/* upcoming */`}</p>
-            <div className="space-y-px">
-              {monitored.slice(0, UPCOMING_CAP).map((m, i) => {
-                if (service === 'sonarr') {
-                  const s = m as MonSerie
-                  const calEp = calendar.find(c => c.seriesId === m.id)
-                  return (
-                    <div key={m.id} className="flex items-center gap-2 font-mono text-xs py-0.5 border-b border-[#0a0a14]">
-                      <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0">{i + 1}</span>
-                      <button onClick={() => setSelected({ via: 'sonarr', seriesId: m.id, episodeId: calEp?.id, title: m.title })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
-                      <span className="flex-1 text-white truncate">{m.title}</span>
-                      <span className="text-green-400 shrink-0 tabular-nums">{s.nextAiring ? fmtRelDate(s.nextAiring) : '—'}</span>
-                    </div>
-                  )
-                } else {
-                  const mv = m as MonMovie
-                  const releaseDate = upcomingMovieDate(mv)
-                  return (
-                    <div key={m.id} className="flex items-center gap-2 font-mono text-xs py-0.5 border-b border-[#0a0a14]">
-                      <span className="text-[#7070a8] tabular-nums select-none w-4 text-right shrink-0">{i + 1}</span>
-                      <button onClick={() => setSelected({ via: 'radarr', movieId: m.id, title: m.title })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
-                      <span className="flex-1 text-white truncate">{m.title}</span>
-                      <span className="text-[#888] shrink-0">{releaseLabel(mv)}</span>
-                      <span className={`shrink-0 tabular-nums ${releaseDate ? 'text-green-400' : 'text-[#888]'}`}>
-                        {releaseDate ? fmtRelDate(releaseDate) : mv.status}
-                      </span>
-                    </div>
-                  )
-                }
-              })}
-            </div>
-          </div>
-        )}
-
-        <div className="font-mono text-xs text-[#6a9a7a] mt-1">
-          {(() => {
-            const parts: string[] = []
-            const activeCount   = rows.filter(r => !['pending','imported','missing','failed'].includes(r.state)).length
-            const pendingCount  = rows.filter(r => r.state === 'pending').length
-            const importedCount = rows.filter(r => r.state === 'imported').length
-            const missingCount  = rows.filter(r => r.state === 'missing').length
-            if (activeCount)   parts.push(`${activeCount} active`)
-            if (failedCount)   parts.push(`${failedCount} failed`)
-            if (pendingCount)  parts.push(`${pendingCount} pending`)
-            if (importedCount) parts.push(`${importedCount} imported`)
-            if (missingCount)  parts.push(`${missingCount} missing`)
-            if (monitored.length) parts.push(`${Math.min(monitored.length, UPCOMING_CAP)} upcoming`)
-            return `] // ${parts.join(', ') || 'empty'}`
+                      </div>
+                    )
+                  })}
+                  {recentRows.length > 0 && recentRows.map((r, i) => {
+                    const isEp = 'seriesTitle' in r
+                    const ep   = isEp ? r as RecentEpisode : null
+                    const mv   = isEp ? null : r as RecentMovie
+                    const ago  = fmtRelDate(isEp ? ep!.dateAdded : mv!.dateAdded)
+                    const isLast = i === recentRows.length - 1
+                    return (
+                      <div key={i} className="flex items-center gap-2 font-mono text-xs px-4 py-2.5" style={{ borderBottom: isLast ? undefined : '1px solid var(--border)', borderTop: i === 0 && queueRows.length > 0 ? '1px solid var(--border)' : undefined }}>
+                        <span className="tabular-nums select-none w-4 text-right shrink-0" style={{ color: 'var(--dim)' }}>{rows.length + i + 1}</span>
+                        {isEp ? (
+                          <>
+                            <button onClick={() => setSelected({ via: 'sonarr', seriesId: ep!.seriesId, title: ep!.seriesTitle })} className="btn-xs shrink-0">↗</button>
+                            <span className="flex-1 truncate" style={{ color: 'var(--text)' }}>{ep!.seriesTitle}</span>
+                            <span className="shrink-0 tabular-nums text-[10px]" style={{ color: 'var(--dim)' }}>S{String(ep!.seasonNumber).padStart(2,'0')}E{String(ep!.episodeNumber).padStart(2,'0')}</span>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => setSelected({ via: 'radarr', movieId: mv!.id, title: mv!.title })} className="btn-xs shrink-0">↗</button>
+                            <span className="flex-1 truncate" style={{ color: 'var(--text)' }}>{mv!.title}</span>
+                            <span className="shrink-0 text-[10px]" style={{ color: 'var(--dim)' }}>{mv!.year}</span>
+                          </>
+                        )}
+                        <span className="shrink-0 tabular-nums text-[10px]" style={{ color: 'var(--s-play)' }}>{ago}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
           })()}
+
+          {/* upcoming — second inset display window within the same module */}
+          {monitored.length > 0 && (
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--dimmer)' }}>upcoming</p>
+              <div className="inset-panel">
+                {monitored.slice(0, UPCOMING_CAP).map((m, i) => {
+                  const isLast = i === Math.min(monitored.length, UPCOMING_CAP) - 1
+                  if (service === 'sonarr') {
+                    const s = m as MonSerie
+                    const calEp = calendar.find(c => c.seriesId === m.id)
+                    return (
+                      <div key={m.id} className="flex items-center gap-2 font-mono text-xs px-4 py-2.5" style={{ borderBottom: isLast ? undefined : '1px solid var(--border)' }}>
+                        <span className="tabular-nums select-none w-4 text-right shrink-0" style={{ color: 'var(--dim)' }}>{i + 1}</span>
+                        <button onClick={() => setSelected({ via: 'sonarr', seriesId: m.id, episodeId: calEp?.id, title: m.title })} className="btn-xs shrink-0">↗</button>
+                        <span className="flex-1 truncate" style={{ color: 'var(--text)' }}>{m.title}</span>
+                        <span className="shrink-0 tabular-nums text-[10px]" style={{ color: s.nextAiring ? 'var(--s-today)' : 'var(--dim)' }}>
+                          {s.nextAiring ? fmtRelDate(s.nextAiring) : '—'}
+                        </span>
+                      </div>
+                    )
+                  } else {
+                    const mv = m as MonMovie
+                    const releaseDate = upcomingMovieDate(mv)
+                    return (
+                      <div key={m.id} className="flex items-center gap-2 font-mono text-xs px-4 py-2.5" style={{ borderBottom: isLast ? undefined : '1px solid var(--border)' }}>
+                        <span className="tabular-nums select-none w-4 text-right shrink-0" style={{ color: 'var(--dim)' }}>{i + 1}</span>
+                        <button onClick={() => setSelected({ via: 'radarr', movieId: m.id, title: m.title })} className="btn-xs shrink-0">↗</button>
+                        <span className="flex-1 truncate" style={{ color: 'var(--text)' }}>{m.title}</span>
+                        <span className="shrink-0 text-[10px]" style={{ color: 'var(--dim)' }}>{releaseLabel(mv)}</span>
+                        <span className="shrink-0 tabular-nums text-[10px]" style={{ color: releaseDate ? 'var(--s-today)' : 'var(--dim)' }}>
+                          {releaseDate ? fmtRelDate(releaseDate) : mv.status}
+                        </span>
+                      </div>
+                    )
+                  }
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

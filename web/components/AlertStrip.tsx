@@ -17,9 +17,9 @@ interface Alert {
 }
 
 function pill(level: Alert['level']) {
-  if (level === 'critical') return { color: '#f43f5e', bg: 'rgba(244,63,94,0.1)'  }
-  if (level === 'warning')  return { color: '#fbbf24', bg: 'rgba(251,191,36,0.1)' }
-  return                           { color: '#60a5fa', bg: 'rgba(96,165,250,0.1)' }
+  if (level === 'critical') return 'var(--s-danger)'
+  if (level === 'warning')  return 'var(--s-today)'
+  return                           'var(--dim)'
 }
 
 export default function AlertStrip() {
@@ -77,20 +77,19 @@ export default function AlertStrip() {
   return (
     <div className="sticky top-[36px] z-40 mx-4 md:mx-6 mb-[-24px] md:mb-[-28px] flex justify-end">
       <div
-        className="flex items-center gap-1.5 flex-wrap px-3 py-1.5 font-mono text-xs border"
-        style={{ background: '#08080f', borderColor: '#1a1a2e' }}
+        className="flex items-center gap-1.5 flex-wrap px-3 py-1.5 font-mono text-xs"
+        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-hi)' }}
       >
-        <span className="text-[#444] shrink-0">{'!!'}</span>
         {alerts.map((a, i) => {
-          const { color, bg } = pill(a.level)
+          const color = pill(a.level)
           return (
             <>
-              {i > 0 && <span key={`sep-${a.id}`} className="text-[#2a2a4a]">·</span>}
+              {i > 0 && <span key={`sep-${a.id}`} style={{ color: 'var(--dimmer)' }}>·</span>}
               <a
                 key={a.id}
                 href={a.href}
-                className="px-1.5 py-0.5 transition-opacity hover:opacity-80 whitespace-nowrap"
-                style={{ color, background: bg, border: `1px solid ${color}33` }}
+                className="transition-opacity hover:opacity-70 whitespace-nowrap"
+                style={{ color }}
               >
                 {a.label}
               </a>

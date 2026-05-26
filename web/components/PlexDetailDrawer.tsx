@@ -6,7 +6,7 @@ import Spinner from '@/components/Spinner'
 import RequestModal from '@/components/RequestModal'
 
 const statusLabel: Record<number, string> = { 1: 'Pending', 2: 'Approved', 3: 'Declined', 4: 'Available', 5: 'Processing' }
-const statusColor: Record<number, string>  = { 1: 'text-yellow-400', 2: 'text-blue-400', 3: 'text-red-400', 4: 'text-green-400', 5: 'text-purple-400' }
+const statusColor: Record<number, string>  = { 1: 'text-yellow-400', 2: 'text-blue-400', 3: 'text-danger', 4: 'text-green-400', 5: 'text-purple-400' }
 
 function fmtDuration(ms: number): string {
   const total = Math.floor(ms / 1000)
@@ -289,8 +289,8 @@ function MatchPanel({
           placeholder="search title..."
           className="bg-[#0f0f1a] border border-[#1a1a2e] text-white font-mono text-xs px-2 py-1 flex-1 focus:outline-none focus:border-[#888]"
         />
-        <button onClick={search} disabled={loading} className="btn-xs text-violet-400">
-          {loading ? '...' : '--grep'}
+        <button onClick={search} disabled={loading} className="btn-xs">
+          {loading ? '...' : 'search'}
         </button>
       </div>
       {results.length > 0 && (
@@ -307,9 +307,9 @@ function MatchPanel({
               <button
                 onClick={() => apply(m)}
                 disabled={!!acting}
-                className="btn-xs text-blue-400 shrink-0"
+                className="btn-xs shrink-0"
               >
-                {acting === m.guid ? '...' : '--set'}
+                {acting === m.guid ? '...' : 'select'}
               </button>
             </div>
           ))}
@@ -466,7 +466,7 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
         <div className="relative z-10 p-6">
           <div className="flex justify-between items-center mb-6">
             <span className="text-[#7070a8] text-xs">{`/* plex -- detail */`}</span>
-            <button onClick={onClose} className="btn-xs text-[#ccc] hover:text-white">--close</button>
+            <button onClick={onClose} className="btn-xs">close</button>
           </div>
 
           {loading && <Spinner />}
@@ -626,8 +626,8 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                             overview: detail?.summary ?? '',
                             posterPath: seerPoster ?? undefined,
                           })}
-                          className="btn-xs text-cyan-600 hover:text-cyan-400"
-                        >--request</button>
+                          className="btn-xs"
+                        >request</button>
                       )}
                     </div>
                   )}
@@ -640,23 +640,25 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                   <p className="text-[#7070a8] text-xs">{`/* artwork */`}</p>
                   <button
                     onClick={() => { setShowPosters(v => !v); setShowArt(false); setPendingKey(null) }}
-                    className={`btn-xs ${showPosters ? 'text-white' : 'text-[#999]'}`}
+                    className="btn-xs"
+                    style={showPosters ? { borderColor: 'var(--border-hi)', color: 'var(--text)' } : undefined}
                   >
-                    --posters
+                    posters
                   </button>
                   <button
                     onClick={() => { setShowArt(v => !v); setShowPosters(false); setPendingKey(null) }}
-                    className={`btn-xs ${showArt ? 'text-white' : 'text-[#999]'}`}
+                    className="btn-xs"
+                    style={showArt ? { borderColor: 'var(--border-hi)', color: 'var(--text)' } : undefined}
                   >
-                    --art
+                    art
                   </button>
                   {pendingKey && (
                     <button
                       onClick={saveArtwork}
                       disabled={artworkSaving}
-                      className="btn-xs text-green-400 hover:text-green-300 disabled:opacity-50"
+                      className="btn-xs disabled:opacity-50"
                     >
-                      {artworkSaving ? '...' : '--save'}
+                      {artworkSaving ? '...' : 'save'}
                     </button>
                   )}
                 </div>
@@ -698,16 +700,16 @@ export default function PlexDetailDrawer({ item, onClose, onRefresh }: Props) {
                   <button
                     onClick={() => doAction('refresh')}
                     disabled={!!acting}
-                    className="btn-xs text-blue-400"
+                    className="btn-xs"
                   >
-                    {acting === 'refresh' ? '...' : '--refresh'}
+                    {acting === 'refresh' ? '...' : 'refresh'}
                   </button>
                   <button
                     onClick={() => { if (confirm(`Delete ${detail.title}?`)) doAction('delete') }}
                     disabled={!!acting}
-                    className="btn-xs text-red-400"
+                    className="btn-xs danger"
                   >
-                    {acting === 'delete' ? '...' : '--rm'}
+                    {acting === 'delete' ? '...' : 'remove'}
                   </button>
                 </div>
               </div>

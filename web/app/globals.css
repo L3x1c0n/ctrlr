@@ -2,17 +2,19 @@
 
 /* ── Rams palette ──────────────────────────────────────────────────────── */
 :root {
-  /* Achromatic base */
-  --bg:          #edeae5;
-  --bg-card:     #f5f2ee;
-  --bg-raised:   #faf8f6;
+  /* Achromatic base — Rams Foundation #F2F0F0 shifted cool */
+  /* Three surface levels: page → panel housing → inset display window */
+  --bg:          #f0f1f2;   /* page — the wall the modules sit on */
+  --bg-card:     #f7f7f9;   /* panel housing — raised surface */
+  --bg-inset:    #e8eaec;   /* recessed display window — sits below housing */
   --bg-white:    #ffffff;
-  --border:      rgba(0,0,0,0.09);
-  --border-hi:   rgba(0,0,0,0.20);
-  --text:        #1a1614;
-  --text-dim:    #706a64;
-  --dim:         #a09890;
-  --dimmer:      #d8d2cc;
+  --border:      rgba(0,0,0,0.08);
+  --border-hi:   rgba(0,0,0,0.18);
+  --border-inset: rgba(0,0,0,0.12);  /* inner edge of the recessed window */
+  --text:        #1a1a1a;
+  --text-dim:    #666668;
+  --dim:         #96969a;
+  --dimmer:      #c8c8cc;
 
   /* Signal colors — Braun register, one use per concept */
   --s-dl:        #E8680A;   /* active download  — Braun operator orange */
@@ -20,9 +22,6 @@
   --s-today:     #D4A800;   /* due today        — Braun function yellow */
   --s-done:      #1A9A3C;   /* available        — same as play          */
   --s-danger:    #CC1A1A;   /* destructive      — Braun clear-key red   */
-
-  /* Legacy aliases kept for components not yet migrated */
-  --bg-card-old: #0d0d18;
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────── */
@@ -40,6 +39,38 @@ body {
 /* ── Scroll offset for fixed 36px topbar ──────────────────────────────── */
 section[id], div[id] {
   scroll-margin-top: 52px;
+}
+
+/* ── Classic (hacker) theme ────────────────────────────────────────────── */
+/* Restores original dark palette when data-theme="classic" is set on <html> */
+[data-theme="classic"] {
+  --bg:          #0A0A0F;
+  --bg-card:     #0f0f1a;
+  --bg-inset:    #060609;
+  --bg-white:    #0f0f1a;
+  --border:      rgba(255,255,255,0.06);
+  --border-hi:   rgba(112,112,168,0.30);
+  --border-inset: rgba(0,0,0,0.40);
+  --text:        #e2e2e2;
+  --text-dim:    #7878a0;
+  --dim:         #444466;
+  --dimmer:      #2a2a40;
+
+  --s-dl:        #5588aa;
+  --s-play:      #6a9a7a;
+  --s-today:     #c8943a;
+  --s-done:      #6a9a7a;
+  --s-danger:    #a85858;
+}
+
+[data-theme="classic"] body {
+  background: #0A0A0F;
+  color: #e2e2e2;
+}
+
+[data-theme="classic"] .btn-xs {
+  border-color: #2a2a40;
+  color: #444466;
 }
 
 /* ── MarqueeText animation ─────────────────────────────────────────────── */
@@ -92,6 +123,23 @@ section[id], div[id] {
 /* ── Component classes ─────────────────────────────────────────────────── */
 @layer components {
 
+  /* Module panel — the section housing, like a Braun component slab */
+  .module-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-hi);
+    border-radius: 2px;
+    padding: 20px 24px;
+  }
+
+  /* Inset display — recessed window cut into the module housing */
+  /* The darker background + inset shadow creates the sunken panel effect */
+  .inset-panel {
+    background: var(--bg-inset);
+    border: 1px solid var(--border-inset);
+    border-radius: 1px;
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.08);
+  }
+
   /* Section label — silent, structural, uppercase */
   .section-label {
     @apply font-mono uppercase tracking-widest;
@@ -99,7 +147,6 @@ section[id], div[id] {
     font-weight: 600;
     color: var(--dim);
     letter-spacing: 0.14em;
-    margin-bottom: 10px;
   }
 
   /* Legacy section-title — maps to new label style, removes >_ prefix */
@@ -141,10 +188,32 @@ section[id], div[id] {
     color: var(--s-danger);
   }
 
+  /* Live Zone card — hero status card with 2px signal bar at top */
+  .live-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-hi);
+    border-radius: 2px;
+    padding: 16px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .live-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .live-card.downloading::before { background: var(--s-dl); }
+  .live-card.playing::before     { background: var(--s-play); }
+
   /* Divider */
   .section-divider {
     border: none;
     border-top: 1px solid var(--border);
     margin: 0;
   }
+
+  /* Danger — maps Tailwind red classes to our signal color */
+  .text-danger { color: var(--s-danger); }
+  .border-danger { border-color: var(--s-danger); }
 }

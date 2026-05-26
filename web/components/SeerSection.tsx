@@ -17,11 +17,11 @@ const statusLabel: Record<number, string> = {
 }
 
 const statusColor: Record<number, string> = {
-  1: 'text-yellow-400',
-  2: 'text-blue-400',
-  3: 'text-red-400',
-  4: 'text-green-400',
-  5: 'text-purple-400',
+  1: 'var(--s-today)',
+  2: 'var(--dim)',
+  3: 'var(--s-danger)',
+  4: 'var(--s-play)',
+  5: 'var(--dim)',
 }
 
 export default function SeerSection() {
@@ -107,10 +107,11 @@ export default function SeerSection() {
   return (
     <>
       <section id="seer">
-        <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between">
-          <span>const <span className="text-white text-sm font-medium uppercase tracking-widest">S33r</span>: SeerRequest[] = [</span>
-          <span className="flex items-center gap-2">
-            <button onClick={async () => { setRefreshing(true); await loadRequests(); setRefreshing(false) }} disabled={refreshing} className="btn-xs text-[#7070a8] hover:text-[#aaa]">{refreshing ? '...' : <><span className="hidden sm:inline">--refresh</span><span className="sm:hidden">↺</span></>}</button>
+        <div className="module-panel">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="section-label">Overseerr</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={async () => { setRefreshing(true); await loadRequests(); setRefreshing(false) }} disabled={refreshing} className="btn-xs">{refreshing ? '...' : '↺'}</button>
             <button
               onClick={async () => {
                 setSyncing(true)
@@ -119,13 +120,13 @@ export default function SeerSection() {
                 setSyncing(false)
               }}
               disabled={syncing}
-              className="btn-xs text-[#7070a8] hover:text-[#aaaadd] disabled:opacity-40"
+              className="btn-xs"
             >
-              {syncing ? '...' : '--sync-arrs'}
+              {syncing ? '...' : 'sync'}
             </button>
-          </span>
+          </div>
         </div>
-        {error && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}
+        {error && <p className="text-danger text-sm font-mono mb-2">{error}</p>}
 
         <div className="flex gap-2 mb-4">
           <input
@@ -134,120 +135,103 @@ export default function SeerSection() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && doSearch()}
             placeholder="Search movies & TV..."
-            className="bg-[#0f0f1a] border border-[#1a1a2e] text-white font-mono text-sm px-3 py-1.5 flex-1 focus:outline-none focus:border-[#888]"
+            className="font-mono text-sm px-3 py-1.5 flex-1 focus:outline-none"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-hi)', color: 'var(--text)' }}
           />
           <button
             onClick={doSearch}
             disabled={searching}
-            className="bg-[#1a1a2e] text-violet-400 font-mono text-sm px-4 py-1.5 hover:bg-[#252540] disabled:opacity-50"
+            className="btn-xs px-4"
           >
-            {searching ? '...' : 'grep'}
+            {searching ? '...' : 'search'}
           </button>
         </div>
 
         {results.length > 0 && (
-          <div className="mb-4 border border-[#1a1a2e]">
-            {results.slice(0, 8).map((r) => (
-              <div
-                key={`${r.mediaType}-${r.id}`}
-                className="flex items-center justify-between px-3 py-2 border-b border-[#0f0f1a]"
-              >
-                <div className="font-mono text-sm">
-                  <button onClick={() => openRequestModal(r)} className="text-white hover:text-cyan-400 transition-colors text-left">{r.title ?? r.name}</button>
-                  <span className="text-[#999] ml-2 text-xs uppercase">{r.mediaType}</span>
-                  {(r.releaseDate || r.firstAirDate) && (
-                    <span className="text-[#999] ml-2 text-xs">
-                      {(r.releaseDate ?? r.firstAirDate)?.slice(0, 4)}
-                    </span>
-                  )}
+          <div className="mb-4">
+            <p className="font-mono text-[9px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--dimmer)' }}>results</p>
+            <div className="inset-panel">
+              {results.slice(0, 8).map((r, i) => (
+                <div key={`${r.mediaType}-${r.id}`} className="flex items-center justify-between px-4 py-2.5 font-mono text-xs" style={{ borderBottom: i < Math.min(results.length, 8) - 1 ? '1px solid var(--border)' : undefined }}>
+                  <div>
+                    <button onClick={() => openRequestModal(r)} className="text-left" style={{ color: 'var(--text)' }}>{r.title ?? r.name}</button>
+                    <span className="ml-2 uppercase" style={{ color: 'var(--dim)' }}>{r.mediaType}</span>
+                    {(r.releaseDate || r.firstAirDate) && (
+                      <span className="ml-2" style={{ color: 'var(--dim)' }}>{(r.releaseDate ?? r.firstAirDate)?.slice(0, 4)}</span>
+                    )}
+                  </div>
+                  <button onClick={() => openRequestModal(r)} className="btn-xs">↗</button>
                 </div>
-                <button
-                  onClick={() => openRequestModal(r)}
-                  className="btn-xs text-cyan-600 hover:text-cyan-400"
-                >
-                  --info
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
-        {requests.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono">no requests</p>)}
-        {requests.length > 0 && (() => {
-          const PAGE_SIZE = 10
-          const totalPages = Math.ceil(requests.length / PAGE_SIZE)
-          const hasPrev = page > 0
-          const hasNext = page < totalPages - 1
-
-          const pageHeader = (
-            <div className="flex items-center gap-3 text-[#999] text-xs uppercase border-b border-[#1a1a2e] py-1 select-none">
-              <span className="w-5 shrink-0"></span>
-              <span className="flex-1">Title</span>
-              <span className="hidden md:block shrink-0 w-[48px]">Type</span>
-              <span className="shrink-0 w-[88px]">Status</span>
-              <span className="hidden md:block shrink-0">By</span>
-              <span className="shrink-0">Actions</span>
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--dimmer)' }}>requests</p>
+          {requests.length === 0 && (loading ? <Spinner /> : (
+            <div className="inset-panel px-4 py-3">
+              <p className="font-mono text-xs" style={{ color: 'var(--dim)' }}>no requests</p>
             </div>
-          )
+          ))}
+          {requests.length > 0 && (() => {
+            const PAGE_SIZE = 10
+            const totalPages = Math.ceil(requests.length / PAGE_SIZE)
+            const hasPrev = page > 0
+            const hasNext = page < totalPages - 1
 
-          return (
-            <div
-              className="overflow-hidden cursor-grab active:cursor-grabbing"
-              onTouchStart={e => { (e.currentTarget as any)._tx = e.touches[0].clientX }}
-              onTouchEnd={e => {
-                const dx = e.changedTouches[0].clientX - ((e.currentTarget as any)._tx ?? 0)
-                if (dx < -40 && hasNext) setPage(p => p + 1)
-                if (dx >  40 && hasPrev) setPage(p => p - 1)
-              }}
-              onMouseDown={e => { (e.currentTarget as any)._mx = e.clientX }}
-              onMouseUp={e => {
-                const dx = e.clientX - ((e.currentTarget as any)._mx ?? 0)
-                if (dx < -40 && hasNext) setPage(p => p + 1)
-                if (dx >  40 && hasPrev) setPage(p => p - 1)
-              }}
-            >
-              {/* sliding track */}
-              <div
-                className="flex transition-transform duration-300 ease-in-out"
-                style={{ transform: `translateX(-${page * 100}%)` }}
-              >
-                {Array.from({ length: totalPages }).map((_, pi) => {
-                  const items = requests.slice(pi * PAGE_SIZE, (pi + 1) * PAGE_SIZE)
-                  return (
-                    <div key={pi} className="w-full shrink-0 font-mono text-xs md:text-sm">
-                      {pageHeader}
-                      {items.map((r, i) => (
-                        <div key={r.id} className="flex items-center gap-3 border-b border-[#0f0f1a] py-0.5">
-                          <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums text-xs">{pi * PAGE_SIZE + i + 1}</span>
-                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                            <button onClick={() => setSelected({ via: 'seer', tmdbId: r.media.tmdbId, mediaType: r.media.mediaType as 'movie' | 'tv', title: r.media.title ?? r.media.name })} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
-                            <MarqueeText className="min-w-0">{r.media.title ?? r.media.name}</MarqueeText>
+            return (
+              <div>
+                <div className="inset-panel overflow-hidden" onTouchStart={e => { (e.currentTarget as any)._tx = e.touches[0].clientX }} onTouchEnd={e => { const dx = e.changedTouches[0].clientX - ((e.currentTarget as any)._tx ?? 0); if (dx < -40 && hasNext) setPage(p => p + 1); if (dx > 40 && hasPrev) setPage(p => p - 1) }} onMouseDown={e => { (e.currentTarget as any)._mx = e.clientX }} onMouseUp={e => { const dx = e.clientX - ((e.currentTarget as any)._mx ?? 0); if (dx < -40 && hasNext) setPage(p => p + 1); if (dx > 40 && hasPrev) setPage(p => p - 1) }}>
+                  <div className="flex transition-transform duration-300 ease-in-out" style={{ transform: `translateX(-${page * 100}%)` }}>
+                    {Array.from({ length: totalPages }).map((_, pi) => {
+                      const items = requests.slice(pi * PAGE_SIZE, (pi + 1) * PAGE_SIZE)
+                      return (
+                        <div key={pi} className="w-full shrink-0 font-mono text-xs">
+                          <div className="flex items-center gap-3 px-4 py-1.5 select-none" style={{ color: 'var(--dim)', borderBottom: '1px solid var(--border)' }}>
+                            <span className="w-5 shrink-0"></span>
+                            <span className="flex-1">Title</span>
+                            <span className="hidden md:block shrink-0 w-[48px]">Type</span>
+                            <span className="shrink-0 w-[88px]">Status</span>
+                            <span className="hidden md:block shrink-0">By</span>
+                            <span className="shrink-0">Actions</span>
                           </div>
-                          <span className="hidden md:block shrink-0 text-[#999] text-xs uppercase whitespace-nowrap w-[48px]">{r.type}</span>
-                          <span className={`shrink-0 w-[88px] whitespace-nowrap ${statusColor[r.status] ?? 'text-[#888]'}`}>{statusLabel[r.status] ?? r.status}</span>
-                          <span className="hidden md:block shrink-0 text-[#999] whitespace-nowrap">{r.requestedBy.displayName}</span>
-                          <div className="shrink-0 flex gap-1">
-                            {r.status === 1 && <button onClick={() => approveRequest(r.id)} className="btn-xs text-green-400 whitespace-nowrap">--approve</button>}
-                            <button onClick={() => { if (confirm('Delete request?')) deleteRequest(r.id) }} className="btn-xs text-red-400 whitespace-nowrap">--rm</button>
-                          </div>
+                          {items.map((r, i) => (
+                            <div key={r.id} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: i < items.length - 1 ? '1px solid var(--border)' : undefined }}>
+                              <span className="w-5 shrink-0 text-right tabular-nums" style={{ color: 'var(--dim)' }}>{pi * PAGE_SIZE + i + 1}</span>
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                <button onClick={() => setSelected({ via: 'seer', tmdbId: r.media.tmdbId, mediaType: r.media.mediaType as 'movie' | 'tv', title: r.media.title ?? r.media.name })} className="btn-xs shrink-0">↗</button>
+                                <MarqueeText className="min-w-0">{r.media.title ?? r.media.name}</MarqueeText>
+                              </div>
+                              <span className="hidden md:block shrink-0 uppercase whitespace-nowrap w-[48px]" style={{ color: 'var(--dim)' }}>{r.type}</span>
+                              <span className="shrink-0 w-[88px] whitespace-nowrap" style={{ color: statusColor[r.status] ?? 'var(--dim)' }}>{statusLabel[r.status] ?? r.status}</span>
+                              <span className="hidden md:block shrink-0 whitespace-nowrap" style={{ color: 'var(--dim)' }}>{r.requestedBy.displayName}</span>
+                              <div className="shrink-0 flex gap-1">
+                                {r.status === 1 && <button onClick={() => approveRequest(r.id)} className="btn-xs whitespace-nowrap">approve</button>}
+                                <button onClick={() => { if (confirm('Delete request?')) deleteRequest(r.id) }} className="btn-xs danger whitespace-nowrap">remove</button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                      {/* bottom nav */}
-                      <div className="flex items-center justify-between pt-1.5 font-mono text-xs text-[#6a9a7a]">
-                        <span>] // {pi * PAGE_SIZE + 1}–{Math.min((pi + 1) * PAGE_SIZE, requests.length)} of {requests.length}</span>
-                        <div className="flex gap-3">
-                          {hasPrev && <button onClick={() => setPage(p => p - 1)} className="text-[#7070a8] hover:text-white transition-colors">‹ prev</button>}
-                          {hasNext && <button onClick={() => setPage(p => p + 1)} className="text-[#7070a8] hover:text-white transition-colors">next ›</button>}
-                        </div>
-                      </div>
+                      )
+                    })}
+                  </div>
+                </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-end pt-2 gap-3 font-mono text-xs" style={{ color: 'var(--dim)' }}>
+                    <span>{page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, requests.length)} of {requests.length}</span>
+                    <div className="flex gap-2">
+                      {hasPrev && <button onClick={() => setPage(p => p - 1)} className="btn-xs">‹ prev</button>}
+                      {hasNext && <button onClick={() => setPage(p => p + 1)} className="btn-xs">next ›</button>}
                     </div>
-                  )
-                })}
+                  </div>
+                )}
               </div>
-            </div>
-          )
-        })()}
+            )
+          })()}
+        </div>
 
+        </div>{/* module-panel */}
         <DiscoverSection />
       </section>
 

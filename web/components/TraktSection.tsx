@@ -1,50 +1,24 @@
 'use client'
 
-import { Fragment, useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { TraktMovie, TraktEpisode } from '@/types'
 import Spinner from '@/components/Spinner'
 import { TraktSelectedItem } from '@/components/TraktDetailDrawer'
 import UnifiedDrawer, { DrawerEntry } from '@/components/UnifiedDrawer'
-import MarqueeText from '@/components/MarqueeText'
 
 // ── constants ─────────────────────────────────────────────────────────────────
 
 const MONTH_NAMES = [
-  'january','february','march','april','may','june',
-  'july','august','september','october','november','december',
+  'jan','feb','mar','apr','may','jun',
+  'jul','aug','sep','oct','nov','dec',
 ]
-const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
-const DAY_HUE   = [220, 229, 238, 247, 256, 265, 280]
 
-const PROVIDER_MAP: Record<string, { abbr: string; color: string }> = {
-  'netflix':             { abbr: 'NF', color: '#E50914' },
-  'prime video':         { abbr: 'PV', color: '#00A8E0' },
-  'amazon prime video':  { abbr: 'PV', color: '#00A8E0' },
-  'disney plus':         { abbr: 'D+', color: '#113CCF' },
-  'disney+':             { abbr: 'D+', color: '#113CCF' },
-  'hulu':                { abbr: 'HU', color: '#1CE783' },
-  'max':                 { abbr: 'MX', color: '#002BE7' },
-  'hbo max':             { abbr: 'MX', color: '#002BE7' },
-  'apple tv+':           { abbr: 'AT', color: '#888888' },
-  'apple tv plus':       { abbr: 'AT', color: '#888888' },
-  'peacock':             { abbr: 'PC', color: '#0066FF' },
-  'paramount+':          { abbr: 'P+', color: '#0064FF' },
-  'paramount plus':      { abbr: 'P+', color: '#0064FF' },
-  'crunchyroll':         { abbr: 'CR', color: '#F47521' },
-  'funimation':          { abbr: 'FN', color: '#410099' },
-}
-
-function providerInfo(name: string): { abbr: string; color: string } {
-  return PROVIDER_MAP[name.toLowerCase()] ?? {
-    abbr:  name.slice(0, 2).toUpperCase(),
-    color: '#666688',
-  }
-}
+const TMDB_LOGO = 'https://image.tmdb.org/t/p/w185'
 
 // ── client-side metadata cache ────────────────────────────────────────────────
 
 interface ItemMeta {
-  providers: { abbr: string; color: string }[]
+  providers: { name: string; logoPath: string }[]
   runtime?: number
   rating?: number
   certification?: string
@@ -58,7 +32,7 @@ function fetchMeta(cacheKey: string, url: string, setter: (m: ItemMeta) => void)
     .then(r => r.json())
     .then(d => {
       const m: ItemMeta = {
-        providers:     (d.watchProviders ?? []).map((p: any) => providerInfo(p.name)),
+        providers:     (d.watchProviders ?? []).filter((p: any) => p.logoPath).map((p: any) => ({ name: p.name, logoPath: p.logoPath })),
         runtime:       d.detail?.runtime  || undefined,
         rating:        d.detail?.rating   || undefined,
         certification: d.detail?.certification || undefined,
@@ -71,8 +45,6 @@ function fetchMeta(cacheKey: string, url: string, setter: (m: ItemMeta) => void)
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-function dowIndex(d: Date): number { return (d.getDay() + 6) % 7 }
-
 function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
@@ -81,15 +53,10 @@ function addDays(d: Date, n: number): Date {
   const r = new Date(d); r.setDate(r.getDate() + n); return r
 }
 
-function fmtDateKey(key: string): string {
+function fmtDateHeader(key: string): string {
   const d  = new Date(key + 'T12:00:00')
   const dn = d.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase()
-  return `/* ${dn} · ${d.getDate()} · ${MONTH_NAMES[d.getMonth()]} */`
-}
-
-function fmtDateHeader(key: string): string {
-  const d = new Date(key + 'T12:00:00')
-  return `${d.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase()} · ${d.getDate()} · ${MONTH_NAMES[d.getMonth()]}`
+  return `${dn}  ${d.getDate()}  ${MONTH_NAMES[d.getMonth()]}`
 }
 
 // ── data types ────────────────────────────────────────────────────────────────
@@ -103,14 +70,7 @@ interface CalItem {
   inArr:      boolean
 }
 
-interface CalDay {
-  n:        number | null
-  dateKey:  string | null
-  isToday:  boolean
-  items:    CalItem[]
-}
-
-// ── data builders ─────────────────────────────────────────────────────────────
+// ── data builder ──────────────────────────────────────────────────────────────
 
 function buildItemMap(
   episodes: TraktEpisode[],
@@ -160,35 +120,7 @@ function buildItemMap(
   return map
 }
 
-function buildCalendar(
-  year: number,
-  month: number,
-  itemMap: Map<string, CalItem[]>,
-): CalDay[][] {
-  const today    = new Date()
-  const lastDay  = new Date(year, month + 1, 0).getDate()
-  const startDow = dowIndex(new Date(year, month, 1))
-  const weeks: CalDay[][] = []
-  let week: CalDay[] = []
-
-  for (let i = 0; i < startDow; i++) week.push({ n: null, dateKey: null, isToday: false, items: [] })
-
-  for (let d = 1; d <= lastDay; d++) {
-    const k       = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-    const isToday = d === today.getDate() && month === today.getMonth() && year === today.getFullYear()
-    week.push({ n: d, dateKey: k, isToday, items: itemMap.get(k) ?? [] })
-    if (week.length === 7) { weeks.push(week); week = [] }
-  }
-
-  if (week.length > 0) {
-    while (week.length < 7) week.push({ n: null, dateKey: null, isToday: false, items: [] })
-    weeks.push(week)
-  }
-
-  return weeks
-}
-
-// ── ItemTags — plex / streaming providers + movie meta ────────────────────────
+// ── ItemTags ──────────────────────────────────────────────────────────────────
 
 function ItemTags({ item }: { item: CalItem }) {
   const [meta, setMeta] = useState<ItemMeta | null>(null)
@@ -210,9 +142,8 @@ function ItemTags({ item }: { item: CalItem }) {
     fetchMeta(cacheKey, url, setMeta)
   }, [needsFetch, item.type, item.selected])
 
-  // Movie meta: runtime + rating (shown regardless of inArr)
   const movieExtra = item.type === 'movie' && meta ? (
-    <span className="text-[#555] text-xs shrink-0 font-mono">
+    <span className="font-mono text-[10px] shrink-0" style={{ color: 'var(--dim)' }}>
       {meta.runtime ? `${meta.runtime}m` : ''}
       {meta.runtime && meta.rating ? ' ' : ''}
       {meta.rating ? `★${meta.rating.toFixed(1)}` : ''}
@@ -220,13 +151,19 @@ function ItemTags({ item }: { item: CalItem }) {
     </span>
   ) : null
 
-  // Plex / provider badge
   const badge = item.downloaded ? (
-    <span style={{ color: '#E5A00D' }} className="text-xs shrink-0">[plex]</span>
-  ) : meta && meta.providers.length > 0 ? (
-    <span className="flex items-center gap-0.5 shrink-0">
-      {meta.providers.slice(0, 2).map((p, i) => (
-        <span key={i} style={{ color: p.color }} className="text-xs">[{p.abbr}]</span>
+    <span className="font-mono text-[10px] shrink-0" style={{ color: 'var(--s-play)' }}>plex</span>
+  ) : !item.inArr && meta && meta.providers.length > 0 ? (
+    <span className="flex items-center gap-1 shrink-0">
+      {meta.providers.slice(0, 3).map((p, i) => (
+        <img
+          key={i}
+          src={`${TMDB_LOGO}${p.logoPath}`}
+          alt={p.name}
+          title={p.name}
+          className="rounded-sm"
+          style={{ width: 32, height: 32, objectFit: 'cover' }}
+        />
       ))}
     </span>
   ) : null
@@ -234,270 +171,94 @@ function ItemTags({ item }: { item: CalItem }) {
   if (!movieExtra && !badge) return null
 
   return (
-    <span className="flex items-center gap-1.5 shrink-0">
+    <span className="flex items-center gap-2 shrink-0">
       {movieExtra}
       {badge}
     </span>
   )
 }
 
-// ── month view primitives ─────────────────────────────────────────────────────
+// ── AgendaView ────────────────────────────────────────────────────────────────
 
-function CalSep({ highlight = false }: { highlight?: boolean }) {
-  return (
-    <div className={`flex items-center font-mono text-xs select-none leading-none ${highlight ? 'text-[#3a3a5a]' : 'text-[#2a2a4a]'}`}>
-      {Array.from({ length: 7 }).map((_, i) => (
-        <Fragment key={i}>
-          <span className="shrink-0">+</span>
-          <span className="flex-1 overflow-hidden whitespace-nowrap">{'─'.repeat(80)}</span>
-        </Fragment>
-      ))}
-      <span className="shrink-0">+</span>
-    </div>
-  )
-}
-
-function CalRow({ cells }: { cells: React.ReactNode[] }) {
-  return (
-    <div className="flex font-mono text-xs leading-none">
-      {cells.map((cell, i) => (
-        <Fragment key={i}>
-          <span className="shrink-0 text-[#2a2a4a] select-none">|</span>
-          <span className="flex-1 min-w-0 overflow-hidden">{cell}</span>
-        </Fragment>
-      ))}
-      <span className="shrink-0 text-[#2a2a4a] select-none">|</span>
-    </div>
-  )
-}
-
-function ExpandedPanel({ dateKey: dk, items, onSelect, onClose }: {
-  dateKey: string; items: CalItem[]
-  onSelect: (item: TraktSelectedItem) => void; onClose: () => void
-}) {
-  return (
-    <div className="border-x border-b border-[#2a2a4a] bg-[#0d0d18] font-mono text-xs">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#1a1a2e]">
-        <span className="text-[#6a9a7a]">{fmtDateKey(dk)}</span>
-        <button onClick={onClose} className="btn-xs text-[#888] hover:text-[#ccc]">--close</button>
-      </div>
-      <div className="px-3 py-2 space-y-1.5">
-        {items.length === 0 && <span className="text-[#999]">no events</span>}
-        {items.map((item, i) => {
-          const textClass = item.downloaded ? 'line-through text-[#999]' : item.isPast ? 'text-yellow-500' : 'text-white'
-          return (
-            <div key={i} className="flex items-center gap-2">
-              <button onClick={() => onSelect(item.selected)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
-              <span className={item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}>{item.type === 'movie' ? '‡' : '†'}</span>
-              <span className={textClass}>{item.line}</span>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function WeekRow({ week, expandedDay, onToggleDay, onSelect }: {
-  week: CalDay[]; expandedDay: string | null
-  onToggleDay: (key: string) => void; onSelect: (item: TraktSelectedItem) => void
-}) {
-  const maxItems = Math.max(...week.map(d => d.items.length), 0)
-
-  const dayNums = week.map(day => {
-    if (day.n === null) return <span className="block text-right pr-1 py-0.5 text-[#1e1e32] select-none">{'─'}</span>
-    const isExpanded = day.dateKey === expandedDay
-    const hasItems   = day.items.length > 0
-    if (day.isToday) return (
-      <button onClick={() => day.dateKey && onToggleDay(day.dateKey)} className={`cal-today${isExpanded ? ' expanded' : ''}`}>
-        [{day.n}]{isExpanded ? '▴' : '▾'}
-      </button>
-    )
-    if (hasItems) return (
-      <button onClick={() => day.dateKey && onToggleDay(day.dateKey)} className={`cal-day${isExpanded ? ' expanded' : ''}`}>
-        {day.n}{isExpanded ? '▴' : '▾'}
-      </button>
-    )
-    return <span className="block text-right pr-1 py-0.5 text-[#252540] select-none leading-none">{day.n}</span>
-  })
-
-  const itemLines = Array.from({ length: maxItems }).map((_, li) =>
-    week.map(day => {
-      const item = day.items[li]
-      if (!item) return <span className="block py-0.5">&nbsp;</span>
-      const textClass = item.downloaded ? 'line-through text-[#999]' : item.isPast ? 'text-yellow-500' : 'text-white'
-      return (
-        <div className="py-0.5 px-0.5 cursor-pointer" onClick={() => onSelect(item.selected)}>
-          <MarqueeText>
-            <span className={item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}>{item.type === 'movie' ? '‡ ' : '† '}</span>
-            <span className={textClass}>{item.line}</span>
-          </MarqueeText>
-        </div>
-      )
-    })
-  )
-
-  return (
-    <>
-      <CalRow cells={dayNums} />
-      {itemLines.map((cells, li) => <CalRow key={li} cells={cells} />)}
-    </>
-  )
-}
-
-// ── Forecast view ─────────────────────────────────────────────────────────────
-
-function ForecastView({ itemMap, offset, onOffsetChange, onSelect }: {
+function AgendaView({ itemMap, onSelect }: {
   itemMap: Map<string, CalItem[]>
-  offset: number
-  onOffsetChange: (n: number) => void
   onSelect: (item: TraktSelectedItem) => void
 }) {
-  const today = new Date()
-  const days  = [-1, 0, 1].map(d => {
-    const date = addDays(today, d + offset)
-    const key  = dateKey(date)
-    return { key, isToday: d + offset === 0, items: itemMap.get(key) ?? [] }
-  })
-
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between mb-2 font-mono text-xs">
-        <button onClick={() => onOffsetChange(offset - 3)} className="btn-xs text-[#888] hover:text-white">← prev</button>
-        {offset !== 0 && (
-          <button onClick={() => onOffsetChange(0)} className="btn-xs text-[#6a9a7a]">today</button>
-        )}
-        <button onClick={() => onOffsetChange(offset + 3)} className="btn-xs text-[#888] hover:text-white">next →</button>
-      </div>
-
-      {days.map(({ key, isToday, items }) => (
-        <div key={key} className={`rounded border font-mono text-xs ${isToday ? 'border-[#3a3a6a] bg-[#12122a]' : 'border-[#1a1a2e] bg-[#0d0d18]'}`}>
-          <div className={`px-3 py-1.5 flex items-center justify-between border-b ${isToday ? 'border-[#3a3a6a]' : 'border-[#1a1a2e]'}`}>
-            <span className={isToday ? 'text-[#4ade80] font-bold' : 'text-[#6a9a7a]'}>
-              {isToday ? `[${fmtDateHeader(key)}]` : fmtDateHeader(key)}
-            </span>
-            {isToday && <span className="text-[#4ade80] text-xs">today</span>}
-          </div>
-          <div className="px-3 py-2 space-y-1.5">
-            {items.length === 0 ? (
-              <span className="text-[#444]">—</span>
-            ) : items.map((item, i) => {
-              const textClass = item.downloaded ? 'line-through text-[#555]' : item.isPast ? 'text-yellow-500' : 'text-white'
-              return (
-                <div key={i} className="flex items-center gap-2 cursor-pointer" onClick={() => onSelect(item.selected)}>
-                  <span className={`shrink-0 ${item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}`}>
-                    {item.type === 'movie' ? '‡' : '†'}
-                  </span>
-                  <span className={`${textClass} flex-1 min-w-0 truncate`}>{item.line}</span>
-                  <ItemTags item={item} />
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ── Agenda view ───────────────────────────────────────────────────────────────
-
-function AgendaView({ itemMap, cap, agendaOffset, onOffsetChange, onSelect }: {
-  itemMap: Map<string, CalItem[]>
-  cap: number
-  agendaOffset: number
-  onOffsetChange: (n: number) => void
-  onSelect: (item: TraktSelectedItem) => void
-}) {
+  const [offset, setOffset] = useState(0)
   const today = new Date()
 
-  // Build days with entries anchored to today.
-  // agendaOffset 0 = today → forward; negative = past via prev button.
-  const startDay = agendaOffset
-  const endDay   = agendaOffset + 90
+  const days = useMemo(() => {
+    const result: Array<{ key: string; isToday: boolean; isPast: boolean; items: CalItem[] }> = []
+    const start = offset < 0 ? offset - 90 : offset
+    const end   = offset < 0 ? offset       : offset + 90
 
-  const daysWithItems: Array<{ key: string; isToday: boolean; isPast: boolean; items: CalItem[] }> = []
-  for (let d = startDay; d <= endDay; d++) {
-    const date  = addDays(today, d)
-    const key   = dateKey(date)
-    const items = itemMap.get(key)
-    if (items && items.length > 0) {
-      daysWithItems.push({ key, isToday: d === 0, isPast: d < 0, items })
+    for (let d = start; d <= end; d++) {
+      const date  = addDays(today, d)
+      const key   = dateKey(date)
+      const items = itemMap.get(key)
+      if (items && items.length > 0) {
+        result.push({ key, isToday: d === 0, isPast: d < 0, items })
+        if (result.length >= 12) break
+      }
     }
-  }
-
-  // Cap by total entries
-  let remaining = cap
-  const capped  = daysWithItems.map(day => {
-    if (remaining <= 0) return null
-    const sliced = day.items.slice(0, remaining)
-    remaining -= sliced.length
-    return { ...day, items: sliced }
-  }).filter(Boolean) as typeof daysWithItems
+    return result
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemMap, offset])
 
   return (
     <div>
-      {/* nav */}
-      <div className="flex items-center justify-between mb-3 font-mono text-xs">
-        <button onClick={() => onOffsetChange(agendaOffset - cap)} className="btn-xs text-[#888] hover:text-white">← prev</button>
-        {agendaOffset !== 0 && (
-          <button onClick={() => onOffsetChange(0)} className="btn-xs text-[#6a9a7a]">today</button>
+      <div className="flex items-center gap-3 mb-4 font-mono text-[10px]">
+        <button onClick={() => setOffset(o => o - 7)} className="btn-xs">← prev</button>
+        {offset !== 0 && (
+          <button onClick={() => setOffset(0)} className="btn-xs" style={{ color: 'var(--s-today)' }}>today</button>
         )}
-        <button onClick={() => onOffsetChange(agendaOffset + cap)} className="btn-xs text-[#888] hover:text-white">next →</button>
+        <button onClick={() => setOffset(o => o + 7)} className="btn-xs">next →</button>
       </div>
 
-      {capped.length === 0 ? (
-        <p className="text-[#444] text-xs font-mono">// no entries in this range</p>
+      {days.length === 0 ? (
+        <p className="font-mono text-[11px]" style={{ color: 'var(--dim)' }}>nothing scheduled</p>
       ) : (
-        <div className="space-y-3 font-mono text-xs">
-          {capped.map(({ key, isToday, isPast, items }) => (
+        <div className="space-y-5">
+          {days.map(({ key, isToday, isPast, items }) => (
             <div key={key}>
-              <div className="mb-1 pb-0.5 border-b border-[#1a1a2e] flex items-center gap-2">
-                <span className={isToday ? 'text-[#4ade80] font-bold' : isPast ? 'text-[#4a4a6a]' : 'text-[#6a9a7a]'}>
-                  {fmtDateKey(key)}
-                </span>
-                {isToday && <span className="text-[#4ade80] text-xs">← today</span>}
+              <div
+                className="font-mono text-[10px] uppercase tracking-wider mb-2 pb-1"
+                style={{
+                  color: isToday ? 'var(--s-today)' : isPast ? 'var(--dimmer)' : 'var(--dim)',
+                  borderBottom: '1px solid var(--border)',
+                }}
+              >
+                {fmtDateHeader(key)}
+                {isToday && <span className="ml-3" style={{ color: 'var(--s-today)' }}>today</span>}
               </div>
-              <div className="space-y-1 pl-2">
-                {items.map((item, i) => {
-                  const textClass = item.downloaded ? 'line-through text-[#555]' : item.isPast ? 'text-yellow-500' : 'text-white'
-                  return (
-                    <div key={i} className="flex items-center gap-2 cursor-pointer group" onClick={() => onSelect(item.selected)}>
-                      <span className={`shrink-0 ${item.type === 'movie' ? 'text-amber-400' : 'text-blue-400'}`}>
-                        {item.type === 'movie' ? '‡' : '†'}
-                      </span>
-                      <span className={`${textClass} flex-1 min-w-0 truncate group-hover:text-[#ddd] transition-colors`}>
-                        {item.line}
-                      </span>
-                      <ItemTags item={item} />
-                    </div>
-                  )
-                })}
+              <div className="space-y-1.5 pl-3" style={{ borderLeft: '2px solid var(--border)' }}>
+                {items.map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 cursor-pointer group"
+                    onClick={() => onSelect(item.selected)}
+                  >
+                    <span
+                      className="font-mono text-xs flex-1 min-w-0 truncate transition-colors"
+                      style={{
+                        color: item.downloaded
+                          ? 'var(--dim)'
+                          : isPast
+                          ? 'var(--text-dim)'
+                          : 'var(--text)',
+                        textDecoration: item.downloaded ? 'line-through' : 'none',
+                      }}
+                    >
+                      {item.line}
+                    </span>
+                    <ItemTags item={item} />
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
       )}
-    </div>
-  )
-}
-
-// ── view switcher ─────────────────────────────────────────────────────────────
-
-type CalView = 'month' | 'forecast' | 'agenda'
-
-function ViewSwitcher({ view, onChange }: { view: CalView; onChange: (v: CalView) => void }) {
-  return (
-    <div className="flex gap-1 font-mono text-xs">
-      {(['month', 'forecast', 'agenda'] as CalView[]).map(v => (
-        <button
-          key={v}
-          onClick={() => onChange(v)}
-          className={`px-1.5 py-0.5 border ${view === v ? 'border-[#7070a8] text-[#aaa]' : 'border-[#1a1a2e] text-[#555] hover:text-[#888]'}`}
-        >
-          {v}
-        </button>
-      ))}
     </div>
   )
 }
@@ -514,6 +275,7 @@ export default function TraktSection() {
   const [error,              setError]              = useState<string | null>(null)
   const [loading,            setLoading]            = useState(true)
   const [selected,           setSelected]           = useState<DrawerEntry | null>(null)
+  const [refreshing,         setRefreshing]         = useState(false)
 
   function selectTrakt(item: TraktSelectedItem) {
     if (item.type === 'movie') {
@@ -522,21 +284,6 @@ export default function TraktSection() {
       setSelected({ via: 'trakt', tmdbId: item.data.show.ids.tmdb, mediaType: 'tv', title: item.data.show.title })
     }
   }
-  const [expandedDay,        setExpandedDay]        = useState<string | null>(null)
-  const [view,               setView]               = useState<CalView>('month')
-  const [forecastOffset,     setForecastOffset]     = useState(0)
-  const [agendaOffset,       setAgendaOffset]       = useState(0)
-  const [isMobile,           setIsMobile]           = useState(false)
-  const [refreshing,         setRefreshing]         = useState(false)
-
-  useEffect(() => {
-    const mobile = window.innerWidth < 768
-    setIsMobile(mobile)
-    setView(mobile ? 'forecast' : 'month')
-    function onResize() { setIsMobile(window.innerWidth < 768) }
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
 
   const load = useCallback(async () => {
     try {
@@ -567,74 +314,26 @@ export default function TraktSection() {
     [episodes, movies, downloadedMovies, downloadedEpisodes, inArrMovies, inArrShows],
   )
 
-  const now   = new Date()
-  const year  = now.getFullYear()
-  const month = now.getMonth()
-  const weeks = useMemo(() => buildCalendar(year, month, itemMap), [year, month, itemMap])
-
-  function toggleDay(key: string) { setExpandedDay(prev => prev === key ? null : key) }
-
-  const headerCells = DAY_NAMES.map((d, i) => (
-    <span key={d} className="block text-center py-0.5 font-bold select-none" style={{ color: `hsl(${DAY_HUE[i]}, 70%, 65%)` }}>
-      {d}
-    </span>
-  ))
-
-  const cap = isMobile ? 5 : 10
-
   return (
     <>
       <section id="trakt">
-        <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between flex-wrap gap-2">
-          <span>
-            const{' '}
-            <span className="text-white text-sm font-medium uppercase tracking-widest">Tr4kt Upc0m1ng</span>
-            {' = { '}
-            <span className="text-[#888]">// {MONTH_NAMES[month]} :: {year}</span>
-          </span>
-          <div className="flex items-center gap-3">
-            <span className="text-[#888] text-xs hidden sm:inline">
-              <span className="text-green-400">[n]</span> today&nbsp;&nbsp;
-              <span className="text-blue-400">†</span> sonarr&nbsp;&nbsp;
-              <span className="text-amber-400">‡</span> radarr
-            </span>
-            <ViewSwitcher view={view} onChange={setView} />
-            <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false) }} disabled={refreshing} className="btn-xs text-[#7070a8] hover:text-[#aaa]">{refreshing ? '...' : <><span className="hidden sm:inline">--refresh</span><span className="sm:hidden">↺</span></>}</button>
+        <div className="module-panel">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-label">Trakt</h2>
+            <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false) }} disabled={refreshing} className="btn-xs">
+              {refreshing ? '...' : '↺'}
+            </button>
           </div>
+
+          {error   && <p className="font-mono text-xs mb-3" style={{ color: 'var(--s-danger)' }}>{error}</p>}
+          {loading && <Spinner />}
+
+          {!loading && !error && (
+            <div className="inset-panel px-4 py-4">
+              <AgendaView itemMap={itemMap} onSelect={selectTrakt} />
+            </div>
+          )}
         </div>
-
-        {error   && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}
-        {loading && <Spinner />}
-
-        {!loading && !error && view === 'month' && (
-          <div>
-            <CalSep />
-            <CalRow cells={headerCells} />
-            <CalSep />
-            {weeks.map((week, wi) => {
-              const expandedInWeek = week.find(d => d.dateKey === expandedDay)
-              return (
-                <div key={wi}>
-                  <WeekRow week={week} expandedDay={expandedDay} onToggleDay={toggleDay} onSelect={selectTrakt} />
-                  <CalSep highlight={!!expandedInWeek} />
-                  {expandedInWeek && expandedDay && (
-                    <ExpandedPanel dateKey={expandedDay} items={expandedInWeek.items} onSelect={selectTrakt} onClose={() => setExpandedDay(null)} />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {!loading && !error && view === 'forecast' && (
-          <ForecastView itemMap={itemMap} offset={forecastOffset} onOffsetChange={setForecastOffset} onSelect={selectTrakt} />
-        )}
-
-        {!loading && !error && view === 'agenda' && (
-          <AgendaView itemMap={itemMap} cap={cap} agendaOffset={agendaOffset} onOffsetChange={setAgendaOffset} onSelect={selectTrakt} />
-        )}
-
-        <div className="font-mono text-xs text-[#6a9a7a] mt-2">{'}'}</div>
       </section>
 
       <UnifiedDrawer entry={selected} onClose={() => setSelected(null)} onRefresh={() => {}} />

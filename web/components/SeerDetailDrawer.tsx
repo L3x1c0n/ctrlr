@@ -23,7 +23,7 @@ const statusLabel: Record<number, string> = {
 const statusColor: Record<number, string> = {
   1: 'text-yellow-400',
   2: 'text-blue-400',
-  3: 'text-red-400',
+  3: 'text-danger',
   4: 'text-green-400',
   5: 'text-purple-400',
 }
@@ -229,7 +229,7 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
         <div className="relative z-10 overflow-y-auto h-full p-6">
           <div className="flex justify-between items-center mb-6">
             <span className="text-[#7070a8] text-xs">{`/* seer -- detail */`}</span>
-            <button onClick={onClose} className="btn-xs text-[#ccc] hover:text-white">--close</button>
+            <button onClick={onClose} className="btn-xs">close</button>
           </div>
 
           {loading && <Spinner />}
@@ -351,7 +351,7 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
                         {(() => {
                           const sel = rootFolders.find(f => f.path === rootFolder)
                           if (!sel) return null
-                          const color = sel.freeSpace < 10 * 1024 ** 3 ? 'text-red-400' : sel.freeSpace < 50 * 1024 ** 3 ? 'text-yellow-400' : 'text-green-400'
+                          const color = sel.freeSpace < 10 * 1024 ** 3 ? 'text-danger' : sel.freeSpace < 50 * 1024 ** 3 ? 'text-yellow-400' : 'text-green-400'
                           return <p className={`text-xs ${color}`}>{fmtBytes(sel.freeSpace)} free</p>
                         })()}
                       </div>
@@ -371,13 +371,13 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
                         <button
                           onClick={saveConfig}
                           disabled={!!acting}
-                          className="btn-xs text-blue-400"
+                          className="btn-xs"
                         >
-                          {acting === 'update' ? '...' : '--save'}
+                          {acting === 'update' ? '...' : 'save'}
                         </button>
                       )}
                       {saveStatus === 'ok' && <span className="text-green-400 text-xs">saved</span>}
-                      {saveStatus === 'error' && <span className="text-red-400 text-xs">{saveError ?? 'error'}</span>}
+                      {saveStatus === 'error' && <span className="text-danger text-xs">{saveError ?? 'error'}</span>}
                     </div>
                   )}
                 </div>
@@ -444,9 +444,9 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
                           })
                           setActing(null)
                         }}
-                        className="btn-xs text-violet-400"
+                        className="btn-xs"
                       >
-                        {acting === 'auto' ? '...' : 'grep'}
+                        {acting === 'auto' ? '...' : 'search'}
                       </button>
                       {searchId != null && (
                         <button
@@ -469,9 +469,9 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
                               setRelLoading(false)
                             }
                           }}
-                          className="btn-xs text-violet-400"
+                          className="btn-xs"
                         >
-                          {relLoading ? '...' : 'grep -i'}
+                          {relLoading ? '...' : 'search releases'}
                         </button>
                       )}
                     </div>
@@ -506,17 +506,17 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
                     <button
                       onClick={() => act('approve')}
                       disabled={!!acting}
-                      className="btn-xs text-green-400"
+                      className="btn-xs"
                     >
-                      {acting === 'approve' ? '...' : '--approve'}
+                      {acting === 'approve' ? '...' : 'approve'}
                     </button>
                   )}
                   <button
                     onClick={() => { if (confirm(`Delete request for ${title}?`)) act('delete') }}
                     disabled={!!acting}
-                    className="btn-xs text-red-400"
+                    className="btn-xs danger"
                   >
-                    {acting === 'delete' ? '...' : '--rm'}
+                    {acting === 'delete' ? '...' : 'remove'}
                   </button>
                 </div>
               </div>

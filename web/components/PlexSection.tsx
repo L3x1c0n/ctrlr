@@ -64,29 +64,24 @@ export default function PlexSection() {
 
   function MediaRow({ item, index }: { item: PlexMedia; index: number }) {
     return (
-      <div className="flex items-center gap-2 font-mono text-xs border-b border-[#0f0f1a] py-0.5">
-        <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums select-none">{index + 1}</span>
+      <div className="flex items-center gap-2 font-mono text-xs px-4 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
+        <span className="w-5 shrink-0 text-right tabular-nums select-none" style={{ color: 'var(--dim)' }}>{index + 1}</span>
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <button
-            onClick={() => openPlex(item)}
-            className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0"
-          >
-            --info
-          </button>
-          <span className="truncate text-white">
+          <button onClick={() => openPlex(item)} className="btn-xs shrink-0">↗</button>
+          <span className="truncate" style={{ color: 'var(--text)' }}>
             {item.grandparentTitle ?? item.title}
             {item.grandparentTitle && (
-              <span className="text-[#888] ml-2">
+              <span className="ml-2" style={{ color: 'var(--dim)' }}>
                 S{String(item.parentIndex ?? 0).padStart(2, '0')}E{String(item.index ?? 0).padStart(2, '0')}
               </span>
             )}
           </span>
         </div>
-        <span className="shrink-0 text-[#999] tabular-nums w-[36px] text-right">{item.year ?? ''}</span>
+        <span className="shrink-0 tabular-nums w-[36px] text-right" style={{ color: 'var(--dim)' }}>{item.year ?? ''}</span>
         <span className="shrink-0 w-[16px] text-center">
           {item.viewCount && item.viewCount > 0
-            ? <span className="text-[#999]">1</span>
-            : <span className="text-yellow-400">Ø</span>}
+            ? <span style={{ color: 'var(--dim)' }}>✓</span>
+            : <span style={{ color: 'var(--s-today)' }}>○</span>}
         </span>
         <button
           onClick={() => {
@@ -98,9 +93,9 @@ export default function PlexSection() {
               }).then(load)
             }
           }}
-          className="btn-xs text-red-400 shrink-0"
+          className="btn-xs danger shrink-0"
         >
-          --rm
+          remove
         </button>
       </div>
     )
@@ -109,18 +104,17 @@ export default function PlexSection() {
   return (
     <>
       <section id="plex">
-        {/* header */}
-        <div className="font-mono text-xs text-[#6a9a7a] pb-2 mb-3 border-b border-[#1a1a2e] flex items-baseline justify-between">
-          <span>const <span className="text-white text-sm font-medium uppercase tracking-widest">Pl3x R3c3ntly 4dd3d</span> = {'{'}</span>
-          <span className="flex items-center gap-3">
-            <span className="text-[#888]">// top {max}, past {days}d first</span>
-            <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false) }} disabled={refreshing} className="btn-xs text-[#7070a8] hover:text-[#aaa]">{refreshing ? '...' : <><span className="hidden sm:inline">--refresh</span><span className="sm:hidden">↺</span></>}</button>
-          </span>
+        <div className="module-panel">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="section-label">Plex</h2>
+            <span className="font-mono text-[10px]" style={{ color: 'var(--dimmer)' }}>top {max}, past {days}d</span>
+          </div>
+          <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false) }} disabled={refreshing} className="btn-xs">{refreshing ? '...' : '↺'}</button>
         </div>
 
-        {error && <p className="text-red-400 text-sm font-mono mb-2"><span className="text-[#888]">2&gt;</span> {error}</p>}
+        {error && <p className="text-danger text-sm font-mono mb-2">{error}</p>}
 
-        {/* search input */}
         <div className="flex gap-2 mb-4">
           <input
             type="text"
@@ -128,31 +122,25 @@ export default function PlexSection() {
             onChange={e => setSearchQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && doSearch()}
             placeholder="Search Plex library..."
-            className="bg-[#0f0f1a] border border-[#1a1a2e] text-white font-mono text-sm px-3 py-1.5 flex-1 focus:outline-none focus:border-[#888]"
+            className="font-mono text-sm px-3 py-1.5 flex-1 focus:outline-none"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-hi)', color: 'var(--text)' }}
           />
-          <button
-            onClick={doSearch}
-            disabled={searchLoading}
-            className="bg-[#1a1a2e] text-violet-400 font-mono text-sm px-4 py-1.5 hover:bg-[#252540] disabled:opacity-50"
-          >
-            {searchLoading ? '...' : 'grep'}
+          <button onClick={doSearch} disabled={searchLoading} className="btn-xs px-4">
+            {searchLoading ? '...' : 'search'}
           </button>
         </div>
 
-        {/* search results — expands above recently added */}
         {searchResults !== null && (
           <div className="mb-4">
-            <div className="font-mono text-xs text-[#7070a8] mb-2">
-              {'/* ── '}
-              {`${searchResults.length} result${searchResults.length !== 1 ? 's' : ''} for "${searchQuery}"`}
-              {' ── */'}
+            <div className="font-mono text-[10px] mb-2" style={{ color: 'var(--dim)' }}>
+              {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for &ldquo;{searchQuery}&rdquo;
             </div>
             {searchResults.length === 0 && (
-              <p className="text-[#999] text-sm font-mono pl-4">no results</p>
+              <p className="font-mono text-xs pl-4" style={{ color: 'var(--dim)' }}>no results</p>
             )}
             {searchResults.length > 0 && (
               <div className="font-mono text-xs md:text-sm">
-                <div className="flex items-center gap-3 text-[#999] text-xs uppercase border-b border-[#1a1a2e] py-1 select-none">
+                <div className="flex items-center gap-3 text-xs uppercase py-1 select-none" style={{ color: 'var(--dim)', borderBottom: '1px solid var(--border)' }}>
                   <span className="w-5 shrink-0" />
                   <span className="flex-1">Title</span>
                   <span className="hidden md:block shrink-0 w-[48px]">Type</span>
@@ -161,27 +149,27 @@ export default function PlexSection() {
                   <span className="shrink-0">Actions</span>
                 </div>
                 {searchResults.map((item, i) => (
-                  <div key={item.ratingKey} className="flex items-center gap-3 border-b border-[#0f0f1a] py-0.5">
-                    <span className="w-5 shrink-0 text-right text-[#7070a8] tabular-nums text-xs">{i + 1}</span>
+                  <div key={item.ratingKey} className="flex items-center gap-3 py-0.5" style={{ borderBottom: '1px solid var(--border)' }}>
+                    <span className="w-5 shrink-0 text-right tabular-nums text-xs" style={{ color: 'var(--dim)' }}>{i + 1}</span>
                     <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <button onClick={() => openPlex(item)} className="btn-xs text-cyan-600 hover:text-cyan-400 shrink-0">--info</button>
-                      <span className="truncate text-white">
+                      <button onClick={() => openPlex(item)} className="btn-xs shrink-0">↗</button>
+                      <span className="truncate" style={{ color: 'var(--text)' }}>
                         {item.grandparentTitle ?? item.title}
                         {item.grandparentTitle && (
-                          <span className="text-[#888] ml-2">
+                          <span className="ml-2" style={{ color: 'var(--dim)' }}>
                             S{String(item.parentIndex ?? 0).padStart(2, '0')}E{String(item.index ?? 0).padStart(2, '0')}
                           </span>
                         )}
                       </span>
                     </div>
-                    <span className="hidden md:block shrink-0 w-[48px] text-[#999] text-xs uppercase whitespace-nowrap">
+                    <span className="hidden md:block shrink-0 w-[48px] text-xs uppercase whitespace-nowrap" style={{ color: 'var(--dim)' }}>
                       {item.type === 'show' ? 'tv' : item.type ?? ''}
                     </span>
-                    <span className="shrink-0 w-[36px] text-right text-[#999] text-xs">{item.year ?? ''}</span>
+                    <span className="shrink-0 w-[36px] text-right text-xs" style={{ color: 'var(--dim)' }}>{item.year ?? ''}</span>
                     <span className="shrink-0 w-[16px] text-center text-xs">
                       {item.viewCount && item.viewCount > 0
-                        ? <span className="text-[#999]">1</span>
-                        : <span className="text-yellow-400">Ø</span>}
+                        ? <span style={{ color: 'var(--dim)' }}>✓</span>
+                        : <span style={{ color: 'var(--s-today)' }}>○</span>}
                     </span>
                     <div className="shrink-0 flex gap-1">
                       <button
@@ -197,9 +185,9 @@ export default function PlexSection() {
                             })
                           }
                         }}
-                        className="btn-xs text-red-400 whitespace-nowrap"
+                        className="btn-xs danger whitespace-nowrap"
                       >
-                        --rm
+                        remove
                       </button>
                     </div>
                   </div>
@@ -209,71 +197,49 @@ export default function PlexSection() {
           </div>
         )}
 
-        {/* recently added — mobile: tabs, desktop: side by side */}
+        {/* Mobile: tab switcher */}
         <div className="md:hidden">
-          {(() => {
-            const PLEX_TABS = [
-              { key: 'shows',  label: 'Shows',  color: '#4169e1' },
-              { key: 'movies', label: 'Movies', color: '#fb923c' },
-            ] as const
-            return (
-              <div className="flex mb-4 border-b border-[#1a1a2e]">
-                {PLEX_TABS.map(t => {
-                  const active = plexTab === t.key
-                  return (
-                    <button
-                      key={t.key}
-                      onClick={() => setPlexTab(t.key)}
-                      className="flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-all duration-150 border-b-2 -mb-px"
-                      style={{
-                        borderColor: active ? t.color : 'transparent',
-                        color: active ? t.color : '#444',
-                        textShadow: active ? `0 0 12px ${t.color}88` : 'none',
-                      }}
-                    >
-                      {t.label}
-                    </button>
-                  )
-                })}
-              </div>
-            )
-          })()}
-          <div className={plexTab === 'shows' ? '' : 'hidden'}>
-            <div className="font-mono text-xs text-[#6a9a7a] mb-2">  shows: [</div>
-            {shows.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
-            {shows.length > 0 && (
-              <div>{shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}</div>
-            )}
-            <div className="font-mono text-xs text-[#6a9a7a] mt-1">  ], // {shows.length}</div>
+          <div className="flex mb-3" style={{ borderBottom: '1px solid var(--border)' }}>
+            {(['shows', 'movies'] as const).map(key => {
+              const active = plexTab === key
+              return (
+                <button key={key} onClick={() => setPlexTab(key)} className="flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-colors duration-150 border-b-2 -mb-px" style={{ borderColor: active ? 'var(--text)' : 'transparent', color: active ? 'var(--text)' : 'var(--dim)' }}>
+                  {key}
+                </button>
+              )
+            })}
           </div>
-          <div className={plexTab === 'movies' ? '' : 'hidden'}>
-            <div className="font-mono text-xs text-[#6a9a7a] mb-2">  movies: [</div>
-            {movies.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
-            {movies.length > 0 && (
-              <div>{movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}</div>
-            )}
-            <div className="font-mono text-xs text-[#6a9a7a] mt-1">  ] // {movies.length}</div>
+          <div className="inset-panel">
+            <div className={plexTab === 'shows' ? '' : 'hidden'}>
+              {shows.length === 0 && (loading ? <div className="px-4 py-3"><Spinner /></div> : <p className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--dim)' }}>none</p>)}
+              {shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}
+            </div>
+            <div className={plexTab === 'movies' ? '' : 'hidden'}>
+              {movies.length === 0 && (loading ? <div className="px-4 py-3"><Spinner /></div> : <p className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--dim)' }}>none</p>)}
+              {movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}
+            </div>
           </div>
         </div>
-        <div className="hidden md:grid md:grid-cols-2 gap-6">
+
+        {/* Desktop: two inset panels side by side */}
+        <div className="hidden md:grid md:grid-cols-2 gap-4">
           <div>
-            <div className="font-mono text-xs text-[#6a9a7a] mb-2">  shows: [</div>
-            {shows.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
-            {shows.length > 0 && (
-              <div>{shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}</div>
-            )}
-            <div className="font-mono text-xs text-[#6a9a7a] mt-1">  ], // {shows.length}</div>
+            <p className="font-mono text-[9px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--dimmer)' }}>Shows</p>
+            <div className="inset-panel">
+              {shows.length === 0 && (loading ? <div className="px-4 py-3"><Spinner /></div> : <p className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--dim)' }}>none</p>)}
+              {shows.map((s, i) => <MediaRow key={s.ratingKey} item={s} index={i} />)}
+            </div>
           </div>
           <div>
-            <div className="font-mono text-xs text-[#6a9a7a] mb-2">  movies: [</div>
-            {movies.length === 0 && (loading ? <Spinner /> : <p className="text-[#999] text-sm font-mono pl-4">none</p>)}
-            {movies.length > 0 && (
-              <div>{movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}</div>
-            )}
-            <div className="font-mono text-xs text-[#6a9a7a] mt-1">  ] // {movies.length}</div>
+            <p className="font-mono text-[9px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--dimmer)' }}>Movies</p>
+            <div className="inset-panel">
+              {movies.length === 0 && (loading ? <div className="px-4 py-3"><Spinner /></div> : <p className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--dim)' }}>none</p>)}
+              {movies.map((m, i) => <MediaRow key={m.ratingKey} item={m} index={i} />)}
+            </div>
           </div>
         </div>
-        <div className="font-mono text-xs text-[#6a9a7a] mt-2">{'}'}</div>
+
+        </div>{/* module-panel */}
       </section>
 
       <UnifiedDrawer entry={selected} onClose={() => setSelected(null)} onRefresh={load} />

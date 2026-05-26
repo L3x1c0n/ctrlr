@@ -89,7 +89,7 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
   }
 
   if (loading) return <Spinner />
-  if (error) return <p className="text-red-500 text-xs font-mono mt-2">// error: {error}</p>
+  if (error) return <p className="text-danger text-xs font-mono mt-2">// error: {error}</p>
   if (!releases) return null
 
   const btnCls = (active: boolean) =>
@@ -159,7 +159,7 @@ export default function ReleaseSearchResults({ releases, loading, error, acting,
                     )}
                   </div>
                   {r.rejected && r.rejections.length > 0 && (
-                    <p className="text-red-600 text-xs mt-0.5">{r.rejections[0]}</p>
+                    <p className="text-danger text-xs mt-0.5">{r.rejections[0]}</p>
                   )}
                 </div>
               )

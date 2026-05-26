@@ -96,7 +96,7 @@ export default function QBDetailDrawer({ torrent, posterUrl, onClose, onRefresh 
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <span className="text-[#7070a8] text-xs">{`/* qbittorrent -- detail */`}</span>
-            <button onClick={onClose} className="btn-xs text-[#ccc] hover:text-white">--close</button>
+            <button onClick={onClose} className="btn-xs">close</button>
           </div>
 
           {torrent && (
@@ -200,23 +200,23 @@ export default function QBDetailDrawer({ torrent, posterUrl, onClose, onRefresh 
                   <button
                     onClick={() => act(isPaused ? 'resume' : 'pause')}
                     disabled={!!acting}
-                    className={`btn-xs ${isPaused ? 'text-green-400' : 'text-yellow-400'}`}
+                    className="btn-xs"
                   >
-                    {acting === 'pause' || acting === 'resume' ? '...' : isPaused ? '--resume' : '--pause'}
+                    {acting === 'pause' || acting === 'resume' ? '...' : isPaused ? 'resume' : 'pause'}
                   </button>
                   <button
                     onClick={() => { if (confirm(`Delete ${torrent.name}?`)) act('delete', { deleteFiles: false }) }}
                     disabled={!!acting}
-                    className="btn-xs text-red-400"
+                    className="btn-xs danger"
                   >
-                    --rm
+                    remove
                   </button>
                   <button
                     onClick={() => { if (confirm(`Delete ${torrent.name} and all files?`)) act('delete', { deleteFiles: true }) }}
                     disabled={!!acting}
-                    className="btn-xs text-red-600"
+                    className="btn-xs danger"
                   >
-                    --rm --files
+                    + files
                   </button>
                 </div>
               </div>

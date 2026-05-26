@@ -11,10 +11,11 @@ import PlexSection from '@/components/PlexSection'
 import TautulliSection from '@/components/TautulliSection'
 import { SECTION_ORDER_KEY, DEFAULT_ORDER, loadSectionOrder, type SectionKey } from '@/components/SectionOrderPicker'
 import AlertStrip from '@/components/AlertStrip'
+import LiveZone from '@/components/LiveZone'
 
 const ARR_TABS = [
-  { key: 'sonarr', label: 'S0n4rr', color: '#fde047' },
-  { key: 'radarr', label: 'R4d4rr', color: '#f43f5e' },
+  { key: 'sonarr', label: 'Sonarr', color: 'var(--s-today)' },
+  { key: 'radarr', label: 'Radarr', color: 'var(--s-danger)' },
 ] as const
 
 function ArrTabs() {
@@ -23,7 +24,7 @@ function ArrTabs() {
     <div id="arr">
       {/* Mobile: tab switcher */}
       <div className="md:hidden">
-        <div className="flex mb-4 border-b border-[#1a1a2e]">
+        <div className="flex mb-4 border-b" style={{ borderColor: 'var(--border)' }}>
           {ARR_TABS.map(t => {
             const active = tab === t.key
             return (
@@ -33,8 +34,7 @@ function ArrTabs() {
                 className="flex-1 py-2 font-mono text-xs uppercase tracking-widest transition-all duration-150 border-b-2 -mb-px"
                 style={{
                   borderColor: active ? t.color : 'transparent',
-                  color: active ? t.color : '#444',
-                  textShadow: active ? `0 0 12px ${t.color}88` : 'none',
+                  color: active ? t.color : 'var(--dim)',
                 }}
               >
                 {t.label}
@@ -50,65 +50,26 @@ function ArrTabs() {
       </div>
       {/* Desktop: side by side */}
       <div className="hidden md:grid md:grid-cols-2 gap-6">
-        <ArrSection service="sonarr" label="S0n4rr" />
-        <ArrSection service="radarr" label="R4d4rr" />
+        <ArrSection service="sonarr" label="Sonarr" />
+        <ArrSection service="radarr" label="Radarr" />
       </div>
-    </div>
-  )
-}
-
-function Divider({ label }: { label: string }) {
-  return (
-    <div className="text-[#7070a8] font-mono text-xs">
-      {'/* ── '}{label}{' ── */'}
     </div>
   )
 }
 
 const TITLES = [
   'CTRLr',
-  'gh05t@moriarty:~$',
-  'CTRLr // m3d14 st4ck',
-  '[0] all systems nominal',
+  'CTRLr — media stack',
+  'CTRLr — all systems nominal',
 ]
 
 function renderSection(key: SectionKey) {
   switch (key) {
-    case 'arr':
-      return (
-        <>
-          <Divider label="arr" />
-          <ArrTabs />
-        </>
-      )
-    case 'trakt':
-      return (
-        <>
-          <Divider label="trakt" />
-          <TraktSection />
-        </>
-      )
-    case 'plex':
-      return (
-        <>
-          <Divider label="plex" />
-          <PlexSection />
-        </>
-      )
-    case 'seer':
-      return (
-        <>
-          <Divider label="seer" />
-          <SeerSection />
-        </>
-      )
-    case 'tautulli':
-      return (
-        <>
-          <Divider label="tautulli" />
-          <TautulliSection />
-        </>
-      )
+    case 'arr':    return <ArrTabs />
+    case 'trakt':  return <TraktSection />
+    case 'plex':   return <PlexSection />
+    case 'seer':   return <SeerSection />
+    case 'tautulli': return <TautulliSection />
   }
 }
 
@@ -150,7 +111,8 @@ export default function Home() {
     <>
       <TopBar transfer={transfer} />
       <AlertStrip />
-      <main className="pt-[52px] px-4 md:px-6 pb-16 max-w-6xl mx-auto space-y-10">
+      <main className="pt-[52px] px-4 md:px-6 pb-16 max-w-6xl mx-auto space-y-5">
+        <LiveZone />
         <QBittorrentSection onTransferUpdate={handleTransferUpdate} />
         {sectionOrder.map(key => (
           <div key={key}>

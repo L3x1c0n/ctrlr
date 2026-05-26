@@ -3,6 +3,7 @@ import SettingsForm from '@/components/SettingsForm'
 import ThemePicker from '@/components/ThemePicker'
 import PasswordForm from '@/components/PasswordForm'
 import SectionOrderPicker from '@/components/SectionOrderPicker'
+import LayoutThemePicker from '@/components/LayoutThemePicker'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,9 +48,13 @@ export default function Settings() {
       <a href="/" className="text-[#999] hover:text-white font-mono text-xs uppercase tracking-wider mb-8 inline-block">
         ← Back
       </a>
-      <h1 className="text-white font-mono text-lg uppercase tracking-widest mb-8">Settings</h1>
+      <h1 className="font-mono text-lg uppercase tracking-widest mb-8" style={{ color: 'var(--text)' }}>Settings</h1>
       <div className="mb-10">
-        <h2 className="text-[#999] font-mono text-xs uppercase tracking-wider mb-3">Topbar Theme</h2>
+        <h2 className="font-mono text-xs uppercase tracking-wider mb-3" style={{ color: 'var(--dim)' }}>Layout theme</h2>
+        <LayoutThemePicker />
+      </div>
+      <div className="mb-10">
+        <h2 className="font-mono text-xs uppercase tracking-wider mb-3" style={{ color: 'var(--dim)' }}>Topbar Theme</h2>
         <ThemePicker />
       </div>
       <div className="mb-10">

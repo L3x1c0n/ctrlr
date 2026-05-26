@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRLr — Design Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* Achromatic base — warm off-white, two surface steps, charcoal text */
+    --bg:        #edeae5;
+    --bg1:       #f5f2ee;
+    --bg2:       #faf8f6;
+    --bg3:       #ffffff;
+    --border:    rgba(0,0,0,0.09);
+    --border-hi: rgba(0,0,0,0.20);
+    --text:      #1a1614;
+    --text-dim:  #706a64;
+    --dim:       #a09890;
+    --dimmer:    #d8d2cc;
+
+    /* Signal colors — Braun register: vivid, saturated, used once per function */
+    --s-dl:      #E8680A;   /* active download — Braun operator orange  */
+    --s-play:    #1A9A3C;   /* now playing     — Braun signal green      */
+    --s-today:   #D4A800;   /* due today       — Braun function yellow   */
+    --s-done:    #1A9A3C;   /* available/done  — same green as playing   */
+    --s-danger:  #CC1A1A;   /* destructive     — Braun clear-key red     */
+  }
+
+  html { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 15px; line-height: 1.5; }
+  body { min-height: 100vh; }
+
+  /* ── TOPBAR — dark control strip, all values same warm dim tone ──────── */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: stretch; height: 36px;
+    background: #252018; border-bottom: 1px solid rgba(0,0,0,0.30);
+    font-size: 12px; font-weight: 400; letter-spacing: 0.04em;
+  }
+  .topbar-seg {
+    display: flex; align-items: center; padding: 0 16px; gap: 5px;
+    color: #706050; border-right: 1px solid rgba(255,255,255,0.06);
+    white-space: nowrap;
+  }
+  /* Brand: the one accent in the topbar, like Rams' single red key */
+  .topbar-seg.brand { color: #c8b898; font-weight: 600; letter-spacing: 0.08em; }
+  .topbar-seg .label { color: #504840; }
+  .topbar-seg .val   { color: #a09070; }
+  /* Active indicator dots — the color IS the signal; text stays dim */
+  .topbar-seg .dot-dl   { width: 5px; height: 5px; border-radius: 50%; background: var(--s-dl);   display: inline-block; }
+  .topbar-seg .dot-play { width: 5px; height: 5px; border-radius: 50%; background: var(--s-play); display: inline-block; }
+  .topbar-seg.clock { margin-left: auto; border-right: none; border-left: 1px solid rgba(255,255,255,0.06); color: #504840; }
+
+  /* ── LAYOUT ──────────────────────────────────────────────────────────── */
+  .page { max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; display: flex; flex-direction: column; gap: 32px; }
+
+  /* ── SECTION LABELS — silent, uppercase, purely structural ───────────── */
+  .section-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--dim); margin-bottom: 10px;
+  }
+
+  /* ── LIVE ZONE ──────────────────────────────────────────────────────── */
+  .live-zone { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .live-card {
+    background: var(--bg1); border: 1px solid var(--border-hi);
+    border-radius: 2px; padding: 18px 20px;
+    position: relative; overflow: hidden;
+  }
+  /* The 2px bar is the ONLY color on the card — it names the card type */
+  .live-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .live-card.downloading::before { background: var(--s-dl); }
+  .live-card.playing::before     { background: var(--s-play); }
+
+  .live-card-state {
+    font-size: 12px; letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--dim); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  /* Blinking dot: one pixel of color to signal liveness — nothing more */
+  .live-card-state .dot { width: 4px; height: 4px; border-radius: 50%; display: inline-block; }
+  .live-card.downloading .dot { background: var(--s-dl); animation: blink 1.4s step-end infinite; }
+  .live-card.playing     .dot { background: var(--s-play); animation: blink 1.4s step-end infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .live-card-title {
+    font-size: 14px; font-weight: 500; color: var(--text);
+    margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .live-card-sub { font-size: 12px; color: var(--dim); margin-bottom: 16px; }
+
+  /* Progress bar: the fill color is the only color in the card body */
+  .progress-bar {
+    height: 2px; background: var(--dimmer); border-radius: 1px; overflow: hidden; margin-bottom: 8px;
+  }
+  .progress-fill { height: 100%; border-radius: 1px; }
+  .live-card.downloading .progress-fill { background: var(--s-dl); }
+  .live-card.playing     .progress-fill { background: var(--s-play); }
+
+  /* All meta text — same dim tone, no special highlighting */
+  .live-meta { display: flex; gap: 16px; font-size: 12px; color: var(--text-dim); }
+
+  /* ── QUEUE ───────────────────────────────────────────────────────────── */
+  .queue-rows { display: flex; flex-direction: column; gap: 1px; }
+  .queue-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg1); padding: 10px 14px;
+    border: 1px solid var(--border); border-radius: 2px;
+  }
+  .queue-row:hover { border-color: var(--border-hi); }
+  .queue-row.queued { opacity: 0.45; }
+  .queue-idx  { font-size: 12px; color: var(--dimmer); width: 14px; flex-shrink: 0; text-align: right; }
+  .queue-name { flex: 1; min-width: 0; font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .queue-bar  { width: 72px; flex-shrink: 0; }
+  .queue-bar .progress-bar { margin-bottom: 0; }
+  /* Queue progress fill inherits signal color from parent */
+  .queue-row .progress-fill { background: var(--s-dl); }
+  .queue-pct  { width: 34px; flex-shrink: 0; font-size: 12px; color: var(--dim); text-align: right; }
+  .queue-size { width: 52px; flex-shrink: 0; font-size: 12px; color: var(--dim); text-align: right; }
+  .queue-eta  { width: 44px; flex-shrink: 0; font-size: 12px; color: var(--dim); text-align: right; }
+  .queue-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+  /* Buttons — monochrome by default; danger color only on hover of destructive action */
+  .btn-ghost {
+    font-family: inherit; font-size: 12px; font-weight: 500;
+    background: transparent; border: 1px solid var(--dimmer);
+    color: var(--dim); padding: 2px 6px; border-radius: 2px; cursor: pointer;
+    letter-spacing: 0.03em; white-space: nowrap; transition: border-color 0.1s, color 0.1s;
+  }
+  .btn-ghost:hover { border-color: var(--border-hi); color: var(--text); }
+  /* Danger color appears only on hover — not resting state */
+  .btn-ghost.danger:hover { border-color: var(--s-danger); color: var(--s-danger); }
+
+  /* ── CALENDAR ────────────────────────────────────────────────────────── */
+  .arr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .arr-col-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--dim); margin-bottom: 8px;
+  }
+  .cal-rows { display: flex; flex-direction: column; gap: 1px; }
+  .cal-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 12px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 2px;
+  }
+  .cal-date { width: 36px; flex-shrink: 0; font-size: 12px; color: var(--dim); text-align: right; }
+  .cal-name { flex: 1; min-width: 0; font-size: 12px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-ep   { font-size: 12px; color: var(--dim); flex-shrink: 0; }
+  /* Today: only the date label gets the signal color — name stays dim */
+  .cal-row.today .cal-date { color: var(--s-today); font-weight: 600; }
+
+  /* ── PLEX STRIP ──────────────────────────────────────────────────────── */
+  .plex-strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+  .plex-strip::-webkit-scrollbar { height: 2px; }
+  .plex-strip::-webkit-scrollbar-thumb { background: var(--dimmer); border-radius: 1px; }
+  .plex-card {
+    flex-shrink: 0; width: 88px;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 2px;
+    overflow: hidden; cursor: pointer; transition: border-color 0.1s;
+  }
+  .plex-card:hover { border-color: var(--border-hi); }
+  .plex-poster {
+    width: 88px; height: 130px; background: var(--dimmer);
+    overflow: hidden; position: relative;
+  }
+  .plex-poster img { width: 100%; height: 100%; object-fit: cover; }
+  .plex-poster-label {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(26,22,20,0.82) 0%, transparent 100%);
+    padding: 16px 6px 5px; font-size: 12px; color: #ddd8d0; line-height: 1.3;
+  }
+  .plex-card-meta { padding: 5px 6px; font-size: 12px; color: var(--dim); }
+
+  /* ── SEER ────────────────────────────────────────────────────────────── */
+  .seer-rows { display: flex; flex-direction: column; gap: 1px; }
+  .seer-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 12px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 2px; transition: border-color 0.1s;
+  }
+  .seer-row:hover { border-color: var(--border-hi); }
+  .seer-title  { flex: 1; min-width: 0; font-size: 12px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seer-type   { width: 28px; flex-shrink: 0; font-size: 12px; color: var(--dim); }
+  .seer-status { width: 72px; flex-shrink: 0; font-size: 12px; color: var(--dim); }
+  /* Available is the only status worth a color — it signals action complete */
+  .seer-status.available { color: var(--s-done); }
+
+  /* ── DIVIDER ─────────────────────────────────────────────────────────── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+  /* ── BOTTOM GRID ─────────────────────────────────────────────────────── */
+  .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+
+  /* ── TAUTULLI ────────────────────────────────────────────────────────── */
+  .tautulli-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 2px;
+  }
+  .tautulli-avatar {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--dimmer);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--dim);
+  }
+  .tautulli-info  { flex: 1; min-width: 0; }
+  .tautulli-title { font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tautulli-sub   { font-size: 12px; color: var(--dim); }
+  .tautulli-bar   { width: 60px; flex-shrink: 0; }
+  .tautulli-pct   { font-size: 12px; color: var(--dim); text-align: right; }
+
+  /* ── ANNOTATION ─────────────────────────────────────────────────────── */
+  .annotation-overlay {
+    position: fixed; right: 20px; top: 50px;
+    width: 220px; background: rgba(10,10,18,0.95);
+    border: 1px solid var(--border-hi); border-radius: 3px;
+    padding: 14px; font-size: 12px; line-height: 1.7; color: var(--text-dim);
+    pointer-events: none;
+  }
+  /* ── PALETTE PANEL ───────────────────────────────────────────────────── */
+  .palette-panel {
+    background: var(--bg1); border-bottom: 1px solid var(--border-hi);
+    padding: 20px 24px 18px; font-family: 'JetBrains Mono', monospace;
+  }
+  .palette-panel-inner { max-width: 1100px; margin: 0 auto; }
+  .palette-panel h2 {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--dim); margin-bottom: 4px;
+  }
+  .palette-panel p.sub {
+    font-size: 12px; color: var(--dim); margin-bottom: 16px; line-height: 1.5;
+  }
+  .palette-groups { display: flex; flex-direction: column; gap: 16px; }
+  .palette-group-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--dimmer); margin-bottom: 8px;
+  }
+  .palette-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+  .swatch {
+    display: flex; flex-direction: column; gap: 4px; cursor: pointer;
+    width: 72px;
+  }
+  .swatch-chip {
+    width: 72px; height: 36px; border-radius: 2px;
+    border: 1px solid rgba(0,0,0,0.12);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .swatch:hover .swatch-chip { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .swatch.active .swatch-chip { box-shadow: 0 0 0 2px var(--text); }
+  .swatch-name { font-size: 12px; color: var(--text-dim); line-height: 1.3; }
+  .swatch-hex  { font-size: 12px; color: var(--dim); }
+  .swatch-prod { font-size: 7px; color: var(--dimmer); line-height: 1.4; margin-top: 1px; }
+
+  .role-pickers { display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap; }
+  .role-picker { display: flex; flex-direction: column; gap: 6px; }
+  .role-label { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+  .role-row { display: flex; gap: 4px; align-items: center; }
+  .role-chip { width: 28px; height: 18px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.12); cursor: pointer; transition: transform 0.1s; }
+  .role-chip:hover { transform: scale(1.1); }
+  .role-chip.active { box-shadow: 0 0 0 2px var(--text); }
+  .role-current { width: 28px; height: 18px; border-radius: 2px; border: 2px solid var(--text); }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR: dark control strip — brand + numbers only, one dot per active signal -->
+<div class="topbar">
+  <div class="topbar-seg brand">CTRLr</div>
+  <div class="topbar-seg">
+    <span class="dot-dl"></span>
+    <span class="label">↓</span><span class="val">24.3 MB/s</span>
+  </div>
+  <div class="topbar-seg">
+    <span class="dot-play"></span>
+    <span class="label">↑</span><span class="val">3.1 MB/s</span>
+  </div>
+  <div class="topbar-seg">
+    <span class="label">ratio</span><span class="val">2.41</span>
+  </div>
+  <div class="topbar-seg">
+    <span class="label">moriarty</span><span class="val">online</span>
+  </div>
+  <div class="topbar-seg clock">22:14</div>
+</div>
+
+<!-- ── BRAUN COLOR PALETTE PANEL ─────────────────────────────────────── -->
+<div class="palette-panel">
+  <div class="palette-panel-inner">
+    <h2>Braun / Rams Color Catalogue</h2>
+    <p class="sub">All documented colors from Braun product history. Select a role below, then click a swatch to apply it. Colors are used once per function — nowhere else.</p>
+
+    <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="flex:1;min-width:320px;">
+        <div id="palette-groups" class="palette-groups"></div>
+      </div>
+      <div>
+        <div class="palette-group-label" style="margin-bottom:10px;">role assignments</div>
+        <div id="role-pickers" class="role-pickers"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ── LIVE ZONE: what's happening right now ── -->
+  <!-- Hierarchy principle: active state owns the most visual weight -->
+  <div>
+    <div class="section-label">live</div>
+    <div class="live-zone">
+
+      <!-- Active download -->
+      <div class="live-card downloading">
+        <div class="live-card-state"><span class="dot"></span> downloading</div>
+        <div class="live-card-title">Top Chef S23E12 — Appalachian Celebration</div>
+        <div class="live-card-sub">1080p WEB-DL · sonarr → qbittorrent</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:67%"></div></div>
+        <div class="live-meta">
+          <span>67%</span>
+          <span>2.8 / 4.1 GB</span>
+          <span>eta 18m</span>
+          <span>↓ 24.3 MB/s</span>
+        </div>
+      </div>
+
+      <!-- Now playing -->
+      <div class="live-card playing">
+        <div class="live-card-state"><span class="dot"></span> playing</div>
+        <div class="live-card-title">Severance — The Way Out</div>
+        <div class="live-card-sub">gh05t · Apple TV · direct play</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:42%"></div></div>
+        <div class="live-meta">
+          <span>42%</span>
+          <span>38m remaining</span>
+          <span>1080p · direct</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── DOWNLOAD QUEUE: still active but secondary ── -->
+  <!-- Eames: honest structure — rows are rows, not a theme park -->
+  <div class="queue-section">
+    <div class="section-label">queue <span style="color:var(--dim);font-weight:400">— 4 active</span></div>
+    <div class="queue-rows">
+
+      <div class="queue-row">
+        <span class="queue-idx">1</span>
+        <span class="queue-name">Top Chef S23E12 — Appalachian Celebration.1080p.WEB-DL</span>
+        <div class="queue-bar"><div class="progress-bar"><div class="progress-fill" style="width:67%"></div></div></div>
+        <span class="queue-pct">67%</span>
+        <span class="queue-size">4.1 GB</span>
+        <span class="queue-eta">18m</span>
+        <div class="queue-actions">
+          <button class="btn-ghost">pause</button>
+          <button class="btn-ghost danger">remove</button>
+        </div>
+      </div>
+
+      <div class="queue-row">
+        <span class="queue-idx">2</span>
+        <span class="queue-name">Andor S02E06.1080p.DSNP.WEB-DL</span>
+        <div class="queue-bar"><div class="progress-bar"><div class="progress-fill" style="width:23%"></div></div></div>
+        <span class="queue-pct">23%</span>
+        <span class="queue-size">3.8 GB</span>
+        <span class="queue-eta">1h 4m</span>
+        <div class="queue-actions">
+          <button class="btn-ghost">pause</button>
+          <button class="btn-ghost danger">remove</button>
+        </div>
+      </div>
+
+      <div class="queue-row">
+        <span class="queue-idx">3</span>
+        <span class="queue-name">The White Lotus S03E07.2160p.HDR.WEB-DL</span>
+        <div class="queue-bar"><div class="progress-bar"><div class="progress-fill" style="width:8%"></div></div></div>
+        <span class="queue-pct">8%</span>
+        <span class="queue-size">18.2 GB</span>
+        <span class="queue-eta">—</span>
+        <div class="queue-actions">
+          <button class="btn-ghost">pause</button>
+          <button class="btn-ghost danger">remove</button>
+        </div>
+      </div>
+
+      <div class="queue-row queued">
+        <span class="queue-idx">4</span>
+        <span class="queue-name">Mission Impossible — The Final Reckoning.2160p.IMAX.Bluray</span>
+        <div class="queue-bar"><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div></div>
+        <span class="queue-pct">—</span>
+        <span class="queue-size">52.4 GB</span>
+        <span class="queue-eta">queued</span>
+        <div class="queue-actions">
+          <button class="btn-ghost">pause</button>
+          <button class="btn-ghost danger">remove</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── ARR CALENDAR: monitoring, passive → recedes visually ── -->
+  <!-- Ive: passive information earns less visual weight -->
+  <div>
+    <div class="section-label">upcoming</div>
+    <div class="arr-grid">
+      <div>
+        <div class="arr-col-label">sonarr</div>
+        <div class="cal-rows">
+          <div class="cal-row today">
+            <span class="cal-date">today</span>
+            <span class="cal-name">Top Chef</span>
+            <span class="cal-ep">S23E13</span>
+          </div>
+          <div class="cal-row">
+            <span class="cal-date">wed</span>
+            <span class="cal-name">Andor</span>
+            <span class="cal-ep">S02E07</span>
+          </div>
+          <div class="cal-row">
+            <span class="cal-date">wed</span>
+            <span class="cal-name">Abbott Elementary</span>
+            <span class="cal-ep">S04E19</span>
+          </div>
+          <div class="cal-row">
+            <span class="cal-date">thu</span>
+            <span class="cal-name">The White Lotus</span>
+            <span class="cal-ep">S03E08</span>
+          </div>
+          <div class="cal-row">
+            <span class="cal-date">fri</span>
+            <span class="cal-name">Severance</span>
+            <span class="cal-ep">S02E10</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="arr-col-label">radarr</div>
+        <div class="cal-rows">
+          <div class="cal-row today">
+            <span class="cal-date">today</span>
+            <span class="cal-name">Mission Impossible: The Final Reckoning</span>
+            <span class="cal-ep">digital</span>
+          </div>
+          <div class="cal-row">
+            <span class="cal-date">jun 3</span>
+            <span class="cal-name">Lilo &amp; Stitch</span>
+            <span class="cal-ep">digital</span>
+          </div>
+          <div class="cal-row">
+            <span class="cal-date">jun 10</span>
+            <span class="cal-name">Materialists</span>
+            <span class="cal-ep">theatrical</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── BOTTOM TIER: library + requests — quietest tier ── -->
+  <!-- Wright: the library is context, not action — it recedes -->
+  <div class="bottom-grid">
+
+    <!-- Plex recently added -->
+    <div>
+      <div class="section-label">recently added</div>
+      <div class="plex-strip">
+        <div class="plex-card">
+          <div class="plex-poster" style="background:#c8c0b8">
+            <div class="plex-poster-label">Andor S02</div>
+          </div>
+          <div class="plex-card-meta">TV · 2025</div>
+        </div>
+        <div class="plex-card">
+          <div class="plex-poster" style="background:#c4bab0">
+            <div class="plex-poster-label">Sinners</div>
+          </div>
+          <div class="plex-card-meta">Movie · 2025</div>
+        </div>
+        <div class="plex-card">
+          <div class="plex-poster" style="background:#bec4c0">
+            <div class="plex-poster-label">Severance S02</div>
+          </div>
+          <div class="plex-card-meta">TV · 2025</div>
+        </div>
+        <div class="plex-card">
+          <div class="plex-poster" style="background:#c4c8b8">
+            <div class="plex-poster-label">A Minecraft Movie</div>
+          </div>
+          <div class="plex-card-meta">Movie · 2025</div>
+        </div>
+        <div class="plex-card">
+          <div class="plex-poster" style="background:#c8b8bc">
+            <div class="plex-poster-label">White Lotus S03</div>
+          </div>
+          <div class="plex-card-meta">TV · 2025</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seer requests -->
+    <div>
+      <div class="section-label">requests</div>
+      <div class="seer-rows">
+        <div class="seer-row">
+          <span class="seer-type" style="color:var(--dim)">TV</span>
+          <span class="seer-title">Dark Matter</span>
+          <span class="seer-status available">available</span>
+          <button class="btn-ghost danger" style="font-size:10px">✕</button>
+        </div>
+        <div class="seer-row">
+          <span class="seer-type" style="color:var(--dim)">MV</span>
+          <span class="seer-title">Materialists</span>
+          <span class="seer-status processing">processing</span>
+          <button class="btn-ghost" style="font-size:10px">✓</button>
+        </div>
+        <div class="seer-row">
+          <span class="seer-type" style="color:var(--dim)">TV</span>
+          <span class="seer-title">The Pitt S02</span>
+          <span class="seer-status pending">pending</span>
+          <button class="btn-ghost" style="font-size:10px">✓</button>
+        </div>
+        <div class="seer-row">
+          <span class="seer-type" style="color:var(--dim)">MV</span>
+          <span class="seer-title">Final Destination: Bloodlines</span>
+          <span class="seer-status pending">pending</span>
+          <button class="btn-ghost" style="font-size:10px">✓</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ── Braun color catalogue ─────────────────────────────────────────────────
+const BRAUN_COLORS = [
+  // Non-Braun fallback
+  { hex: '#7070a8', name: 'CTRLr Purple',    role: 'fallback', prod: 'Not Braun — CTRLr identity color. Use only if no Braun signal color fits.' },
+  { hex: '#9090c8', name: 'CTRLr Purple Hi', role: 'fallback', prod: 'Not Braun — lighter variant of CTRLr identity purple.' },
+  // Neutrals
+  { hex: '#F0EDE5', name: 'Braun White',     role: 'neutral', prod: 'SK 4, KM 3, RT 20 — primary housing across all eras' },
+  { hex: '#C5C3BE', name: 'Pebble',          role: 'neutral', prod: 'ET 66, TP 1 — button surfaces, secondary controls' },
+  { hex: '#8A8A87', name: 'Braun Grey',      role: 'neutral', prod: 'ET 66 body, Sixtant 8008 — main housing grey' },
+  { hex: '#4A7A58', name: 'Laurel Green',    role: 'neutral', prod: 'RT 20 radio — housing accent, rare use' },
+  { hex: '#5A6030', name: 'Olive',           role: 'neutral', prod: 'KF 20 coffee maker — one of six colorways offered' },
+  { hex: '#2E2E2C', name: 'Anthracite',      role: 'neutral', prod: 'Phase 1 stereo, T 1000 — dark housing variant' },
+  { hex: '#1A1A18', name: 'Warm Black',      role: 'neutral', prod: '606 shelving, DN 40, Sixtant — dark product variant' },
+
+  // Reds
+  { hex: '#C02820', name: 'Signal Red',      role: 'signal',  prod: 'ET 66 on/off key — single most important control' },
+  { hex: '#8B1A14', name: 'Deep Red',        role: 'signal',  prod: 'KF 20 — dark red housing colorway variant' },
+  { hex: '#C02820', name: 'DN 40 Red',       role: 'signal',  prod: 'DN 40 alarm clock — full body colorway option' },
+  { hex: '#B83020', name: 'Sixtant Red',     role: 'signal',  prod: 'Sixtant Color/Rallye shaver — housing variant' },
+
+  // Yellows & Oranges
+  { hex: '#D4B018', name: 'Function Yellow', role: 'signal',  prod: 'ET 66 = key, ET 44 equals — the key operational signal' },
+  { hex: '#E8A800', name: 'Bright Yellow',   role: 'signal',  prod: 'HLD 4 hair dryer, KF 20, Sixtant — full body colorway' },
+  { hex: '#E8650A', name: 'Braun Orange',    role: 'signal',  prod: 'KF 20, LE03 microphone-off indicator — operator signal' },
+  { hex: '#C85008', name: 'Deep Orange',     role: 'signal',  prod: 'KF 20 orange housing variant — warmer than signal orange' },
+
+  // Blues
+  { hex: '#1A5088', name: 'Braun Blue',      role: 'signal',  prod: 'HLD 4 hair dryer — third colorway, LE03 Bluetooth indicator' },
+  { hex: '#2A72B8', name: 'Light Blue',      role: 'signal',  prod: 'LE03 — Bluetooth pairing state indicator' },
+
+  // Greens
+  { hex: '#1A9A3C', name: 'Signal Green',    role: 'signal',  prod: 'LE03 — processing state indicator (modern Braun reissue)' },
+  { hex: '#4A7A58', name: 'Muted Green',     role: 'signal',  prod: 'RT 20 — housing accent; closest to nature references in Rams' },
+]
+
+// Role assignments
+const ROLES = {
+  dl:     { label: 'downloading', var: '--s-dl',     default: '#E8650A' },
+  play:   { label: 'playing',     var: '--s-play',   default: '#1A9A3C' },
+  today:  { label: 'today',       var: '--s-today',  default: '#D4B018' },
+  danger: { label: 'danger',      var: '--s-danger', default: '#C02820' },
+}
+const roleState = {
+  dl:     '#E8650A',
+  play:   '#1A9A3C',
+  today:  '#D4B018',
+  danger: '#C02820',
+}
+let activeRole = 'dl'
+
+function setVar(name, value) {
+  document.documentElement.style.setProperty(name, value)
+}
+
+function applyColor(hex) {
+  roleState[activeRole] = hex
+  setVar(ROLES[activeRole].var, hex)
+  renderRolePickers()
+  renderSwatches()
+}
+
+function buildPalette() {
+  const groups = [
+    { label: 'neutrals — housing & surfaces',           filter: c => c.role === 'neutral' },
+    { label: 'signal — reds',                           filter: c => c.role === 'signal' && (c.hex.startsWith('#C0') || c.hex.startsWith('#B8') || c.hex.startsWith('#8B')) },
+    { label: 'signal — yellows & oranges',              filter: c => c.role === 'signal' && ['#D4', '#E8A', '#E86', '#C85'].some(p => c.hex.startsWith(p)) },
+    { label: 'signal — blues & greens',                 filter: c => c.role === 'signal' && ['#1A5', '#2A7', '#1A9', '#4A7'].some(p => c.hex.startsWith(p)) },
+    { label: 'last resort — not braun, use sparingly',  filter: c => c.role === 'fallback' },
+  ]
+
+  const container = document.getElementById('palette-groups')
+  container.innerHTML = groups.map(g => {
+    const colors = BRAUN_COLORS.filter(g.filter)
+    if (!colors.length) return ''
+    return `
+      <div>
+        <div class="palette-group-label">${g.label}</div>
+        <div class="palette-swatches" id="swatches-${g.label.replace(/\W+/g,'-')}">
+          ${colors.map(c => swatchHtml(c)).join('')}
+        </div>
+      </div>`
+  }).join('')
+
+  container.querySelectorAll('.swatch').forEach(el => {
+    el.addEventListener('click', () => applyColor(el.dataset.hex))
+  })
+}
+
+function swatchHtml(c) {
+  const isActive = roleState[activeRole] === c.hex
+  const chipStyle = c.role === 'fallback'
+    ? `background:${c.hex};border:1.5px dashed rgba(0,0,0,0.25);`
+    : `background:${c.hex};`
+  return `<div class="swatch${isActive ? ' active' : ''}" data-hex="${c.hex}" title="${c.prod}">
+    <div class="swatch-chip" style="${chipStyle}"></div>
+    <div class="swatch-name" style="${c.role==='fallback'?'color:var(--dimmer);':''}">${c.name}</div>
+    <div class="swatch-hex">${c.hex}</div>
+    <div class="swatch-prod">${c.prod.split('—')[0].trim()}</div>
+  </div>`
+}
+
+function renderSwatches() {
+  document.querySelectorAll('.swatch').forEach(el => {
+    el.classList.toggle('active', roleState[activeRole] === el.dataset.hex)
+  })
+}
+
+function renderRolePickers() {
+  const container = document.getElementById('role-pickers')
+  container.innerHTML = Object.entries(ROLES).map(([key, r]) => `
+    <div class="role-picker">
+      <div class="role-label">${r.label}</div>
+      <div class="role-row">
+        <div class="role-current" style="background:${roleState[key]}"></div>
+        <div style="font-size:10px;color:var(--dim);margin-left:6px;">${roleState[key]}</div>
+      </div>
+      <div style="font-size:10px;color:var(--dim);cursor:pointer;margin-top:2px;text-decoration:underline;" onclick="activeRole='${key}';renderRolePickers();renderSwatches();">
+        ${activeRole === key ? '▶ editing' : 'click to edit'}
+      </div>
+    </div>`).join('')
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildPalette()
+  renderRolePickers()
+})
+</script>
+
+</body>
+</html>

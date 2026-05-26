@@ -115,7 +115,7 @@ export default function SettingsForm({ initial }: { initial: Record<string, stri
 
   return (
     <div className="space-y-8">
-      {error && <p className="text-red-400 font-mono text-sm border border-red-400 px-4 py-3">{error}</p>}
+      {error && <p className="text-danger font-mono text-sm border border-danger px-4 py-3">{error}</p>}
       {saved && <p className="text-green-400 font-mono text-sm">Saved.</p>}
 
       {FIELDS.map(({ section, keys }) => (
@@ -160,11 +160,11 @@ export default function SettingsForm({ initial }: { initial: Record<string, stri
               )}
               {traktState === 'error' && (
                 <div>
-                  <p className="text-red-400 mb-2">{traktError}</p>
+                  <p className="text-danger mb-2">{traktError}</p>
                   <button onClick={connectTrakt} className="text-blue-400 hover:text-blue-300">Try again →</button>
                 </div>
               )}
-              {traktError && traktState !== 'error' && <p className="text-red-400 mt-2">{traktError}</p>}
+              {traktError && traktState !== 'error' && <p className="text-danger mt-2">{traktError}</p>}
             </div>
           )}
         </div>

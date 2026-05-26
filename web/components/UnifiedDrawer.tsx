@@ -190,7 +190,7 @@ function PlexMatchPanel({ ratingKey, mediaType, onDone }: { ratingKey: string; m
         <input type="text" value={query} onChange={e => setQuery(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && search()} placeholder="search title..."
           className="bg-[#0f0f1a] border border-[#1a1a2e] text-white font-mono text-xs px-2 py-1 flex-1 focus:outline-none focus:border-[#888]" />
-        <button onClick={search} disabled={loading} className="btn-xs text-violet-400">{loading ? '...' : '--grep'}</button>
+        <button onClick={search} disabled={loading} className="btn-xs">{loading ? '...' : 'search'}</button>
       </div>
       {results.length > 0 && (
         <div className="space-y-1 max-h-48 overflow-y-auto">
@@ -201,8 +201,8 @@ function PlexMatchPanel({ ratingKey, mediaType, onDone }: { ratingKey: string; m
                 <p className="text-white text-xs truncate">{m.name}</p>
                 {m.year && <p className="text-[#999] text-xs">{m.year}</p>}
               </div>
-              <button onClick={() => apply(m)} disabled={!!acting} className="btn-xs text-blue-400 shrink-0">
-                {acting === m.guid ? '...' : '--set'}
+              <button onClick={() => apply(m)} disabled={!!acting} className="btn-xs shrink-0">
+                {acting === m.guid ? '...' : 'select'}
               </button>
             </div>
           ))}
@@ -238,7 +238,7 @@ function fmtRes(r?: string): string | null {
 }
 
 const statusLabel: Record<number, string> = { 1: 'Pending', 2: 'Approved', 3: 'Declined', 4: 'Available', 5: 'Processing' }
-const statusColor: Record<number, string>  = { 1: 'text-yellow-400', 2: 'text-blue-400', 3: 'text-red-400', 4: 'text-green-400', 5: 'text-purple-400' }
+const statusColor: Record<number, string>  = { 1: 'text-yellow-400', 2: 'text-blue-400', 3: 'text-danger', 4: 'text-green-400', 5: 'text-purple-400' }
 
 // ── stage detection ───────────────────────────────────────────────────────────
 
@@ -851,7 +851,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
           {/* header */}
           <div className="flex justify-between items-center mb-6">
             <span className="text-[#7070a8] text-xs">{`/* unified -- detail */`}</span>
-            <button onClick={onClose} className="btn-xs text-[#ccc] hover:text-white">--close</button>
+            <button onClick={onClose} className="btn-xs">close</button>
           </div>
 
           {loading && <Spinner />}
@@ -1013,23 +1013,23 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           </button>
                         )}
                         {(mediaType === 'movie' ? arr.id : selEpId) && (
-                          <button onClick={searchReleases} disabled={relLoading} className="btn-xs text-violet-400">
-                            {relLoading ? '...' : 'grep -i'}
+                          <button onClick={searchReleases} disabled={relLoading} className="btn-xs">
+                            {relLoading ? '...' : 'search'}
                           </button>
                         )}
                         {qitem?.id && (
                           <>
                             <button
                               onClick={() => { if (confirm(`Remove ${title} from queue?`)) arrAction('delete') }}
-                              disabled={!!acting} className="btn-xs text-red-400"
+                              disabled={!!acting} className="btn-xs danger"
                             >
-                              {acting === 'delete' ? '...' : '--rm'}
+                              {acting === 'delete' ? '...' : 'remove'}
                             </button>
                             <button
                               onClick={() => { if (confirm(`Blacklist and remove ${title}?`)) arrAction('delete', { blacklist: true }) }}
-                              disabled={!!acting} className="btn-xs text-red-600"
+                              disabled={!!acting} className="btn-xs danger"
                             >
-                              --blacklist --rm
+                              blacklist
                             </button>
                           </>
                         )}
@@ -1096,13 +1096,13 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           </div>
                           <div className="flex flex-wrap gap-1.5 mt-1">
                             <button onClick={() => qbitAction(isPaused ? 'resume' : 'pause')} disabled={!!acting}
-                              className={`btn-xs ${isPaused ? 'text-green-400' : 'text-yellow-400'}`}>
-                              {acting === `qbit-${isPaused ? 'resume' : 'pause'}` ? '...' : isPaused ? '--resume' : '--pause'}
+                              className="btn-xs">
+                              {acting === `qbit-${isPaused ? 'resume' : 'pause'}` ? '...' : isPaused ? 'resume' : 'pause'}
                             </button>
                             <button onClick={() => { if (confirm(`Delete torrent?`)) qbitAction('delete', { deleteFiles: false }) }}
-                              disabled={!!acting} className="btn-xs text-red-400">--rm</button>
+                              disabled={!!acting} className="btn-xs danger">remove</button>
                             <button onClick={() => { if (confirm(`Delete torrent and files?`)) qbitAction('delete', { deleteFiles: true }) }}
-                              disabled={!!acting} className="btn-xs text-red-600">--rm --files</button>
+                              disabled={!!acting} className="btn-xs danger">+ files</button>
                           </div>
                         </>
                       ) : (
@@ -1132,25 +1132,25 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           )
                         })()}
                         <div className="flex flex-wrap gap-1.5 mt-1">
-                          <button onClick={() => plexAction('refresh')} disabled={!!acting} className="btn-xs text-blue-400">
-                            {acting === 'plex-refresh' ? '...' : '--refresh'}
+                          <button onClick={() => plexAction('refresh')} disabled={!!acting} className="btn-xs">
+                            {acting === 'plex-refresh' ? '...' : 'refresh'}
                           </button>
                           <button onClick={() => { setShowMatch(v => !v); setShowPosters(false); setShowArt(false); setPendingKey(null) }}
-                            className={`btn-xs ${showMatch ? 'text-white' : 'text-[#999]'}`}>--fix-match</button>
+                            className="btn-xs" style={showMatch ? { borderColor: 'var(--border-hi)', color: 'var(--text)' } : undefined}>fix match</button>
                           {mediaType === 'tv' && (
                             <button onClick={() => setShowSeries(v => !v)}
-                              className={`btn-xs ${showSeries ? 'text-white' : 'text-[#999]'}`}>--series</button>
+                              className="btn-xs" style={showSeries ? { borderColor: 'var(--border-hi)', color: 'var(--text)' } : undefined}>series</button>
                           )}
                           <button onClick={deleteChain}
-                            disabled={!!acting} className="btn-xs text-red-400">
-                            {acting === 'plex-delete' ? '...' : '--rm'}
+                            disabled={!!acting} className="btn-xs danger">
+                            {acting === 'plex-delete' ? '...' : 'remove'}
                           </button>
                         </div>
 
                         {pendingKey && (
                           <button onClick={saveArtwork} disabled={artworkSaving}
-                            className="btn-xs text-green-400 hover:text-green-300 disabled:opacity-50">
-                            {artworkSaving ? '...' : '--save'}
+                            className="btn-xs disabled:opacity-50">
+                            {artworkSaving ? '...' : 'save'}
                           </button>
                         )}
                         {showPosters && (
