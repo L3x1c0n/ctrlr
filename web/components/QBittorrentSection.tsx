@@ -183,7 +183,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
       <section id="qbittorrent">
         <div className="module-panel">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="section-label">qBittorrent</h2>
+            <h2 className="section-label" style={{ color: 'var(--s-dl)' }}>qBittorrent</h2>
             <div className="flex items-center gap-3">
               {transfer && (
                 <span className="font-mono text-[10px]" style={{ color: 'var(--dim)' }}>

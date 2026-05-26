@@ -14,8 +14,8 @@ import AlertStrip from '@/components/AlertStrip'
 import LiveZone from '@/components/LiveZone'
 
 const ARR_TABS = [
-  { key: 'sonarr', label: 'Sonarr', color: 'var(--s-today)' },
-  { key: 'radarr', label: 'Radarr', color: 'var(--s-danger)' },
+  { key: 'sonarr', label: 'Sonarr', color: 'var(--s-sonarr)' },
+  { key: 'radarr', label: 'Radarr', color: 'var(--s-today)' },
 ] as const
 
 function ArrTabs() {
@@ -44,14 +44,14 @@ function ArrTabs() {
         </div>
         {ARR_TABS.map(t => (
           <div key={t.key} className={tab === t.key ? '' : 'hidden'}>
-            <ArrSection service={t.key} label={t.label} />
+            <ArrSection service={t.key} label={t.label} labelColor={t.color} />
           </div>
         ))}
       </div>
       {/* Desktop: side by side */}
       <div className="hidden md:grid md:grid-cols-2 gap-6">
-        <ArrSection service="sonarr" label="Sonarr" />
-        <ArrSection service="radarr" label="Radarr" />
+        <ArrSection service="sonarr" label="Sonarr" labelColor="var(--s-sonarr)" />
+        <ArrSection service="radarr" label="Radarr" labelColor="var(--s-today)" />
       </div>
     </div>
   )

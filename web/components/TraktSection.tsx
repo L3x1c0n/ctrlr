@@ -321,7 +321,7 @@ export default function TraktSection() {
       <section id="trakt">
         <div className="module-panel">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="section-label">Trakt</h2>
+            <h2 className="section-label" style={{ color: 'var(--s-danger)' }}>Trakt</h2>
             <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false) }} disabled={refreshing} className="btn-xs">
               {refreshing ? '...' : '↺'}
             </button>

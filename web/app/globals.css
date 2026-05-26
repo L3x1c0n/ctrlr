@@ -22,6 +22,8 @@
   --s-today:     #D4A800;   /* due today        — Braun function yellow */
   --s-done:      #1A9A3C;   /* available        — same as play          */
   --s-danger:    #CC1A1A;   /* destructive      — Braun clear-key red   */
+  --s-sonarr:    #2B6CB5;   /* Sonarr           — inferred Braun grey-blue */
+  --s-seer:      #7040B0;   /* Overseerr        — brand purple           */
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────── */
@@ -61,6 +63,8 @@ section[id], div[id] {
   --s-today:     #c8943a;
   --s-done:      #6a9a7a;
   --s-danger:    #a85858;
+  --s-sonarr:    #4a88cc;
+  --s-seer:      #9060c8;
 }
 
 [data-theme="classic"] body {

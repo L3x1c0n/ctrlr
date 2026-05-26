@@ -109,7 +109,7 @@ export default function PlexSection() {
         <div className="module-panel">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="section-label">Plex</h2>
+            <h2 className="section-label" style={{ color: 'var(--s-play)' }}>Plex</h2>
             <span className="font-mono text-[10px]" style={{ color: 'var(--dimmer)' }}>top {max}, past {days}d</span>
           </div>
           <button onClick={async () => { setRefreshing(true); await load(); setRefreshing(false) }} disabled={refreshing} className="btn-xs">{refreshing ? '...' : '↺'}</button>

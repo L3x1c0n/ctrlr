@@ -125,11 +125,12 @@ function saveRetained(service: string, rows: RetainedRow[]) {
 }
 
 interface Props {
-  service: 'radarr' | 'sonarr'
-  label:   string
+  service:    'radarr' | 'sonarr'
+  label:      string
+  labelColor?: string
 }
 
-export default function ArrSection({ service, label }: Props) {
+export default function ArrSection({ service, label, labelColor }: Props) {
   const [queue,          setQueue]          = useState<ArrQueueItem[]>([])
   const [health,         setHealth]         = useState<Health[]>([])
   const [monitored,      setMonitored]      = useState<Monitored[]>([])
@@ -320,7 +321,7 @@ export default function ArrSection({ service, label }: Props) {
       <section id={service}>
         <div className="module-panel">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="section-label">{label}</h2>
+            <h2 className="section-label" style={labelColor ? { color: labelColor } : undefined}>{label}</h2>
             <div className="flex items-center gap-3">
               {monitored.length > 0 && (
                 <span className="font-mono text-[10px]" style={{ color: 'var(--dim)' }}>{monitored.length} monitored</span>

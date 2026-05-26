@@ -109,7 +109,7 @@ export default function SeerSection() {
       <section id="seer">
         <div className="module-panel">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="section-label">Overseerr</h2>
+          <h2 className="section-label" style={{ color: 'var(--s-seer)' }}>Overseerr</h2>
           <div className="flex items-center gap-2">
             <button onClick={async () => { setRefreshing(true); await loadRequests(); setRefreshing(false) }} disabled={refreshing} className="btn-xs">{refreshing ? '...' : '↺'}</button>
             <button
