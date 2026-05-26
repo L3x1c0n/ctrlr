@@ -15,9 +15,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="h-full">
       <head>
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3" />
-        <link rel="stylesheet" href="https://www.nerdfonts.com/assets/css/webfont.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
       </head>
-      <body className="min-h-full bg-[#0A0A0F] text-[#e2e2e2] antialiased">
+      <body className="min-h-full antialiased" style={{ background: 'var(--bg)', color: 'var(--text)', fontFamily: "'JetBrains Mono', ui-monospace, monospace" }}>
         {children}
       </body>
     </html>
