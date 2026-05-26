@@ -110,16 +110,33 @@ function fmtEta(seconds: number): string {
 }
 
 const stateColor: Record<string, string> = {
-  downloading: 'var(--s-dl)',
-  seeding:     'var(--s-play)',
-  pausedDL:    'var(--s-today)',
-  pausedUP:    'var(--s-today)',
-  stalledDL:   'var(--s-today)',
-  stalledUP:   'var(--s-today)',
-  error:       'var(--s-danger)',
-  missingFiles:'var(--s-danger)',
-  checkingDL:  'var(--dim)',
-  checkingUP:  'var(--dim)',
+  downloading:  'var(--s-dl)',
+  seeding:      'var(--s-play)',
+  pausedDL:     'var(--s-today)',
+  pausedUP:     'var(--s-today)',
+  stalledDL:    'var(--s-today)',
+  stalledUP:    'var(--s-today)',
+  error:        'var(--s-danger)',
+  missingFiles: 'var(--s-danger)',
+  checkingDL:   'var(--dim)',
+  checkingUP:   'var(--dim)',
+}
+
+const stateLabel: Record<string, string> = {
+  downloading:  'active',
+  seeding:      'seeding',
+  pausedDL:     'paused',
+  pausedUP:     'paused',
+  stalledDL:    'stalled',
+  stalledUP:    'stalled',
+  error:        'error',
+  missingFiles: 'missing',
+  checkingDL:   'checking',
+  checkingUP:   'checking',
+  queuedDL:     'queued',
+  queuedUP:     'queued',
+  allocating:   'allocating',
+  metaDL:       'metadata',
 }
 
 interface Props {
@@ -226,7 +243,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                 </div>
                 <span className="hidden md:block shrink-0 w-[72px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--s-dl)' }}>{fmtSpeed(t.dlspeed)}</span>
                 <span className="hidden md:block shrink-0 w-[52px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtEta(t.eta)}</span>
-                <span className="shrink-0 w-[88px] whitespace-nowrap text-[10px]" style={{ color: stateColor[t.state] ?? 'var(--dim)' }}>{t.state}</span>
+                <span className="shrink-0 whitespace-nowrap text-[10px]" style={{ color: stateColor[t.state] ?? 'var(--dim)' }}>{stateLabel[t.state] ?? t.state}</span>
                 <div className="shrink-0 flex gap-1.5" onClick={e => e.stopPropagation()}>
                   {t.state.includes('paused') || t.state.includes('Paused') ? (
                     <button onClick={() => action('resume', t.hash)} className="btn-xs" title="resume">{'▶︎'}</button>
