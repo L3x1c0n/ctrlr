@@ -207,11 +207,15 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
               </div>
             )}
             {torrents.map((t, i) => (
-              <div key={t.hash} className="flex items-center gap-3 px-4 py-2.5 font-mono text-xs" style={{ borderBottom: i < torrents.length - 1 ? '1px solid var(--border)' : undefined }}>
+              <div
+                key={t.hash}
+                className="flex items-center gap-3 px-4 py-2.5 font-mono text-xs cursor-pointer group"
+                style={{ borderBottom: i < torrents.length - 1 ? '1px solid var(--border)' : undefined }}
+                onClick={() => setSelected({ via: 'qbit', hash: t.hash, tmdbId: tmdbIds[t.hash], mediaType: mediaTypes[t.hash], title: t.name, posterUrl: posters[t.hash] })}
+              >
                 <span className="w-5 shrink-0 text-right tabular-nums select-none" style={{ color: 'var(--dim)' }}>{i + 1}</span>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <button onClick={() => setSelected({ via: 'qbit', hash: t.hash, tmdbId: tmdbIds[t.hash], mediaType: mediaTypes[t.hash], title: t.name, posterUrl: posters[t.hash] })} className="btn-xs shrink-0">↗</button>
-                  <MarqueeText className="min-w-0">
+                  <MarqueeText className="min-w-0 group-hover:underline">
                     <ScrambledName name={t.name} active={t.state === 'downloading'} />
                   </MarqueeText>
                 </div>
@@ -223,7 +227,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                 <span className="hidden md:block shrink-0 w-[72px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--s-dl)' }}>{fmtSpeed(t.dlspeed)}</span>
                 <span className="hidden md:block shrink-0 w-[52px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtEta(t.eta)}</span>
                 <span className="shrink-0 w-[88px] whitespace-nowrap text-[10px]" style={{ color: stateColor[t.state] ?? 'var(--dim)' }}>{t.state}</span>
-                <div className="shrink-0 flex gap-1.5">
+                <div className="shrink-0 flex gap-1.5" onClick={e => e.stopPropagation()}>
                   {t.state.includes('paused') || t.state.includes('Paused') ? (
                     <button onClick={() => action('resume', t.hash)} className="btn-xs">resume</button>
                   ) : (

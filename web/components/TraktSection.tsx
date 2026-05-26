@@ -239,19 +239,21 @@ function AgendaView({ itemMap, onSelect }: {
                     onClick={() => onSelect(item.selected)}
                   >
                     <span
-                      className="font-mono text-xs flex-1 min-w-0 truncate transition-colors"
+                      className={`font-mono text-xs flex-1 min-w-0 truncate transition-colors ${item.downloaded ? 'line-through' : 'group-hover:underline'}`}
                       style={{
                         color: item.downloaded
                           ? 'var(--dim)'
                           : isPast
                           ? 'var(--text-dim)'
                           : 'var(--text)',
-                        textDecoration: item.downloaded ? 'line-through' : 'none',
                       }}
                     >
                       {item.line}
                     </span>
                     <ItemTags item={item} />
+                    {!item.downloaded && (
+                      <span className="shrink-0 font-mono text-xs" style={{ color: 'var(--dimmer)' }}>›</span>
+                    )}
                   </div>
                 ))}
               </div>

@@ -72,6 +72,14 @@ section[id], div[id] {
   border-color: #2a2a40;
   color: #444466;
 }
+[data-theme="classic"] .btn-xs:hover {
+  border-color: #4a4a72;
+  color: #e2e2e2;
+}
+[data-theme="classic"] .btn-xs.danger:hover {
+  border-color: var(--s-danger);
+  color: var(--s-danger);
+}
 
 /* ── MarqueeText animation ─────────────────────────────────────────────── */
 @keyframes scroll-left {
@@ -179,7 +187,7 @@ section[id], div[id] {
     transition: border-color 0.1s, color 0.1s;
   }
   .btn-xs:hover {
-    border-color: var(--border-hi);
+    border-color: var(--text-dim);
     color: var(--text);
   }
   /* Danger: signal color only on hover, never at rest */

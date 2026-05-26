@@ -64,19 +64,20 @@ export default function PlexSection() {
 
   function MediaRow({ item, index }: { item: PlexMedia; index: number }) {
     return (
-      <div className="flex items-center gap-2 font-mono text-xs px-4 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div
+        className="flex items-center gap-2 font-mono text-xs px-4 py-2.5 cursor-pointer group"
+        style={{ borderBottom: '1px solid var(--border)' }}
+        onClick={() => openPlex(item)}
+      >
         <span className="w-5 shrink-0 text-right tabular-nums select-none" style={{ color: 'var(--dim)' }}>{index + 1}</span>
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <button onClick={() => openPlex(item)} className="btn-xs shrink-0">↗</button>
-          <span className="truncate" style={{ color: 'var(--text)' }}>
-            {item.grandparentTitle ?? item.title}
-            {item.grandparentTitle && (
-              <span className="ml-2" style={{ color: 'var(--dim)' }}>
-                S{String(item.parentIndex ?? 0).padStart(2, '0')}E{String(item.index ?? 0).padStart(2, '0')}
-              </span>
-            )}
-          </span>
-        </div>
+        <span className="truncate flex-1 min-w-0 group-hover:underline" style={{ color: 'var(--text)' }}>
+          {item.grandparentTitle ?? item.title}
+          {item.grandparentTitle && (
+            <span className="ml-2" style={{ color: 'var(--dim)' }}>
+              S{String(item.parentIndex ?? 0).padStart(2, '0')}E{String(item.index ?? 0).padStart(2, '0')}
+            </span>
+          )}
+        </span>
         <span className="shrink-0 tabular-nums w-[36px] text-right" style={{ color: 'var(--dim)' }}>{item.year ?? ''}</span>
         <span className="shrink-0 w-[16px] text-center">
           {item.viewCount && item.viewCount > 0
@@ -84,7 +85,8 @@ export default function PlexSection() {
             : <span style={{ color: 'var(--s-today)' }}>○</span>}
         </span>
         <button
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation()
             if (confirm(`Delete ${item.title} from Plex library?`)) {
               fetch('/api/plex', {
                 method: 'POST',
@@ -149,19 +151,21 @@ export default function PlexSection() {
                   <span className="shrink-0">Actions</span>
                 </div>
                 {searchResults.map((item, i) => (
-                  <div key={item.ratingKey} className="flex items-center gap-3 py-0.5" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <div
+                    key={item.ratingKey}
+                    className="flex items-center gap-3 py-0.5 cursor-pointer group"
+                    style={{ borderBottom: '1px solid var(--border)' }}
+                    onClick={() => openPlex(item)}
+                  >
                     <span className="w-5 shrink-0 text-right tabular-nums text-xs" style={{ color: 'var(--dim)' }}>{i + 1}</span>
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <button onClick={() => openPlex(item)} className="btn-xs shrink-0">↗</button>
-                      <span className="truncate" style={{ color: 'var(--text)' }}>
-                        {item.grandparentTitle ?? item.title}
-                        {item.grandparentTitle && (
-                          <span className="ml-2" style={{ color: 'var(--dim)' }}>
-                            S{String(item.parentIndex ?? 0).padStart(2, '0')}E{String(item.index ?? 0).padStart(2, '0')}
-                          </span>
-                        )}
-                      </span>
-                    </div>
+                    <span className="truncate flex-1 min-w-0 text-xs group-hover:underline" style={{ color: 'var(--text)' }}>
+                      {item.grandparentTitle ?? item.title}
+                      {item.grandparentTitle && (
+                        <span className="ml-2" style={{ color: 'var(--dim)' }}>
+                          S{String(item.parentIndex ?? 0).padStart(2, '0')}E{String(item.index ?? 0).padStart(2, '0')}
+                        </span>
+                      )}
+                    </span>
                     <span className="hidden md:block shrink-0 w-[48px] text-xs uppercase whitespace-nowrap" style={{ color: 'var(--dim)' }}>
                       {item.type === 'show' ? 'tv' : item.type ?? ''}
                     </span>
@@ -171,25 +175,24 @@ export default function PlexSection() {
                         ? <span style={{ color: 'var(--dim)' }}>✓</span>
                         : <span style={{ color: 'var(--s-today)' }}>○</span>}
                     </span>
-                    <div className="shrink-0 flex gap-1">
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete ${item.title} from Plex library?`)) {
-                            fetch('/api/plex', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ action: 'delete', ratingKey: item.ratingKey }),
-                            }).then(() => {
-                              setSearchResults(prev => prev ? prev.filter(r => r.ratingKey !== item.ratingKey) : prev)
-                              load()
-                            })
-                          }
-                        }}
-                        className="btn-xs danger whitespace-nowrap"
-                      >
-                        remove
-                      </button>
-                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (confirm(`Delete ${item.title} from Plex library?`)) {
+                          fetch('/api/plex', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'delete', ratingKey: item.ratingKey }),
+                          }).then(() => {
+                            setSearchResults(prev => prev ? prev.filter(r => r.ratingKey !== item.ratingKey) : prev)
+                            load()
+                          })
+                        }
+                      }}
+                      className="btn-xs danger whitespace-nowrap shrink-0"
+                    >
+                      remove
+                    </button>
                   </div>
                 ))}
               </div>

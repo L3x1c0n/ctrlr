@@ -362,17 +362,22 @@ export default function ArrSection({ service, label }: Props) {
                   {queueRows.map((row, i) => {
                     const q = row.queueItem
                     const isLast = i === queueRows.length - 1 && recentRows.length === 0
+                    const openRow = q
+                      ? () => openArr(q)
+                      : row.calendarId
+                      ? () => setSelected(service === 'sonarr' ? { via: 'sonarr', seriesId: row.seriesId!, episodeId: row.calendarId, title: row.title } : { via: 'radarr', movieId: row.calendarId!, title: row.title })
+                      : null
                     return (
-                      <div key={row.key} className="flex items-center gap-2 font-mono text-xs px-4 py-2.5" style={{ borderBottom: isLast ? undefined : '1px solid var(--border)' }}>
+                      <div
+                        key={row.key}
+                        className={`flex items-center gap-2 font-mono text-xs px-4 py-2.5 ${openRow ? 'cursor-pointer group' : ''}`}
+                        style={{ borderBottom: isLast ? undefined : '1px solid var(--border)' }}
+                        onClick={openRow ?? undefined}
+                      >
                         <span className="tabular-nums select-none w-4 text-right shrink-0" style={{ color: 'var(--dim)' }}>{i + 1}</span>
-                        {q ? (
-                          <button onClick={() => openArr(q)} className="btn-xs shrink-0">↗</button>
-                        ) : row.calendarId ? (
-                          <button onClick={() => setSelected(service === 'sonarr' ? { via: 'sonarr', seriesId: row.seriesId!, episodeId: row.calendarId, title: row.title } : { via: 'radarr', movieId: row.calendarId!, title: row.title })} className="btn-xs shrink-0">↗</button>
-                        ) : null}
-                        <span className="flex-1 truncate" style={{ color: 'var(--text)' }}>{row.title}</span>
+                        <span className={`flex-1 truncate ${openRow ? 'group-hover:underline' : ''}`} style={{ color: 'var(--text)' }}>{row.title}</span>
                         <span className="shrink-0 tabular-nums text-[10px] transition-colors duration-500" style={{ color: stateColor[row.state] }}>{row.state}</span>
-                        <div className="flex gap-1.5 shrink-0">
+                        <div className="flex gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
                           {(row.state === 'pending' || row.state === 'missing') && row.calendarId && (
                             <button onClick={() => searchCalendar(row.calendarId!)} className="btn-xs">search</button>
                           )}
@@ -401,23 +406,24 @@ export default function ArrSection({ service, label }: Props) {
                     const mv   = isEp ? null : r as RecentMovie
                     const ago  = fmtRelDate(isEp ? ep!.dateAdded : mv!.dateAdded)
                     const isLast = i === recentRows.length - 1
+                    const onOpen = isEp
+                      ? () => setSelected({ via: 'sonarr', seriesId: ep!.seriesId, title: ep!.seriesTitle })
+                      : () => setSelected({ via: 'radarr', movieId: mv!.id, title: mv!.title })
                     return (
-                      <div key={i} className="flex items-center gap-2 font-mono text-xs px-4 py-2.5" style={{ borderBottom: isLast ? undefined : '1px solid var(--border)', borderTop: i === 0 && queueRows.length > 0 ? '1px solid var(--border)' : undefined }}>
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 font-mono text-xs px-4 py-2.5 cursor-pointer group"
+                        style={{ borderBottom: isLast ? undefined : '1px solid var(--border)', borderTop: i === 0 && queueRows.length > 0 ? '1px solid var(--border)' : undefined }}
+                        onClick={onOpen}
+                      >
                         <span className="tabular-nums select-none w-4 text-right shrink-0" style={{ color: 'var(--dim)' }}>{rows.length + i + 1}</span>
-                        {isEp ? (
-                          <>
-                            <button onClick={() => setSelected({ via: 'sonarr', seriesId: ep!.seriesId, title: ep!.seriesTitle })} className="btn-xs shrink-0">↗</button>
-                            <span className="flex-1 truncate" style={{ color: 'var(--text)' }}>{ep!.seriesTitle}</span>
-                            <span className="shrink-0 tabular-nums text-[10px]" style={{ color: 'var(--dim)' }}>S{String(ep!.seasonNumber).padStart(2,'0')}E{String(ep!.episodeNumber).padStart(2,'0')}</span>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => setSelected({ via: 'radarr', movieId: mv!.id, title: mv!.title })} className="btn-xs shrink-0">↗</button>
-                            <span className="flex-1 truncate" style={{ color: 'var(--text)' }}>{mv!.title}</span>
-                            <span className="shrink-0 text-[10px]" style={{ color: 'var(--dim)' }}>{mv!.year}</span>
-                          </>
-                        )}
+                        <span className="flex-1 truncate group-hover:underline" style={{ color: 'var(--text)' }}>
+                          {isEp ? ep!.seriesTitle : mv!.title}
+                        </span>
+                        {isEp && <span className="shrink-0 tabular-nums text-[10px]" style={{ color: 'var(--dim)' }}>S{String(ep!.seasonNumber).padStart(2,'0')}E{String(ep!.episodeNumber).padStart(2,'0')}</span>}
+                        {!isEp && <span className="shrink-0 text-[10px]" style={{ color: 'var(--dim)' }}>{mv!.year}</span>}
                         <span className="shrink-0 tabular-nums text-[10px]" style={{ color: 'var(--s-play)' }}>{ago}</span>
+                        <span className="shrink-0 font-mono text-xs" style={{ color: 'var(--dimmer)' }}>›</span>
                       </div>
                     )
                   })}
@@ -437,27 +443,37 @@ export default function ArrSection({ service, label }: Props) {
                     const s = m as MonSerie
                     const calEp = calendar.find(c => c.seriesId === m.id)
                     return (
-                      <div key={m.id} className="flex items-center gap-2 font-mono text-xs px-4 py-2.5" style={{ borderBottom: isLast ? undefined : '1px solid var(--border)' }}>
+                      <div
+                        key={m.id}
+                        className="flex items-center gap-2 font-mono text-xs px-4 py-2.5 cursor-pointer group"
+                        style={{ borderBottom: isLast ? undefined : '1px solid var(--border)' }}
+                        onClick={() => setSelected({ via: 'sonarr', seriesId: m.id, episodeId: calEp?.id, title: m.title })}
+                      >
                         <span className="tabular-nums select-none w-4 text-right shrink-0" style={{ color: 'var(--dim)' }}>{i + 1}</span>
-                        <button onClick={() => setSelected({ via: 'sonarr', seriesId: m.id, episodeId: calEp?.id, title: m.title })} className="btn-xs shrink-0">↗</button>
-                        <span className="flex-1 truncate" style={{ color: 'var(--text)' }}>{m.title}</span>
+                        <span className="flex-1 truncate group-hover:underline" style={{ color: 'var(--text)' }}>{m.title}</span>
                         <span className="shrink-0 tabular-nums text-[10px]" style={{ color: s.nextAiring ? 'var(--s-today)' : 'var(--dim)' }}>
                           {s.nextAiring ? fmtRelDate(s.nextAiring) : '—'}
                         </span>
+                        <span className="shrink-0 font-mono text-xs" style={{ color: 'var(--dimmer)' }}>›</span>
                       </div>
                     )
                   } else {
                     const mv = m as MonMovie
                     const releaseDate = upcomingMovieDate(mv)
                     return (
-                      <div key={m.id} className="flex items-center gap-2 font-mono text-xs px-4 py-2.5" style={{ borderBottom: isLast ? undefined : '1px solid var(--border)' }}>
+                      <div
+                        key={m.id}
+                        className="flex items-center gap-2 font-mono text-xs px-4 py-2.5 cursor-pointer group"
+                        style={{ borderBottom: isLast ? undefined : '1px solid var(--border)' }}
+                        onClick={() => setSelected({ via: 'radarr', movieId: m.id, title: m.title })}
+                      >
                         <span className="tabular-nums select-none w-4 text-right shrink-0" style={{ color: 'var(--dim)' }}>{i + 1}</span>
-                        <button onClick={() => setSelected({ via: 'radarr', movieId: m.id, title: m.title })} className="btn-xs shrink-0">↗</button>
-                        <span className="flex-1 truncate" style={{ color: 'var(--text)' }}>{m.title}</span>
+                        <span className="flex-1 truncate group-hover:underline" style={{ color: 'var(--text)' }}>{m.title}</span>
                         <span className="shrink-0 text-[10px]" style={{ color: 'var(--dim)' }}>{releaseLabel(mv)}</span>
                         <span className="shrink-0 tabular-nums text-[10px]" style={{ color: releaseDate ? 'var(--s-today)' : 'var(--dim)' }}>
                           {releaseDate ? fmtRelDate(releaseDate) : mv.status}
                         </span>
+                        <span className="shrink-0 font-mono text-xs" style={{ color: 'var(--dimmer)' }}>›</span>
                       </div>
                     )
                   }

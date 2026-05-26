@@ -152,15 +152,20 @@ export default function SeerSection() {
             <p className="font-mono text-[9px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--dimmer)' }}>results</p>
             <div className="inset-panel">
               {results.slice(0, 8).map((r, i) => (
-                <div key={`${r.mediaType}-${r.id}`} className="flex items-center justify-between px-4 py-2.5 font-mono text-xs" style={{ borderBottom: i < Math.min(results.length, 8) - 1 ? '1px solid var(--border)' : undefined }}>
-                  <div>
-                    <button onClick={() => openRequestModal(r)} className="text-left" style={{ color: 'var(--text)' }}>{r.title ?? r.name}</button>
+                <div
+                  key={`${r.mediaType}-${r.id}`}
+                  className="flex items-center justify-between px-4 py-2.5 font-mono text-xs cursor-pointer group"
+                  style={{ borderBottom: i < Math.min(results.length, 8) - 1 ? '1px solid var(--border)' : undefined }}
+                  onClick={() => openRequestModal(r)}
+                >
+                  <div className="flex-1 min-w-0 truncate">
+                    <span className="group-hover:underline" style={{ color: 'var(--text)' }}>{r.title ?? r.name}</span>
                     <span className="ml-2 uppercase" style={{ color: 'var(--dim)' }}>{r.mediaType}</span>
                     {(r.releaseDate || r.firstAirDate) && (
                       <span className="ml-2" style={{ color: 'var(--dim)' }}>{(r.releaseDate ?? r.firstAirDate)?.slice(0, 4)}</span>
                     )}
                   </div>
-                  <button onClick={() => openRequestModal(r)} className="btn-xs">↗</button>
+                  <span className="shrink-0 font-mono text-xs ml-3" style={{ color: 'var(--dimmer)' }}>›</span>
                 </div>
               ))}
             </div>
@@ -197,16 +202,18 @@ export default function SeerSection() {
                             <span className="shrink-0">Actions</span>
                           </div>
                           {items.map((r, i) => (
-                            <div key={r.id} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: i < items.length - 1 ? '1px solid var(--border)' : undefined }}>
+                            <div
+                              key={r.id}
+                              className="flex items-center gap-3 px-4 py-2.5 cursor-pointer group"
+                              style={{ borderBottom: i < items.length - 1 ? '1px solid var(--border)' : undefined }}
+                              onClick={() => setSelected({ via: 'seer', tmdbId: r.media.tmdbId, mediaType: r.media.mediaType as 'movie' | 'tv', title: r.media.title ?? r.media.name })}
+                            >
                               <span className="w-5 shrink-0 text-right tabular-nums" style={{ color: 'var(--dim)' }}>{pi * PAGE_SIZE + i + 1}</span>
-                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                <button onClick={() => setSelected({ via: 'seer', tmdbId: r.media.tmdbId, mediaType: r.media.mediaType as 'movie' | 'tv', title: r.media.title ?? r.media.name })} className="btn-xs shrink-0">↗</button>
-                                <MarqueeText className="min-w-0">{r.media.title ?? r.media.name}</MarqueeText>
-                              </div>
+                              <MarqueeText className="flex-1 min-w-0 group-hover:underline">{r.media.title ?? r.media.name}</MarqueeText>
                               <span className="hidden md:block shrink-0 uppercase whitespace-nowrap w-[48px]" style={{ color: 'var(--dim)' }}>{r.type}</span>
                               <span className="shrink-0 w-[88px] whitespace-nowrap" style={{ color: statusColor[r.status] ?? 'var(--dim)' }}>{statusLabel[r.status] ?? r.status}</span>
                               <span className="hidden md:block shrink-0 whitespace-nowrap" style={{ color: 'var(--dim)' }}>{r.requestedBy.displayName}</span>
-                              <div className="shrink-0 flex gap-1">
+                              <div className="shrink-0 flex gap-1" onClick={e => e.stopPropagation()}>
                                 {r.status === 1 && <button onClick={() => approveRequest(r.id)} className="btn-xs whitespace-nowrap">approve</button>}
                                 <button onClick={() => { if (confirm('Delete request?')) deleteRequest(r.id) }} className="btn-xs danger whitespace-nowrap">remove</button>
                               </div>
