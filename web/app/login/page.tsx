@@ -33,56 +33,50 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center font-mono" style={{ background: 'var(--bg)' }}>
-      <div className="w-full max-w-xs px-6">
-        <p className="section-label mb-8">ctrlr</p>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+      <div className="w-full max-w-sm px-8">
+        <p className="section-label mb-10">ctrlr</p>
 
-        <form onSubmit={submit} className="space-y-3">
-          <div
-            className="flex items-center transition-colors"
-            style={{ border: '1px solid var(--border)' }}
-            onFocus={e => (e.currentTarget.style.borderColor = 'var(--border-hi)')}
-            onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-          >
-            <span className="text-[10px] uppercase tracking-widest px-3 select-none shrink-0" style={{ color: 'var(--dim)' }}>user</span>
+        <form onSubmit={submit} className="space-y-4">
+          <div>
+            <label className="block text-xs uppercase tracking-widest mb-1.5" style={{ color: 'var(--text-dim)' }}>Username</label>
             <input
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
               autoFocus
-              className="flex-1 bg-transparent text-xs px-2 py-2.5 focus:outline-none"
-              style={{ color: 'var(--text)' }}
+              className="w-full bg-transparent text-sm px-3 py-2.5 focus:outline-none transition-colors"
+              style={{ border: '1px solid var(--border-hi)', color: 'var(--text)' }}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--text-dim)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-hi)')}
             />
           </div>
-          <div
-            className="flex items-center transition-colors"
-            style={{ border: '1px solid var(--border)' }}
-            onFocus={e => (e.currentTarget.style.borderColor = 'var(--border-hi)')}
-            onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-          >
-            <span className="text-[10px] uppercase tracking-widest px-3 select-none shrink-0" style={{ color: 'var(--dim)' }}>pass</span>
+          <div>
+            <label className="block text-xs uppercase tracking-widest mb-1.5" style={{ color: 'var(--text-dim)' }}>Password</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="flex-1 bg-transparent text-xs px-2 py-2.5 focus:outline-none"
-              style={{ color: 'var(--text)' }}
+              className="w-full bg-transparent text-sm px-3 py-2.5 focus:outline-none transition-colors"
+              style={{ border: '1px solid var(--border-hi)', color: 'var(--text)' }}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--text-dim)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-hi)')}
             />
           </div>
 
           {error && (
-            <p className="text-xs" style={{ color: 'var(--s-danger)' }}>{error}</p>
+            <p className="text-sm" style={{ color: 'var(--s-danger)' }}>{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading || !password || !username}
-            className="w-full text-xs uppercase tracking-widest py-2.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ border: '1px solid var(--border)', color: 'var(--text-dim)' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border-hi)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-dim)' }}
+            className="w-full text-sm uppercase tracking-widest py-3 mt-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ border: '1px solid var(--border-hi)', color: 'var(--text)' }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--text-dim)')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border-hi)')}
           >
-            {loading ? '·  ·  ·' : 'login'}
+            {loading ? '· · ·' : 'Login'}
           </button>
         </form>
       </div>
