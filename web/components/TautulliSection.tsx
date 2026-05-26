@@ -81,7 +81,7 @@ export default function TautulliSection() {
       <section id="tautulli">
         <div className="module-panel">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="section-label" style={{ color: 'var(--s-play)' }}>Tautulli</h2>
+            <h2 className="section-label" style={{ color: 'var(--s-dl)' }}>Tautulli</h2>
             <div className="flex items-center gap-3">
               {activity && activity.stream_count > 0 && (
                 <span className="font-mono text-[10px]" style={{ color: 'var(--s-play)' }}>{activity.stream_count} stream{activity.stream_count !== 1 ? 's' : ''}</span>
