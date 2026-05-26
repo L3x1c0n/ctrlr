@@ -2,12 +2,19 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { QBTorrent, TautulliSession } from '@/types'
-import ProgressBar from '@/components/ProgressBar'
 
 function fmtSpeed(bps: number): string {
   if (bps >= 1024 * 1024) return `${(bps / 1024 / 1024).toFixed(1)} MB/s`
   if (bps >= 1024)         return `${(bps / 1024).toFixed(0)} KB/s`
   return `${bps} B/s`
+}
+
+function Bar({ pct, color }: { pct: number; color: string }) {
+  return (
+    <div className="w-full mb-3" style={{ height: '2px', background: 'var(--border-hi)', borderRadius: '1px' }}>
+      <div style={{ width: `${Math.min(pct, 100)}%`, height: '100%', background: color, borderRadius: '1px', transition: 'width 0.4s ease' }} />
+    </div>
+  )
 }
 
 export default function LiveZone() {
@@ -55,32 +62,32 @@ export default function LiveZone() {
         const pct = Math.round((download.progress ?? 0) * 100)
         return (
           <div className="live-card downloading">
-            <p className="font-mono text-[9px] uppercase tracking-widest mb-2" style={{ color: 'var(--s-dl)' }}>downloading</p>
-            <p className="font-mono text-sm truncate mb-3" style={{ color: 'var(--text)' }}>{download.name}</p>
-            <div className="flex items-center gap-3">
-              <ProgressBar pct={pct} width={20} />
-              <span className="font-mono text-xs tabular-nums" style={{ color: 'var(--s-dl)' }}>{fmtSpeed(download.dlspeed)}</span>
-              <span className="font-mono text-xs tabular-nums" style={{ color: 'var(--dim)' }}>{pct}%</span>
+            <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--s-dl)' }}>Downloading</p>
+            <p className="text-base font-medium truncate mb-3" style={{ color: 'var(--text)' }}>{download.name}</p>
+            <Bar pct={pct} color="var(--s-dl)" />
+            <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--dim)' }}>
+              <span>{pct}%</span>
+              <span style={{ color: 'var(--s-dl)' }}>{fmtSpeed(download.dlspeed)}</span>
             </div>
           </div>
         )
       })()}
       {session && (() => {
-        const isTV   = session.media_type === 'episode'
-        const title  = isTV
+        const isTV = session.media_type === 'episode'
+        const title = isTV
           ? `${session.grandparent_title} — S${String(session.parent_title?.match(/\d+/)?.[0] ?? '0').padStart(2, '0')} — ${session.title}`
           : session.title
-        const pct    = parseInt(session.progress_percent, 10) || 0
+        const pct = parseInt(session.progress_percent, 10) || 0
         const stateColor = session.state === 'playing' ? 'var(--s-play)' : 'var(--s-today)'
         return (
           <div className="live-card playing">
-            <p className="font-mono text-[9px] uppercase tracking-widest mb-2" style={{ color: 'var(--s-play)' }}>now playing</p>
-            <p className="font-mono text-sm truncate mb-3" style={{ color: 'var(--text)' }}>{title}</p>
-            <div className="flex items-center gap-3">
-              <ProgressBar pct={pct} width={20} />
-              <span className="font-mono text-xs tabular-nums" style={{ color: 'var(--dim)' }}>{pct}%</span>
-              <span className="font-mono text-xs" style={{ color: stateColor }}>{session.state}</span>
-              <span className="font-mono text-xs" style={{ color: 'var(--dim)' }}>{session.friendly_name}</span>
+            <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--s-play)' }}>Now Playing</p>
+            <p className="text-base font-medium truncate mb-3" style={{ color: 'var(--text)' }}>{title}</p>
+            <Bar pct={pct} color={stateColor} />
+            <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--dim)' }}>
+              <span>{pct}%</span>
+              <span style={{ color: stateColor }}>{session.state}</span>
+              <span>{session.friendly_name}</span>
             </div>
           </div>
         )
