@@ -235,12 +235,12 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                   )}
                   {pendingDelete === t.hash ? (
                     <>
-                      <button onClick={() => { setPendingDelete(null); action('delete', t.hash, { deleteFiles: false }) }} className="btn-xs danger" title="remove torrent">■</button>
-                      <button onClick={() => { if (confirm(`Delete ${t.name} AND files?`)) { setPendingDelete(null); action('delete', t.hash, { deleteFiles: true }) } }} className="btn-xs danger" title="remove + files">⏏</button>
-                      <button onClick={() => setPendingDelete(null)} className="btn-xs" title="cancel">×</button>
+                      <button onClick={() => { setPendingDelete(null); action('delete', t.hash, { deleteFiles: false }) }} className="btn-xs danger">Del</button>
+                      <button onClick={() => { if (confirm(`Delete ${t.name} AND files?`)) { setPendingDelete(null); action('delete', t.hash, { deleteFiles: true }) } }} className="btn-xs danger">Del +</button>
+                      <button onClick={() => setPendingDelete(null)} className="btn-xs">×</button>
                     </>
                   ) : (
-                    <button onClick={() => setPendingDelete(t.hash)} className="btn-xs danger" title="remove">■</button>
+                    <button onClick={() => setPendingDelete(t.hash)} className="btn-xs danger">Del</button>
                   )}
                 </div>
               </div>
