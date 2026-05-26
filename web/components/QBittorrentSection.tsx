@@ -229,18 +229,18 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                 <span className="shrink-0 w-[88px] whitespace-nowrap text-[10px]" style={{ color: stateColor[t.state] ?? 'var(--dim)' }}>{t.state}</span>
                 <div className="shrink-0 flex gap-1.5" onClick={e => e.stopPropagation()}>
                   {t.state.includes('paused') || t.state.includes('Paused') ? (
-                    <button onClick={() => action('resume', t.hash)} className="btn-xs">resume</button>
+                    <button onClick={() => action('resume', t.hash)} className="btn-xs" title="resume">▶</button>
                   ) : (
-                    <button onClick={() => action('pause', t.hash)} className="btn-xs">pause</button>
+                    <button onClick={() => action('pause', t.hash)} className="btn-xs" title="pause">⏸</button>
                   )}
                   {pendingDelete === t.hash ? (
                     <>
-                      <button onClick={() => { setPendingDelete(null); action('delete', t.hash, { deleteFiles: false }) }} className="btn-xs danger">torrent</button>
-                      <button onClick={() => { if (confirm(`Delete ${t.name} AND files?`)) { setPendingDelete(null); action('delete', t.hash, { deleteFiles: true }) } }} className="btn-xs danger">+ files</button>
-                      <button onClick={() => setPendingDelete(null)} className="btn-xs">×</button>
+                      <button onClick={() => { setPendingDelete(null); action('delete', t.hash, { deleteFiles: false }) }} className="btn-xs danger" title="remove torrent">■</button>
+                      <button onClick={() => { if (confirm(`Delete ${t.name} AND files?`)) { setPendingDelete(null); action('delete', t.hash, { deleteFiles: true }) } }} className="btn-xs danger" title="remove + files">⏏</button>
+                      <button onClick={() => setPendingDelete(null)} className="btn-xs" title="cancel">×</button>
                     </>
                   ) : (
-                    <button onClick={() => setPendingDelete(t.hash)} className="btn-xs danger">remove</button>
+                    <button onClick={() => setPendingDelete(t.hash)} className="btn-xs danger" title="remove">■</button>
                   )}
                 </div>
               </div>
