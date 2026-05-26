@@ -1,113 +1,73 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { THEMES, DEFAULT_THEME } from '@/lib/themes'
+import { QBTransferInfo } from '@/types'
 
-const BAR_H = 22
-const PAGE_BG = '#0A0A0F'
-const CHEV_W = 11
-
-const LABELS = ['๛', 'gh05t@moriarty', 'qB', 'arr', 'trakt', 'seer', 'plex', 'tautulli']
-const MOB_LABELS = ['๛', 'gh05t', 'qB', 'arr', 'trkt', 'seer', 'plex', 'tautulli']
-// Mobile chevron widths — larger values = more prominent triangle
-const MOB_CHEV_WIDTHS = [8, 8, 6, 6, 7, 7, 7, 7]
-const HREFS: (string | null)[] = [null, null, '#qbittorrent', '#arr', '#trakt', '#seer', '#plex', '#tautulli']
-
-function ChevSvg({ color, w, className }: { color: string; w: number; className: string }) {
-  return (
-    <svg
-      viewBox={`0 0 ${CHEV_W} ${BAR_H}`}
-      preserveAspectRatio="none"
-      className={className}
-      style={{ flexShrink: 0, marginLeft: -1, width: w, height: '100%' }}
-    >
-      <polygon points={`0,0 ${CHEV_W},${BAR_H / 2} 0,${BAR_H}`} fill={color} />
-    </svg>
-  )
+function fmtSpeed(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB/s`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB/s`
 }
 
-export default function TopBar() {
+interface Props {
+  transfer?: QBTransferInfo | null
+}
+
+const SEG = 'flex items-center gap-2 px-4 text-xs font-mono whitespace-nowrap border-r'
+const SEG_STYLE = { borderColor: 'rgba(255,255,255,0.06)', color: '#706050' }
+const VAL = { color: '#a09070' }
+const LBL = { color: '#504840' }
+const BAR = { background: '#252018', borderBottom: '1px solid rgba(0,0,0,0.30)' }
+
+export default function TopBar({ transfer }: Props) {
   const [time, setTime] = useState('')
-  const [themeKey, setThemeKey] = useState(DEFAULT_THEME)
 
   useEffect(() => {
-    const saved = localStorage.getItem('ctrlr-theme')
-    if (saved && THEMES[saved]) setThemeKey(saved)
-    function onStorage(e: StorageEvent) {
-      if (e.key === 'ctrlr-theme' && e.newValue && THEMES[e.newValue]) setThemeKey(e.newValue)
+    function tick() {
+      setTime(new Date().toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }))
     }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
-
-  useEffect(() => {
-    function tick() { setTime(new Date().toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })) }
     tick()
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
   }, [])
 
-  const theme = THEMES[themeKey]
+  const dlSpeed = transfer?.dl_info_speed ?? 0
+  const ulSpeed = transfer?.up_info_speed ?? 0
+  const dlActive = dlSpeed > 50 * 1024
+  const ulActive = ulSpeed > 50 * 1024
 
   return (
-    <>
-    <div
-      className="fixed top-0 left-0 right-0 z-50 flex items-stretch font-mono overflow-hidden h-4 md:h-[22px]"
-      style={{ background: PAGE_BG }}
-    >
-      {LABELS.map((label, i) => {
-        const seg = theme.segments[i]
-        const nextBg = theme.segments[i + 1]?.bg ?? PAGE_BG
-        const href = HREFS[i]
-        const mobChevW = MOB_CHEV_WIDTHS[i]
+    <div className="fixed top-0 left-0 right-0 z-50 flex items-stretch overflow-hidden" style={{ height: 36, ...BAR }}>
 
-        const textContent = label === '๛' ? (
-          <span className="text-xs font-bold" style={{ fontFamily: 'sans-serif' }}>
-            <span className="text-white">CTRL</span><span style={{ color: '#4ade80' }}>r</span>
-          </span>
-        ) : (
-          <>
-            <span className="md:hidden">{MOB_LABELS[i]}</span>
-            <span className="hidden md:inline">{label}</span>
-          </>
-        )
+      {/* Brand */}
+      <a href="/settings" className={SEG} style={{ ...SEG_STYLE, color: '#c8b898', fontWeight: 600, letterSpacing: '0.08em', textDecoration: 'none' }}>
+        CTRLr
+      </a>
 
-        const innerCls = 'flex-1 flex items-center whitespace-nowrap px-1 md:px-2 text-xs font-medium'
+      {/* Download */}
+      <div className={SEG} style={SEG_STYLE}>
+        {dlActive && <span className="rounded-full shrink-0" style={{ width: 5, height: 5, background: '#E8680A' }} />}
+        <span style={LBL}>↓</span>
+        <span style={VAL}>{transfer ? fmtSpeed(dlSpeed) : '—'}</span>
+      </div>
 
-        const content = label === '๛' ? (
-          <a href="/settings" style={{ background: seg.bg }} className={`${innerCls} hover:brightness-110 transition-[filter]`}>
-            {textContent}
-          </a>
-        ) : href ? (
-          <a href={href} style={{ background: seg.bg, color: seg.fg }} className={`${innerCls} hover:brightness-110 transition-[filter]`}>
-            {textContent}
-          </a>
-        ) : (
-          <div style={{ background: seg.bg, color: seg.fg }} className={innerCls}>
-            {textContent}
-          </div>
-        )
+      {/* Upload */}
+      <div className={SEG} style={SEG_STYLE}>
+        {ulActive && <span className="rounded-full shrink-0" style={{ width: 5, height: 5, background: '#1A9A3C' }} />}
+        <span style={LBL}>↑</span>
+        <span style={VAL}>{transfer ? fmtSpeed(ulSpeed) : '—'}</span>
+      </div>
 
-        return (
-          <div key={label} className="flex-none flex items-stretch">
-            {content}
-            {mobChevW > 0 && (
-              <div style={{ background: nextBg, flexShrink: 0 }} className="flex items-center">
-                {/* mobile: per-segment width */}
-                <ChevSvg color={seg.bg} w={mobChevW} className="md:hidden" />
-                {/* desktop: uniform */}
-                <ChevSvg color={seg.bg} w={CHEV_W} className="hidden md:block" />
-              </div>
-            )}
-          </div>
-        )
-      })}
+      {/* Session totals */}
+      <div className="hidden md:flex items-center gap-2 px-4 text-xs font-mono border-r" style={SEG_STYLE}>
+        <span style={LBL}>session</span>
+        <span style={VAL}>{transfer ? `↓${(transfer.dl_info_data / 1024 / 1024 / 1024).toFixed(1)}G` : '—'}</span>
+        <span style={VAL}>{transfer ? `↑${(transfer.up_info_data / 1024 / 1024 / 1024).toFixed(1)}G` : '—'}</span>
+      </div>
 
-      {/* clock — absolutely pinned to right edge so segments can never clip it */}
-      <div className="absolute right-0 top-0 bottom-0 flex items-center pl-3 pr-2" style={{ background: PAGE_BG }}>
-        {time && <span className="font-mono text-xs md:text-sm tabular-nums text-white">{time}</span>}
+      {/* Clock */}
+      <div className="ml-auto flex items-center px-4 text-xs font-mono border-l" style={{ borderColor: 'rgba(255,255,255,0.06)', color: '#504840' }}>
+        {time}
       </div>
     </div>
-    </>
   )
 }
