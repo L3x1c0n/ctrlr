@@ -123,7 +123,7 @@ const stateColor: Record<string, string> = {
 }
 
 const stateLabel: Record<string, string> = {
-  downloading:  'active',
+  downloading:  'downloading',
   seeding:      'seeding',
   pausedDL:     'paused',
   pausedUP:     'paused',
