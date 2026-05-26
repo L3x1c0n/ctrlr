@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@theme {
+  --font-mono: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
 /* ── Rams palette ──────────────────────────────────────────────────────── */
 :root {
   /* Achromatic base — Rams Foundation #F2F0F0 shifted cool */
@@ -30,7 +35,7 @@
 /* ── Base ──────────────────────────────────────────────────────────────── */
 html {
   font-size: 15px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 body {
