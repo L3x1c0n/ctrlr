@@ -92,22 +92,6 @@ section[id], div[id] {
   color: var(--s-danger);
 }
 
-/* ── MarqueeText animation ─────────────────────────────────────────────── */
-@keyframes scroll-left {
-  0%   { transform: translateX(0); }
-  15%  { transform: translateX(0); }
-  85%  { transform: translateX(var(--scroll-dist, -50%)); }
-  100% { transform: translateX(var(--scroll-dist, -50%)); }
-}
-.scroll-hover { overflow: hidden; white-space: nowrap; }
-.scroll-hover:hover .scroll-inner {
-  animation: scroll-left 3.5s ease-in-out infinite alternate;
-}
-@media (max-width: 767px) {
-  .scroll-hover .scroll-inner {
-    animation: scroll-left 3.5s ease-in-out infinite alternate;
-  }
-}
 
 /* ── Calendar day styles ───────────────────────────────────────────────── */
 .cal-day {

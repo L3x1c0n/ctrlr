@@ -5,7 +5,6 @@ import { QBTorrent, QBTransferInfo } from '@/types'
 import ProgressBar from '@/components/ProgressBar'
 import Spinner from '@/components/Spinner'
 import UnifiedDrawer, { DrawerEntry } from '@/components/UnifiedDrawer'
-import MarqueeText from '@/components/MarqueeText'
 
 const SCRAMBLE_CHARS = '01ﾊﾐﾋｱｳｦ█▓▒░╪┼╬╫╩╦╠═'
 
@@ -231,10 +230,8 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                 onClick={() => setSelected({ via: 'qbit', hash: t.hash, tmdbId: tmdbIds[t.hash], mediaType: mediaTypes[t.hash], title: t.name, posterUrl: posters[t.hash] })}
               >
                 <span className="w-5 shrink-0 text-right tabular-nums select-none" style={{ color: 'var(--dim)' }}>{i + 1}</span>
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <MarqueeText className="min-w-0 group-hover:underline">
-                    <ScrambledName name={t.name} active={t.state === 'downloading'} />
-                  </MarqueeText>
+                <div className="flex-1 min-w-0 truncate group-hover:underline">
+                  <ScrambledName name={t.name} active={t.state === 'downloading'} />
                 </div>
                 <span className="hidden md:block shrink-0 w-[64px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtSize(t.size)}</span>
                 <div className="hidden md:flex items-center justify-end gap-1.5 shrink-0 w-[100px]">

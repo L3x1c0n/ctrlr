@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { SeerSearchResult, DiscoverDetail } from '@/types'
 import Spinner from '@/components/Spinner'
 import DiscoverDetailDrawer from '@/components/DiscoverDetailDrawer'
-import MarqueeText from '@/components/MarqueeText'
 
 const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${path}`
 const PLEX_ORANGE = '#E5A00D'

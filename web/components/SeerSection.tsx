@@ -5,7 +5,6 @@ import { SeerRequest, SeerSearchResult } from '@/types'
 import Spinner from '@/components/Spinner'
 import UnifiedDrawer, { DrawerEntry } from '@/components/UnifiedDrawer'
 import DiscoverSection from '@/components/DiscoverSection'
-import MarqueeText from '@/components/MarqueeText'
 import RequestModal from '@/components/RequestModal'
 
 const statusLabel: Record<number, string> = {
@@ -209,7 +208,7 @@ export default function SeerSection() {
                               onClick={() => setSelected({ via: 'seer', tmdbId: r.media.tmdbId, mediaType: r.media.mediaType as 'movie' | 'tv', title: r.media.title ?? r.media.name })}
                             >
                               <span className="w-5 shrink-0 text-right tabular-nums" style={{ color: 'var(--dim)' }}>{pi * PAGE_SIZE + i + 1}</span>
-                              <MarqueeText className="flex-1 min-w-0 group-hover:underline">{r.media.title ?? r.media.name}</MarqueeText>
+                              <span className="flex-1 min-w-0 truncate group-hover:underline">{r.media.title ?? r.media.name}</span>
                               <span className="hidden md:block shrink-0 uppercase whitespace-nowrap w-[48px]" style={{ color: 'var(--dim)' }}>{r.type}</span>
                               <span className="shrink-0 w-[88px] whitespace-nowrap" style={{ color: statusColor[r.status] ?? 'var(--dim)' }}>{statusLabel[r.status] ?? r.status}</span>
                               <span className="hidden md:block shrink-0 whitespace-nowrap" style={{ color: 'var(--dim)' }}>{r.requestedBy.displayName}</span>
