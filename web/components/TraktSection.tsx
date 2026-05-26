@@ -152,7 +152,7 @@ function ItemTags({ item }: { item: CalItem }) {
   ) : null
 
   const badge = item.downloaded ? (
-    <span className="font-mono text-[10px] shrink-0" style={{ color: 'var(--s-play)' }}>plex</span>
+    <span className="font-mono text-[10px] shrink-0" style={{ color: 'var(--s-dl)' }}>plex</span>
   ) : !item.inArr && meta && meta.providers.length > 0 ? (
     <span className="flex items-center gap-1 shrink-0">
       {meta.providers.slice(0, 3).map((p, i) => (
