@@ -516,7 +516,7 @@ export default function SeerDetailDrawer({ request, onClose, onRefresh }: Props)
                     disabled={!!acting}
                     className="btn-xs danger"
                   >
-                    {acting === 'delete' ? '...' : 'remove'}
+                    {acting === 'delete' ? '...' : 'Del'}
                   </button>
                 </div>
               </div>

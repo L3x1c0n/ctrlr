@@ -384,16 +384,16 @@ export default function ArrSection({ service, label }: Props) {
                           {row.state === 'failed' && q && (
                             <>
                               <button onClick={() => queueAction('search', q.id)} className="btn-xs">retry</button>
-                              <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id, { blacklist: true }) }} className="btn-xs danger">remove</button>
+                              <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id, { blacklist: true }) }} className="btn-xs danger">Del</button>
                             </>
                           )}
                           {row.state === 'completed' && q && (
-                            <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id) }} className="btn-xs danger">remove</button>
+                            <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id) }} className="btn-xs danger">Del</button>
                           )}
                           {(['delay', 'queued', 'downloading', 'paused', 'warning'] as RowState[]).includes(row.state) && q && (
                             <>
                               <button onClick={() => queueAction('search', q.id)} className="btn-xs">search</button>
-                              <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id) }} className="btn-xs danger">remove</button>
+                              <button onClick={() => { if (confirm(`Remove ${row.title}?`)) queueAction('delete', q.id) }} className="btn-xs danger">Del</button>
                             </>
                           )}
                         </div>

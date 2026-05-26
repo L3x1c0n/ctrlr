@@ -215,7 +215,7 @@ export default function SeerSection() {
                               <span className="hidden md:block shrink-0 whitespace-nowrap" style={{ color: 'var(--dim)' }}>{r.requestedBy.displayName}</span>
                               <div className="shrink-0 flex gap-1" onClick={e => e.stopPropagation()}>
                                 {r.status === 1 && <button onClick={() => approveRequest(r.id)} className="btn-xs whitespace-nowrap">approve</button>}
-                                <button onClick={() => { if (confirm('Delete request?')) deleteRequest(r.id) }} className="btn-xs danger whitespace-nowrap">remove</button>
+                                <button onClick={() => { if (confirm('Delete request?')) deleteRequest(r.id) }} className="btn-xs danger whitespace-nowrap">Del</button>
                               </div>
                             </div>
                           ))}

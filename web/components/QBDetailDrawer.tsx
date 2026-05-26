@@ -209,7 +209,7 @@ export default function QBDetailDrawer({ torrent, posterUrl, onClose, onRefresh 
                     disabled={!!acting}
                     className="btn-xs danger"
                   >
-                    remove
+                    Del
                   </button>
                   <button
                     onClick={() => { if (confirm(`Delete ${torrent.name} and all files?`)) act('delete', { deleteFiles: true }) }}

@@ -336,7 +336,7 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
                         disabled={!!acting}
                         className="btn-xs danger"
                       >
-                        {acting === 'delete' ? '...' : 'remove'}
+                        {acting === 'delete' ? '...' : 'Del'}
                       </button>
                       <button
                         onClick={() => { if (confirm(`Remove and blacklist ${detail.title}?`)) act('delete', { blacklist: true }) }}

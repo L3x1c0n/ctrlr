@@ -229,9 +229,9 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                 <span className="shrink-0 w-[88px] whitespace-nowrap text-[10px]" style={{ color: stateColor[t.state] ?? 'var(--dim)' }}>{t.state}</span>
                 <div className="shrink-0 flex gap-1.5" onClick={e => e.stopPropagation()}>
                   {t.state.includes('paused') || t.state.includes('Paused') ? (
-                    <button onClick={() => action('resume', t.hash)} className="btn-xs" title="resume">▶</button>
+                    <button onClick={() => action('resume', t.hash)} className="btn-xs" title="resume">{'▶︎'}</button>
                   ) : (
-                    <button onClick={() => action('pause', t.hash)} className="btn-xs" title="pause">⏸</button>
+                    <button onClick={() => action('pause', t.hash)} className="btn-xs" title="pause">{'⏸︎'}</button>
                   )}
                   {pendingDelete === t.hash ? (
                     <>

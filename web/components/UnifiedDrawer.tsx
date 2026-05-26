@@ -728,7 +728,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   }
 
   async function deleteChain() {
-    if (!confirm(`Delete ${title}? Files will be permanently removed.`)) return
+    if (!confirm(`Delete ${title}? Files will be permanently Deld.`)) return
     setActing('plex-delete')
     try {
       // Step 1: Arr deletes entry + files
@@ -1023,10 +1023,10 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                               onClick={() => { if (confirm(`Remove ${title} from queue?`)) arrAction('delete') }}
                               disabled={!!acting} className="btn-xs danger"
                             >
-                              {acting === 'delete' ? '...' : 'remove'}
+                              {acting === 'delete' ? '...' : 'Del'}
                             </button>
                             <button
-                              onClick={() => { if (confirm(`Blacklist and remove ${title}?`)) arrAction('delete', { blacklist: true }) }}
+                              onClick={() => { if (confirm(`Blacklist and Del ${title}?`)) arrAction('delete', { blacklist: true }) }}
                               disabled={!!acting} className="btn-xs danger"
                             >
                               blacklist
@@ -1100,7 +1100,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                               {acting === `qbit-${isPaused ? 'resume' : 'pause'}` ? '...' : isPaused ? 'resume' : 'pause'}
                             </button>
                             <button onClick={() => { if (confirm(`Delete torrent?`)) qbitAction('delete', { deleteFiles: false }) }}
-                              disabled={!!acting} className="btn-xs danger">remove</button>
+                              disabled={!!acting} className="btn-xs danger">Del</button>
                             <button onClick={() => { if (confirm(`Delete torrent and files?`)) qbitAction('delete', { deleteFiles: true }) }}
                               disabled={!!acting} className="btn-xs danger">+ files</button>
                           </div>
@@ -1143,7 +1143,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           )}
                           <button onClick={deleteChain}
                             disabled={!!acting} className="btn-xs danger">
-                            {acting === 'plex-delete' ? '...' : 'remove'}
+                            {acting === 'plex-delete' ? '...' : 'Del'}
                           </button>
                         </div>
 

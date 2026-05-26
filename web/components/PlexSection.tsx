@@ -97,7 +97,7 @@ export default function PlexSection() {
           }}
           className="btn-xs danger shrink-0"
         >
-          remove
+          Del
         </button>
       </div>
     )
@@ -191,7 +191,7 @@ export default function PlexSection() {
                       }}
                       className="btn-xs danger whitespace-nowrap shrink-0"
                     >
-                      remove
+                      Del
                     </button>
                   </div>
                 ))}
