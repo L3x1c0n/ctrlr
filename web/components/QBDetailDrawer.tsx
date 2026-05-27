@@ -121,7 +121,7 @@ export default function QBDetailDrawer({ torrent, posterUrl, onClose, onRefresh 
                 <div className="space-y-1.5 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="text-[#bbb] w-24">progress:</span>
-                    <ProgressBar pct={torrent.progress * 100} width={20} />
+                    <ProgressBar pct={torrent.progress * 100} />
                   </div>
                   <div className="flex gap-2">
                     <span className="text-[#bbb] w-24">downloaded:</span>
@@ -185,7 +185,7 @@ export default function QBDetailDrawer({ torrent, posterUrl, onClose, onRefresh 
                           <span className="text-[#ccc] flex-shrink-0">{fmtSize(f.size)}</span>
                         </div>
                         {files.length <= 10 && (
-                          <ProgressBar pct={f.progress * 100} width={24} label={false} />
+                          <ProgressBar pct={f.progress * 100} />
                         )}
                       </div>
                     ))}

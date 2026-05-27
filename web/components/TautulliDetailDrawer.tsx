@@ -96,7 +96,7 @@ export default function TautulliDetailDrawer({ session, onClose }: Props) {
                 <div className="space-y-1.5 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="text-[#bbb] w-24">progress:</span>
-                    <ProgressBar pct={pct} width={20} />
+                    <ProgressBar pct={pct} />
                   </div>
                   {session.duration > 0 && (
                     <div className="flex gap-2">

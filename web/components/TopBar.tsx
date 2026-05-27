@@ -68,6 +68,19 @@ export default function TopBar({ transfer }: Props) {
       <div className="ml-auto flex items-center px-4 text-xs font-mono border-l" style={{ borderColor: 'rgba(255,255,255,0.12)', color: '#b0b8c0' }}>
         {time}
       </div>
+
+      {/* Logout */}
+      <button
+        onClick={async () => {
+          await fetch('/api/auth', { method: 'DELETE' })
+          window.location.href = '/login'
+        }}
+        className="flex items-center px-3 text-xs font-mono border-l transition-opacity hover:opacity-60"
+        style={{ borderColor: 'rgba(255,255,255,0.12)', color: '#8890a0' }}
+        title="Log out"
+      >
+        ⏻
+      </button>
     </div>
   )
 }

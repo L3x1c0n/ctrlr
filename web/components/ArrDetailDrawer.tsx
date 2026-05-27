@@ -238,7 +238,7 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[#bbb] w-20">progress:</span>
-                      <ProgressBar pct={pct} width={20} />
+                      <ProgressBar pct={pct} />
                       <span className="text-[#999]">{pct.toFixed(0)}%</span>
                     </div>
                     <div className="flex gap-2">

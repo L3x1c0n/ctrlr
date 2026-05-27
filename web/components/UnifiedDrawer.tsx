@@ -995,7 +995,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           )}
                           <div className="flex items-center gap-2">
                             <span className="text-[#bbb] w-20">progress:</span>
-                            <ProgressBar pct={pct} width={16} />
+                            <ProgressBar pct={pct} />
                             <span className="text-[#999]">{pct.toFixed(0)}%</span>
                           </div>
                           <div className="flex gap-2">
@@ -1073,7 +1073,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           )}
                           <div className="flex items-center gap-2">
                             <span className="text-[#bbb] w-20">progress:</span>
-                            <ProgressBar pct={(qbitData.progress ?? 0) * 100} width={16} />
+                            <ProgressBar pct={(qbitData.progress ?? 0) * 100} />
                             <span className="text-[#999]">{((qbitData.progress ?? 0) * 100).toFixed(0)}%</span>
                           </div>
                           {qbitData.size > 0 && (

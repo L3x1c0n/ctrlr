@@ -234,9 +234,11 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                   <ScrambledName name={t.name} active={t.state === 'downloading'} />
                 </div>
                 <span className="hidden md:block shrink-0 w-[64px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtSize(t.size)}</span>
-                <div className="hidden md:flex items-center justify-end gap-1.5 shrink-0 w-[100px]">
-                  <ProgressBar pct={t.progress * 100} width={8} label={false} />
-                  <span className="tabular-nums w-[32px] text-right" style={{ color: 'var(--dim)' }}>{Math.round(t.progress * 100)}%</span>
+                <div className="hidden md:flex items-center gap-2 shrink-0 w-[110px]">
+                  <div className="flex-1" style={{ minWidth: 0 }}>
+                    <ProgressBar pct={t.progress * 100} color={stateColor[t.state] ?? 'var(--s-play)'} height={6} />
+                  </div>
+                  <span className="tabular-nums shrink-0 w-[28px] text-right" style={{ color: 'var(--dim)' }}>{Math.round(t.progress * 100)}%</span>
                 </div>
                 <span className="hidden md:block shrink-0 w-[72px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--s-dl)' }}>{fmtSpeed(t.dlspeed)}</span>
                 <span className="hidden md:block shrink-0 w-[52px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtEta(t.eta)}</span>
