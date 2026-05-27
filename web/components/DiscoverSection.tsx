@@ -5,7 +5,8 @@ import { SeerSearchResult, DiscoverDetail } from '@/types'
 import Spinner from '@/components/Spinner'
 import DiscoverDetailDrawer from '@/components/DiscoverDetailDrawer'
 
-const TMDB_W = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${path}`
+const TMDB_W    = (w: number, path: string) => `https://image.tmdb.org/t/p/w${w}${path}`
+const TMDB_LOGO = (path: string)           => `https://image.tmdb.org/t/p/w45${path}`
 
 const PROVIDER_MAP: Record<string, { abbr: string; color: string }> = {
   'netflix':             { abbr: 'NF', color: '#E50914' },
@@ -63,6 +64,31 @@ function isUltraHD(name: string): boolean {
   return n.includes('ultra') || n.includes('2160') || n.includes('4k') || n.includes('uhd')
 }
 
+// ── provider logo ──────────────────────────────────────────────────────────────
+
+function ProviderLogo({ name, logo, size = 20 }: { name: string; logo: string | null; size?: number }) {
+  const p = providerInfo(name)
+  if (logo) {
+    return (
+      <img
+        src={TMDB_LOGO(logo)}
+        alt={name}
+        title={name}
+        style={{ height: size, width: 'auto', maxWidth: size * 2.5, borderRadius: 3, objectFit: 'contain' }}
+      />
+    )
+  }
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      width: size, height: size, borderRadius: 3,
+      background: p.color, color: 'white', fontSize: 7, fontWeight: 700, flexShrink: 0,
+    }}>
+      {p.abbr}
+    </span>
+  )
+}
+
 // ── list row ───────────────────────────────────────────────────────────────────
 
 function ListRow({ item, index, isActive, onHover, onClick, provider }: {
@@ -75,7 +101,6 @@ function ListRow({ item, index, isActive, onHover, onClick, provider }: {
 }) {
   const title = item.title ?? item.name ?? '—'
   const year  = (item.releaseDate ?? item.firstAirDate)?.slice(0, 4)
-  const pInfo = provider ? providerInfo(provider.name) : null
 
   return (
     <div
@@ -90,7 +115,7 @@ function ListRow({ item, index, isActive, onHover, onClick, provider }: {
     >
       <span className="w-4 tabular-nums text-right shrink-0" style={{ color: 'var(--dimmer)' }}>{index + 1}</span>
       <span className="flex-1 truncate">{title}</span>
-      {pInfo && <span className="shrink-0 text-[10px]" style={{ color: pInfo.color }}>[{pInfo.abbr}]</span>}
+      {provider && <ProviderLogo name={provider.name} logo={provider.logo} size={16} />}
       {year  && <span className="shrink-0" style={{ color: 'var(--dim)' }}>{year}</span>}
     </div>
   )
@@ -264,8 +289,6 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
     setReqState('done')
   }
 
-  const pInfo = provider ? providerInfo(provider.name) : null
-
   return (
     <div className="flex flex-col overflow-hidden md:h-full md:overflow-hidden overflow-y-auto" style={{ border: '1px solid var(--border)' }}>
 
@@ -375,9 +398,7 @@ function PreviewPane({ item, detail, detailLoading, profiles, folders, plexFileI
               </span>
             )}
             {/* provider */}
-            {pInfo && (
-              <span className="text-[10px] font-medium" style={{ color: pInfo.color }}>{pInfo.abbr}</span>
-            )}
+            {provider && <ProviderLogo name={provider.name} logo={provider.logo} size={22} />}
             <span className="flex-1" />
             {/* actions */}
             {reqState === 'picking' && (
@@ -736,10 +757,9 @@ export default function DiscoverSection() {
                       }}
                     >
                       <span className="flex-1 truncate">{item.title ?? item.name}</span>
-                      {providerMap[String(item.id)] && (() => {
-                        const p = providerInfo(providerMap[String(item.id)].name)
-                        return <span className="shrink-0 text-[10px]" style={{ color: p.color }}>[{p.abbr}]</span>
-                      })()}
+                      {providerMap[String(item.id)] && (
+                        <ProviderLogo name={providerMap[String(item.id)].name} logo={providerMap[String(item.id)].logo} size={16} />
+                      )}
                       {(item.releaseDate ?? item.firstAirDate) && (
                         <span className="shrink-0 text-xs" style={{ color: 'var(--dim)' }}>
                           {(item.releaseDate ?? item.firstAirDate)!.slice(0, 4)}
