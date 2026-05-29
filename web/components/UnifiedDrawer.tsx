@@ -304,8 +304,9 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   const arrTracked = qitem?.trackedDownloadStatus
   const qbitState  = qbit?.state ?? ''
 
+  const effectiveSeerStatus = (seerStatus === 3 && arr) ? 2 : seerStatus
   const seerNode: NodeState  = plexOnly ? 'na'
-    : seer ? (seerStatus >= 2 ? 'done' : 'active') : (arr || plex ? 'done' : 'pending')
+    : seer ? (effectiveSeerStatus >= 2 ? 'done' : 'active') : (arr || plex ? 'done' : 'pending')
 
   const arrNode: NodeState = plexOnly ? 'na'
     : (arr?.hasFile || (!!plex && !arr?.queueItem)) ? 'done'
@@ -1190,10 +1191,18 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                     <p className="text-[#7070a8] text-[10px] uppercase tracking-wider">seer</p>
                     {seer?.mediaInfo?.status != null ? (
                       <div className="flex items-center gap-3">
-                        <span className={`text-xs ${statusColor[seer.mediaInfo.status] ?? 'text-[#888]'}`}>
-                          {statusLabel[seer.mediaInfo.status] ?? String(seer.mediaInfo.status)}
-                        </span>
-                        {tmdbId && seer.mediaInfo.status < 4 && (
+                        {(() => {
+                          // Overseerr marks a request "Declined" when the item was already in arr
+                          // (duplicate request). Override to "Approved" if arr actually has it.
+                          const raw = seer.mediaInfo.status
+                          const effective = (raw === 3 && arr) ? 2 : raw
+                          return (
+                            <span className={`text-xs ${statusColor[effective] ?? 'text-[#888]'}`}>
+                              {statusLabel[effective] ?? String(effective)}
+                            </span>
+                          )
+                        })()}
+                        {tmdbId && seer.mediaInfo.status < 4 && !(seer.mediaInfo.status === 3 && arr) && (
                           <button
                             className="btn-xs text-cyan-600 hover:text-cyan-400"
                             onClick={() => setRequestItem({
