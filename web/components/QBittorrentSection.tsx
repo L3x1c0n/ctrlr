@@ -225,10 +225,12 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
             {torrents.map((t, i) => (
               <div
                 key={t.hash}
-                className="flex items-center gap-3 px-4 py-2.5 font-mono text-xs cursor-pointer group"
+                className="flex flex-col px-4 py-2.5 font-mono text-xs cursor-pointer group"
                 style={{ borderBottom: i < torrents.length - 1 ? '1px solid var(--border)' : undefined }}
                 onClick={() => setSelected({ via: 'qbit', hash: t.hash, tmdbId: tmdbIds[t.hash], mediaType: mediaTypes[t.hash], title: t.name, posterUrl: posters[t.hash] })}
               >
+                {/* main row */}
+                <div className="flex items-center gap-3">
                 <span className="w-5 shrink-0 text-right tabular-nums select-none" style={{ color: 'var(--dim)' }}>{i + 1}</span>
                 <div className="flex-1 min-w-0 truncate group-hover:underline">
                   <ScrambledName name={t.name} active={t.state === 'downloading'} />
@@ -258,6 +260,14 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                   ) : (
                     <button onClick={() => setPendingDelete(t.hash)} className="btn-xs danger">Del</button>
                   )}
+                </div>
+                </div>
+                {/* mobile progress bar — second line */}
+                <div className="md:hidden flex items-center gap-2 mt-1.5 pl-8">
+                  <div className="flex-1">
+                    <ProgressBar pct={t.progress * 100} color={stateColor[t.state] ?? 'var(--s-play)'} height={6} />
+                  </div>
+                  <span className="shrink-0 tabular-nums text-[10px] w-[28px] text-right" style={{ color: 'var(--dim)' }}>{Math.round(t.progress * 100)}%</span>
                 </div>
               </div>
             ))}
