@@ -315,11 +315,11 @@ export default function ArrSection({ service, label, labelColor }: Props) {
   const failedCount = rows.filter(r => r.state === 'failed').length
 
   const QUEUE_CAP    = 5
-  const RECENT_CAP   = 10
   const UPCOMING_CAP = 10
 
   const queueRows   = rows.slice(0, QUEUE_CAP)
-  const recentRows  = recentlyAdded.slice(0, RECENT_CAP)
+  const recentSlot  = Math.max(0, QUEUE_CAP - queueRows.length)
+  const recentRows  = recentlyAdded.slice(0, recentSlot)
   const upcomingVisible = monitored.slice(0, UPCOMING_CAP)
 
   return (
