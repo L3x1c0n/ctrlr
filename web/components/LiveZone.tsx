@@ -65,7 +65,7 @@ export default function LiveZone() {
         return (
           <div className="live-card downloading overflow-hidden" style={{ display: 'flex', padding: 0 }}>
             {downloadPoster && (
-              <div className="inset-panel shrink-0 overflow-hidden m-3 mr-0" style={{ width: 56, alignSelf: 'stretch' }}>
+              <div className="shrink-0" style={{ width: 56, alignSelf: 'stretch' }}>
                 <img src={downloadPoster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               </div>
             )}
@@ -97,7 +97,7 @@ export default function LiveZone() {
         return (
           <div className="live-card playing overflow-hidden" style={{ display: 'flex', padding: 0 }}>
             {posterSrc && (
-              <div className="inset-panel shrink-0 overflow-hidden m-3 mr-0" style={{ width: 56, alignSelf: 'stretch' }}>
+              <div className="shrink-0" style={{ width: 56, alignSelf: 'stretch' }}>
                 <img src={posterSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               </div>
             )}
