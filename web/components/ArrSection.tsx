@@ -125,12 +125,14 @@ function saveRetained(service: string, rows: RetainedRow[]) {
 }
 
 interface Props {
-  service:     'radarr' | 'sonarr'
-  label:       string
-  labelColor?: string
+  service:           'radarr' | 'sonarr'
+  label:             string
+  labelColor?:       string
+  upcomingCap?:      number
+  onUpcomingCount?:  (n: number) => void
 }
 
-export default function ArrSection({ service, label, labelColor }: Props) {
+export default function ArrSection({ service, label, labelColor, upcomingCap, onUpcomingCount }: Props) {
   const [queue,          setQueue]          = useState<ArrQueueItem[]>([])
   const [health,         setHealth]         = useState<Health[]>([])
   const [monitored,      setMonitored]      = useState<Monitored[]>([])
@@ -320,7 +322,12 @@ export default function ArrSection({ service, label, labelColor }: Props) {
   const queueRows   = rows.slice(0, QUEUE_CAP)
   const recentSlot  = Math.max(0, QUEUE_CAP - queueRows.length)
   const recentRows  = recentlyAdded.slice(0, recentSlot)
-  const upcomingVisible = monitored.slice(0, UPCOMING_CAP)
+  const naturalUpcoming = Math.min(monitored.length, UPCOMING_CAP)
+  const upcomingVisible = monitored.slice(0, upcomingCap ?? UPCOMING_CAP)
+
+  useEffect(() => {
+    onUpcomingCount?.(naturalUpcoming)
+  }, [naturalUpcoming, onUpcomingCount])
 
   return (
     <>

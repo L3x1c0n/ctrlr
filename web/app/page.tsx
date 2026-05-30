@@ -20,6 +20,13 @@ const ARR_TABS = [
 
 function ArrTabs() {
   const [tab, setTab] = useState<'sonarr' | 'radarr'>('sonarr')
+  const [sonarrUpcoming, setSonarrUpcoming] = useState<number | null>(null)
+  const [radarrUpcoming, setRadarrUpcoming] = useState<number | null>(null)
+  const upcomingCap =
+    sonarrUpcoming !== null && radarrUpcoming !== null &&
+    sonarrUpcoming > 0 && radarrUpcoming > 0
+      ? Math.min(sonarrUpcoming, radarrUpcoming)
+      : undefined
 
   return (
     <div id="arr">
@@ -45,14 +52,18 @@ function ArrTabs() {
         </div>
         {ARR_TABS.map(t => (
           <div key={t.key} className={tab === t.key ? '' : 'hidden'}>
-            <ArrSection service={t.key} label={t.label} labelColor={t.color} />
+            <ArrSection
+              service={t.key} label={t.label} labelColor={t.color}
+              upcomingCap={upcomingCap}
+              onUpcomingCount={t.key === 'sonarr' ? setSonarrUpcoming : setRadarrUpcoming}
+            />
           </div>
         ))}
       </div>
       {/* Desktop: side by side */}
       <div className="hidden md:grid md:grid-cols-2 gap-6">
-        <ArrSection service="sonarr" label="Sonarr" labelColor="var(--s-sonarr)" />
-        <ArrSection service="radarr" label="Radarr" labelColor="var(--s-today)" />
+        <ArrSection service="sonarr" label="Sonarr" labelColor="var(--s-sonarr)" upcomingCap={upcomingCap} onUpcomingCount={setSonarrUpcoming} />
+        <ArrSection service="radarr" label="Radarr" labelColor="var(--s-today)"  upcomingCap={upcomingCap} onUpcomingCount={setRadarrUpcoming} />
       </div>
     </div>
   )
