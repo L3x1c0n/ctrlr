@@ -22,7 +22,7 @@ function ArrTabs() {
   const [tab, setTab] = useState<'sonarr' | 'radarr'>('sonarr')
   const [sonarrCount, setSonarrCount] = useState<number | null>(null)
   const [radarrCount, setRadarrCount] = useState<number | null>(null)
-  const rowCap = sonarrCount !== null && radarrCount !== null
+  const rowCap = sonarrCount !== null && radarrCount !== null && sonarrCount > 0 && radarrCount > 0
     ? Math.min(sonarrCount, radarrCount)
     : undefined
 
