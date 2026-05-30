@@ -125,12 +125,14 @@ function saveRetained(service: string, rows: RetainedRow[]) {
 }
 
 interface Props {
-  service:    'radarr' | 'sonarr'
-  label:      string
-  labelColor?: string
+  service:      'radarr' | 'sonarr'
+  label:        string
+  labelColor?:  string
+  rowCap?:      number
+  onRowCount?:  (n: number) => void
 }
 
-export default function ArrSection({ service, label, labelColor }: Props) {
+export default function ArrSection({ service, label, labelColor, rowCap, onRowCount }: Props) {
   const [queue,          setQueue]          = useState<ArrQueueItem[]>([])
   const [health,         setHealth]         = useState<Health[]>([])
   const [monitored,      setMonitored]      = useState<Monitored[]>([])
@@ -312,9 +314,23 @@ export default function ArrSection({ service, label, labelColor }: Props) {
     )
   }, [rows, service])
 
-  const failedCount  = rows.filter(r => r.state === 'failed').length
+  const failedCount = rows.filter(r => r.state === 'failed').length
+
   const QUEUE_CAP    = 10
   const UPCOMING_CAP = 10
+  const maxTotal     = rowCap ?? (QUEUE_CAP + UPCOMING_CAP)
+
+  const queueRows   = rows.slice(0, Math.min(QUEUE_CAP, maxTotal))
+  const recentSlot  = Math.max(0, Math.min(QUEUE_CAP, maxTotal) - rows.length)
+  const recentRows  = recentlyAdded.slice(0, recentSlot)
+  const usedByQueue = queueRows.length + recentRows.length
+  const upcomingSlots   = Math.max(0, maxTotal - usedByQueue)
+  const upcomingVisible = monitored.slice(0, Math.min(UPCOMING_CAP, upcomingSlots))
+  const totalShown  = usedByQueue + upcomingVisible.length
+
+  useEffect(() => {
+    onRowCount?.(totalShown)
+  }, [totalShown, onRowCount])
 
   return (
     <>
@@ -349,10 +365,7 @@ export default function ArrSection({ service, label, labelColor }: Props) {
 
           {/* queue + recently added — inset display window */}
           {(() => {
-            const queueRows  = rows.slice(0, QUEUE_CAP)
-            const recentSlot = Math.max(0, QUEUE_CAP - rows.length)
-            const recentRows = recentlyAdded.slice(0, recentSlot)
-            const isEmpty    = rows.length === 0 && recentlyAdded.length === 0
+            const isEmpty = rows.length === 0 && recentlyAdded.length === 0
             return (
               <div className="mb-4">
                 <p className="font-mono text-[9px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--dimmer)' }}>queue</p>
@@ -434,12 +447,12 @@ export default function ArrSection({ service, label, labelColor }: Props) {
           })()}
 
           {/* upcoming — second inset display window within the same module */}
-          {monitored.length > 0 && (
+          {upcomingVisible.length > 0 && (
             <div>
               <p className="font-mono text-[9px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--dimmer)' }}>upcoming</p>
               <div className="inset-panel">
-                {monitored.slice(0, UPCOMING_CAP).map((m, i) => {
-                  const isLast = i === Math.min(monitored.length, UPCOMING_CAP) - 1
+                {upcomingVisible.map((m, i) => {
+                  const isLast = i === upcomingVisible.length - 1
                   if (service === 'sonarr') {
                     const s = m as MonSerie
                     const calEp = calendar.find(c => c.seriesId === m.id)
