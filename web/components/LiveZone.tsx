@@ -18,8 +18,9 @@ function Bar({ pct, color }: { pct: number; color: string }) {
 }
 
 export default function LiveZone() {
-  const [download, setDownload] = useState<QBTorrent | null>(null)
-  const [session,  setSession]  = useState<TautulliSession | null>(null)
+  const [download,    setDownload]    = useState<QBTorrent | null>(null)
+  const [downloadPoster, setDownloadPoster] = useState<string | null>(null)
+  const [session,     setSession]     = useState<TautulliSession | null>(null)
 
   const load = useCallback(async () => {
     const [qbRes, ttRes] = await Promise.allSettled([
@@ -35,6 +36,7 @@ export default function LiveZone() {
           .filter(t => t.dlspeed > 0)
           .sort((a, b) => b.dlspeed - a.dlspeed)[0] ?? null
         setDownload(active)
+        setDownloadPoster(active ? (data.posters?.[active.hash] ?? null) : null)
       } catch {}
     }
 
@@ -61,33 +63,53 @@ export default function LiveZone() {
       {download && (() => {
         const pct = Math.round((download.progress ?? 0) * 100)
         return (
-          <div className="live-card downloading">
-            <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--s-dl)' }}>Downloading</p>
-            <p className="text-base font-medium truncate mb-3" style={{ color: 'var(--text)' }}>{download.name}</p>
-            <Bar pct={pct} color="var(--s-dl)" />
-            <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--dim)' }}>
-              <span>{pct}%</span>
-              <span style={{ color: 'var(--s-dl)' }}>{fmtSpeed(download.dlspeed)}</span>
+          <div className="live-card downloading overflow-hidden" style={{ display: 'flex', padding: 0 }}>
+            {downloadPoster && (
+              <img src={downloadPoster} alt="" style={{ width: 'auto', flexShrink: 0, objectFit: 'cover', alignSelf: 'stretch', maxWidth: 80 }} />
+            )}
+            <div className="flex flex-col justify-between p-4 flex-1 min-w-0">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--s-dl)' }}>Downloading</p>
+                <p className="text-base font-medium truncate mb-3" style={{ color: 'var(--text)' }}>{download.name}</p>
+              </div>
+              <div>
+                <Bar pct={pct} color="var(--s-dl)" />
+                <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--dim)' }}>
+                  <span>{pct}%</span>
+                  <span style={{ color: 'var(--s-dl)' }}>{fmtSpeed(download.dlspeed)}</span>
+                </div>
+              </div>
             </div>
           </div>
         )
       })()}
       {session && (() => {
         const isTV = session.media_type === 'episode'
+        const thumb = isTV ? session.grandparent_thumb : session.thumb
+        const posterSrc = thumb ? `/api/tautulli?thumb=${encodeURIComponent(thumb)}` : null
         const title = isTV
           ? `${session.grandparent_title} — S${String(session.parent_title?.match(/\d+/)?.[0] ?? '0').padStart(2, '0')} — ${session.title}`
           : session.title
         const pct = parseInt(session.progress_percent, 10) || 0
         const stateColor = session.state === 'playing' ? 'var(--s-play)' : 'var(--s-today)'
         return (
-          <div className="live-card playing">
-            <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--s-play)' }}>Now Playing</p>
-            <p className="text-base font-medium truncate mb-3" style={{ color: 'var(--text)' }}>{title}</p>
-            <Bar pct={pct} color={stateColor} />
-            <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--dim)' }}>
-              <span>{pct}%</span>
-              <span style={{ color: stateColor }}>{session.state}</span>
-              <span>{session.friendly_name}</span>
+          <div className="live-card playing overflow-hidden" style={{ display: 'flex', padding: 0 }}>
+            {posterSrc && (
+              <img src={posterSrc} alt="" style={{ width: 'auto', flexShrink: 0, objectFit: 'cover', alignSelf: 'stretch', maxWidth: 80 }} />
+            )}
+            <div className="flex flex-col justify-between p-4 flex-1 min-w-0">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--s-play)' }}>Now Playing</p>
+                <p className="text-base font-medium truncate mb-3" style={{ color: 'var(--text)' }}>{title}</p>
+              </div>
+              <div>
+                <Bar pct={pct} color={stateColor} />
+                <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--dim)' }}>
+                  <span>{pct}%</span>
+                  <span style={{ color: stateColor }}>{session.state}</span>
+                  <span>{session.friendly_name}</span>
+                </div>
+              </div>
             </div>
           </div>
         )
