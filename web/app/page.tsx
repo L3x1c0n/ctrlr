@@ -20,11 +20,6 @@ const ARR_TABS = [
 
 function ArrTabs() {
   const [tab, setTab] = useState<'sonarr' | 'radarr'>('sonarr')
-  const [sonarrCount, setSonarrCount] = useState<number | null>(null)
-  const [radarrCount, setRadarrCount] = useState<number | null>(null)
-  const rowCap = sonarrCount !== null && radarrCount !== null && sonarrCount > 0 && radarrCount > 0
-    ? Math.min(sonarrCount, radarrCount)
-    : undefined
 
   return (
     <div id="arr">
@@ -54,10 +49,10 @@ function ArrTabs() {
           </div>
         ))}
       </div>
-      {/* Desktop: side by side, row-capped to match */}
+      {/* Desktop: side by side */}
       <div className="hidden md:grid md:grid-cols-2 gap-6">
-        <ArrSection service="sonarr" label="Sonarr" labelColor="var(--s-sonarr)" rowCap={rowCap} onRowCount={setSonarrCount} />
-        <ArrSection service="radarr" label="Radarr" labelColor="var(--s-today)"  rowCap={rowCap} onRowCount={setRadarrCount} />
+        <ArrSection service="sonarr" label="Sonarr" labelColor="var(--s-sonarr)" />
+        <ArrSection service="radarr" label="Radarr" labelColor="var(--s-today)" />
       </div>
     </div>
   )

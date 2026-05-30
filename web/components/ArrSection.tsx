@@ -125,14 +125,12 @@ function saveRetained(service: string, rows: RetainedRow[]) {
 }
 
 interface Props {
-  service:      'radarr' | 'sonarr'
-  label:        string
-  labelColor?:  string
-  rowCap?:      number
-  onRowCount?:  (n: number) => void
+  service:     'radarr' | 'sonarr'
+  label:       string
+  labelColor?: string
 }
 
-export default function ArrSection({ service, label, labelColor, rowCap, onRowCount }: Props) {
+export default function ArrSection({ service, label, labelColor }: Props) {
   const [queue,          setQueue]          = useState<ArrQueueItem[]>([])
   const [health,         setHealth]         = useState<Health[]>([])
   const [monitored,      setMonitored]      = useState<Monitored[]>([])
@@ -316,21 +314,13 @@ export default function ArrSection({ service, label, labelColor, rowCap, onRowCo
 
   const failedCount = rows.filter(r => r.state === 'failed').length
 
-  const QUEUE_CAP    = 10
+  const QUEUE_CAP    = 5
+  const RECENT_CAP   = 10
   const UPCOMING_CAP = 10
-  const maxTotal     = rowCap ?? (QUEUE_CAP + UPCOMING_CAP)
 
-  const queueRows   = rows.slice(0, Math.min(QUEUE_CAP, maxTotal))
-  const recentSlot  = Math.max(0, Math.min(QUEUE_CAP, maxTotal) - rows.length)
-  const recentRows  = recentlyAdded.slice(0, recentSlot)
-  const usedByQueue = queueRows.length + recentRows.length
-  const upcomingSlots   = Math.max(0, maxTotal - usedByQueue)
-  const upcomingVisible = monitored.slice(0, Math.min(UPCOMING_CAP, upcomingSlots))
-  const totalShown  = usedByQueue + upcomingVisible.length
-
-  useEffect(() => {
-    onRowCount?.(totalShown)
-  }, [totalShown, onRowCount])
+  const queueRows   = rows.slice(0, QUEUE_CAP)
+  const recentRows  = recentlyAdded.slice(0, RECENT_CAP)
+  const upcomingVisible = monitored.slice(0, UPCOMING_CAP)
 
   return (
     <>
@@ -365,7 +355,7 @@ export default function ArrSection({ service, label, labelColor, rowCap, onRowCo
 
           {/* queue + recently added — inset display window */}
           {(() => {
-            const isEmpty = rows.length === 0 && recentlyAdded.length === 0
+            const isEmpty = queueRows.length === 0 && recentRows.length === 0
             return (
               <div className="mb-4">
                 <p className="font-mono text-[9px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--dimmer)' }}>queue</p>
