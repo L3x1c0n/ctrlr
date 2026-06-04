@@ -7,7 +7,6 @@ import ReleaseSearchResults, { Release } from '@/components/ReleaseSearchResults
 import { SonarrEpisode } from '@/lib/sonarr'
 import RequestModal from '@/components/RequestModal'
 import { SeerSearchResult } from '@/types'
-import { THEMES, DEFAULT_THEME } from '@/lib/themes'
 
 // ── entry point union ─────────────────────────────────────────────────────────
 
@@ -59,28 +58,28 @@ function PlexSeriesBrowser({ showKey }: { showKey: string }) {
   }
 
   if (loading) return <Spinner />
-  if (!seasons.length) return <p className="text-[#999] text-xs">// no seasons</p>
+  if (!seasons.length) return <p className="text-xs" style={{ color: 'var(--dim)' }}>no seasons</p>
   return (
     <div className="space-y-0.5">
       {seasons.map(s => (
         <div key={s.ratingKey}>
           <button onClick={() => toggleSeason(s.ratingKey)}
-            className="w-full flex items-center justify-between py-1.5 px-2 hover:bg-[#1a1a2e] text-left">
-            <span className="text-[#ccc] text-xs">S{String(s.index).padStart(2,'0')} — {s.title}</span>
-            <span className="text-[#888] text-xs flex gap-2">
+            className="w-full flex items-center justify-between py-1.5 px-2 hover:bg-black/[0.04] text-left">
+            <span className="text-xs" style={{ color: 'var(--text-dim)' }}>S{String(s.index).padStart(2,'0')} — {s.title}</span>
+            <span className="text-xs flex gap-2" style={{ color: 'var(--dim)' }}>
               {s.leafCount != null && <span>{s.leafCount}ep</span>}
               <span>{openSeason === s.ratingKey ? '▲' : '▼'}</span>
             </span>
           </button>
           {openSeason === s.ratingKey && (
-            <div className="ml-3 border-l border-[#2a2a4a] pl-2 pb-1">
+            <div className="ml-3 pl-2 pb-1" style={{ borderLeft: '1px solid var(--border)' }}>
               {loadingSeason === s.ratingKey ? <div className="py-2"><Spinner /></div> : (
                 <div className="space-y-0.5 pt-0.5">
                   {(episodes[s.ratingKey] ?? []).map(ep => (
                     <div key={ep.ratingKey} className="py-1 px-1.5 flex items-center gap-2">
-                      <span className="text-[#7070a8] text-xs w-7 shrink-0">E{String(ep.index).padStart(2,'0')}</span>
-                      <span className="text-[#bbb] text-xs truncate flex-1">{ep.title}</span>
-                      {ep.duration != null && <span className="text-[#666] text-xs shrink-0">{fmtDuration(ep.duration)}</span>}
+                      <span className="text-xs w-7 shrink-0" style={{ color: 'var(--dim)' }}>E{String(ep.index).padStart(2,'0')}</span>
+                      <span className="text-xs truncate flex-1" style={{ color: 'var(--text-dim)' }}>{ep.title}</span>
+                      {ep.duration != null && <span className="text-xs shrink-0" style={{ color: 'var(--dim)' }}>{fmtDuration(ep.duration)}</span>}
                     </div>
                   ))}
                 </div>
@@ -116,10 +115,10 @@ function PlexArtGrid({ ratingKey, kind, pendingKey, onPick, saving }: {
 
   const isPortrait = kind === 'posters'
   if (loading) return <Spinner />
-  if (!photos.length) return <p className="text-[#999] text-xs">// none available</p>
+  if (!photos.length) return <p className="text-xs" style={{ color: 'var(--dim)' }}>none available</p>
   return (
     <>
-      <p className="text-[#7070a8] text-xs mb-1.5">// {photos.length} available — click to select, then --save</p>
+      <p className="text-xs mb-1.5" style={{ color: 'var(--dim)' }}>{photos.length} available — click to select, then save</p>
       <div className={`grid gap-2 ${isPortrait ? 'grid-cols-4' : 'grid-cols-3'}`}>
         {photos.map((p, i) => {
           const isPending  = pendingKey === p.key
@@ -127,12 +126,15 @@ function PlexArtGrid({ ratingKey, kind, pendingKey, onPick, saving }: {
           return (
             <div key={i} className="flex flex-col gap-0.5">
               <button onClick={() => onPick(p.key)} disabled={saving}
-                className={`relative overflow-hidden border ${isPending ? 'border-green-400' : isSelected ? 'border-white' : 'border-[#2a2a4a] hover:border-[#7070a8]'}`}
-                style={{ aspectRatio: isPortrait ? '2/3' : '16/9' }}>
+                className="relative overflow-hidden border transition-colors"
+                style={{
+                  aspectRatio: isPortrait ? '2/3' : '16/9',
+                  borderColor: isPending ? 'var(--s-done)' : isSelected ? 'var(--border-hi)' : 'var(--border)',
+                }}>
                 <img src={`/api/plex?thumb=${encodeURIComponent(p.thumb)}`} alt="" className="w-full h-full object-cover" />
                 {isPending && (
                   <div className="absolute inset-0 flex items-end justify-start p-0.5 bg-gradient-to-t from-black/60 to-transparent">
-                    <span className="text-[7px] font-mono text-green-400 leading-none">● selected</span>
+                    <span className="text-[7px] font-mono leading-none" style={{ color: 'var(--s-done)' }}>● selected</span>
                   </div>
                 )}
                 {isSelected && (
@@ -147,8 +149,8 @@ function PlexArtGrid({ ratingKey, kind, pendingKey, onPick, saving }: {
                 )}
               </button>
               <div className="flex justify-between items-center px-0.5">
-                <span className="text-[7px] font-mono text-[#7070a8]">[{i}]</span>
-                <span className="text-[7px] font-mono text-[#888]">{srcLabel(p.key)}</span>
+                <span className="text-[7px] font-mono" style={{ color: 'var(--dim)' }}>[{i}]</span>
+                <span className="text-[7px] font-mono" style={{ color: 'var(--dim)' }}>{srcLabel(p.key)}</span>
               </div>
             </div>
           )
@@ -189,17 +191,18 @@ function PlexMatchPanel({ ratingKey, mediaType, onDone }: { ratingKey: string; m
       <div className="flex gap-2">
         <input type="text" value={query} onChange={e => setQuery(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && search()} placeholder="search title..."
-          className="bg-[#0f0f1a] border border-[#1a1a2e] text-white font-mono text-xs px-2 py-1 flex-1 focus:outline-none focus:border-[#888]" />
+          className="font-mono text-xs px-2 py-1 flex-1 focus:outline-none border"
+          style={{ background: 'var(--bg-inset)', borderColor: 'var(--border)', color: 'var(--text)' }} />
         <button onClick={search} disabled={loading} className="btn-xs">{loading ? '...' : 'search'}</button>
       </div>
       {results.length > 0 && (
         <div className="space-y-1 max-h-48 overflow-y-auto">
           {results.map((m, i) => (
-            <div key={i} className="flex items-center gap-2 py-1 border-b border-[#0f0f1a]">
-              {m.thumb && <img src={m.thumb} alt="" className="w-8 aspect-[2/3] object-cover shrink-0 border border-[#2a2a4a]" />}
+            <div key={i} className="flex items-center gap-2 py-1 border-b" style={{ borderColor: 'var(--border)' }}>
+              {m.thumb && <img src={m.thumb} alt="" className="w-8 aspect-[2/3] object-cover shrink-0 border" style={{ borderColor: 'var(--border)' }} />}
               <div className="flex-1 min-w-0">
-                <p className="text-white text-xs truncate">{m.name}</p>
-                {m.year && <p className="text-[#999] text-xs">{m.year}</p>}
+                <p className="text-xs truncate" style={{ color: 'var(--text)' }}>{m.name}</p>
+                {m.year && <p className="text-xs" style={{ color: 'var(--dim)' }}>{m.year}</p>}
               </div>
               <button onClick={() => apply(m)} disabled={!!acting} className="btn-xs shrink-0">
                 {acting === m.guid ? '...' : 'select'}
@@ -238,7 +241,13 @@ function fmtRes(r?: string): string | null {
 }
 
 const statusLabel: Record<number, string> = { 1: 'Pending', 2: 'Approved', 3: 'Declined', 4: 'Available', 5: 'Processing' }
-const statusColor: Record<number, string>  = { 1: 'text-yellow-400', 2: 'text-blue-400', 3: 'text-danger', 4: 'text-green-400', 5: 'text-purple-400' }
+const statusColor: Record<number, string>  = {
+  1: 'var(--s-today)',
+  2: 'var(--s-sonarr)',
+  3: 'var(--s-danger)',
+  4: 'var(--s-done)',
+  5: 'var(--s-seer)',
+}
 
 // ── stage detection ───────────────────────────────────────────────────────────
 
@@ -256,56 +265,28 @@ function detectStage(arr: any, qbit: any, seer: any, plex: any): Stage {
 }
 
 const stageColor: Record<Stage, string> = {
-  downloading: 'text-blue-400',
-  available:   'text-green-400',
-  searching:   'text-yellow-400',
-  requested:   'text-purple-400',
-  unknown:     'text-[#666]',
+  downloading: 'var(--s-dl)',
+  available:   'var(--s-done)',
+  searching:   'var(--s-today)',
+  requested:   'var(--s-seer)',
+  unknown:     'var(--dim)',
 }
 
 // ── pipeline mini-map ─────────────────────────────────────────────────────────
 
-const PIPE_H = 22
-const PIPE_CHEV_W = 11
-
-// Map pipeline stages to TopBar segment indices: seer=5, arr=3, qbit=2, plex=6
-const PIPE_SEG_IDX = [5, 3, 2, 6]
-
 type NodeState = 'done' | 'active' | 'warn' | 'error' | 'pending' | 'na'
-
-function PipeChev({ segBg, nextBg }: { segBg: string; nextBg: string }) {
-  return (
-    <div style={{ background: nextBg, flexShrink: 0 }} className="flex items-center">
-      <svg
-        viewBox={`0 0 ${PIPE_CHEV_W} ${PIPE_H}`}
-        preserveAspectRatio="none"
-        style={{ flexShrink: 0, marginLeft: -1, width: PIPE_CHEV_W, height: PIPE_H }}
-      >
-        <polygon points={`0,0 ${PIPE_CHEV_W},${PIPE_H / 2} 0,${PIPE_H}`} fill={segBg} />
-      </svg>
-    </div>
-  )
-}
 
 function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   arr: any; qbit: any; seer: any; plex: any; mediaType: 'movie' | 'tv'; loading: boolean
 }) {
-  const [themeKey, setThemeKey] = useState(DEFAULT_THEME)
-  useEffect(() => {
-    const saved = localStorage.getItem('ctrlr-theme')
-    if (saved && THEMES[saved]) setThemeKey(saved)
-  }, [])
-  const theme = THEMES[themeKey]
-
-  const qitem = arr?.queueItem ?? null
   const plexOnly = !arr && !qbit && !seer && !!plex
 
   const seerStatus = seer?.mediaInfo?.status ?? 0
-  const arrTracked = qitem?.trackedDownloadStatus
+  const arrTracked = arr?.queueItem?.trackedDownloadStatus
   const qbitState  = qbit?.state ?? ''
 
   const effectiveSeerStatus = (seerStatus === 3 && arr) ? 2 : seerStatus
-  const seerNode: NodeState  = plexOnly ? 'na'
+  const seerNode: NodeState = plexOnly ? 'na'
     : seer ? (effectiveSeerStatus >= 2 ? 'done' : 'active') : (arr || plex ? 'done' : 'pending')
 
   const arrNode: NodeState = plexOnly ? 'na'
@@ -327,46 +308,47 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
   const plexNode: NodeState = (plex && !arr?.queueItem) ? 'active' : 'pending'
 
   const arrLabel = mediaType === 'movie' ? 'radarr' : 'sonarr'
-  const nodes: { label: string; state: NodeState }[] = [
-    { label: 'seer',   state: seerNode },
-    { label: arrLabel, state: arrNode  },
-    { label: 'qbit',   state: qbitNode },
-    { label: 'plex',   state: plexNode },
+  const nodes: { label: string; state: NodeState; color: string }[] = [
+    { label: 'seer',   state: seerNode,  color: 'var(--s-seer)'   },
+    { label: arrLabel, state: arrNode,   color: 'var(--s-sonarr)' },
+    { label: 'qbit',   state: qbitNode,  color: 'var(--s-dl)'     },
+    { label: 'plex',   state: plexNode,  color: 'var(--s-plex)'   },
   ]
 
-  function nodeIndicator(s: NodeState) {
-    if (s === 'active') return '  ●'
-    if (s === 'warn')   return '  !'
-    if (s === 'error')  return '  ✗'
-    return ''
-  }
-  function indicatorColor(s: NodeState) {
-    if (s === 'warn')  return '#facc15'
-    if (s === 'error') return '#f87171'
-    return ''  // inherit fg
+  function dotStyle(state: NodeState, color: string): React.CSSProperties {
+    if (state === 'error') return { borderColor: 'var(--s-danger)', background: 'var(--s-danger)' }
+    if (state === 'warn')  return { borderColor: 'var(--s-today)',  background: 'var(--s-today)'  }
+    if (state === 'active') return {
+      borderColor: color, background: color,
+      boxShadow: `0 0 0 3px var(--bg-card), 0 0 0 5px ${color}`,
+    }
+    if (state === 'done') return { borderColor: color, background: color, opacity: 0.45 }
+    return { borderColor: 'var(--dimmer)', background: 'var(--bg-card)' }
   }
 
   return (
-    <div className="flex items-stretch w-full overflow-hidden font-mono text-[10px]" style={{ height: PIPE_H }}>
-      {nodes.map((n, i) => {
-        const seg  = theme.segments[PIPE_SEG_IDX[i]]
-        const next = nodes[i + 1]
-        const ind  = nodeIndicator(n.state)
-        const indColor = indicatorColor(n.state)
-        return (
-          <div key={n.label} className="flex items-stretch flex-1">
-            <div className="flex-1 flex items-center justify-center gap-1.5" style={{ background: seg.bg, color: seg.fg }}>
-              <span>{n.label}</span>
-              {ind && (
-                <span style={indColor ? { color: indColor } : {}}>{ind.trim()}</span>
-              )}
-            </div>
-            <PipeChev segBg={seg.bg} nextBg={next ? theme.segments[PIPE_SEG_IDX[i + 1]].bg : '#16162a'} />
+    <div className="w-full">
+      <div className="grid grid-cols-4 mb-2">
+        {nodes.map(n => (
+          <p key={n.label} className="section-label text-center">{n.label}</p>
+        ))}
+      </div>
+      <div className="relative grid grid-cols-4 items-center py-1">
+        <div
+          className="absolute h-px"
+          style={{ left: '12.5%', right: '12.5%', background: 'var(--border-hi)' }}
+        />
+        {nodes.map(n => (
+          <div key={n.label} className="flex justify-center">
+            <div
+              className="rounded-full border-2 transition-all duration-300"
+              style={{ width: 10, height: 10, ...dotStyle(n.state, n.color) }}
+            />
           </div>
-        )
-      })}
+        ))}
+      </div>
       {loading && (
-        <div className="flex items-center px-2 text-[#444]">...</div>
+        <p className="text-[10px] mt-1 text-center" style={{ color: 'var(--dim)' }}>resolving...</p>
       )}
     </div>
   )
@@ -375,7 +357,7 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
 // ── section header ────────────────────────────────────────────────────────────
 
 function SectionHeader({ label }: { label: string }) {
-  return <p className="text-[#7070a8] text-xs mb-2">{`/* ${label} */`}</p>
+  return <p className="section-label mb-3">{label}</p>
 }
 
 // ── props ─────────────────────────────────────────────────────────────────────
@@ -386,45 +368,46 @@ interface Props {
   onRefresh: () => void
 }
 
+// ── inset service panel ───────────────────────────────────────────────────────
+
+function ServicePanel({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="inset-panel p-3 space-y-2 text-xs">
+      <p className="section-label mb-1">{label}</p>
+      {children}
+    </div>
+  )
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const isOpen = !!entry
 
-  // resolution state
   const [tmdbId,     setTmdbId]     = useState<number | null>(null)
   const [mediaType,  setMediaType]  = useState<'movie' | 'tv'>('movie')
   const [resolving,  setResolving]  = useState(false)
 
-  // arr detail (from entry-point fetch)
   const [arrDetail,  setArrDetail]  = useState<any>(null)
   const [profiles,   setProfiles]   = useState<{ id: number; name: string }[]>([])
 
-  // pipeline state
   const [pipeline,   setPipeline]   = useState<{ arr: any; qbit: any; seer: any; plex: any; profiles: any[] } | null>(null)
   const [pipelineLoading, setPipelineLoading] = useState(false)
 
-  // qbit direct — fetched by hash when entry is via qbit, regardless of pipeline
   const [qbitDirect, setQbitDirect] = useState<any>(null)
-
-  // episode synopsis — fetched for Sonarr/Plex episode entries
   const [episodeSynopsis, setEpisodeSynopsis] = useState<string | null>(null)
 
-  // actions
   const [acting,     setActing]     = useState<string | null>(null)
   const [qualActing, setQualActing] = useState(false)
 
-  // release search
   const [releases,   setReleases]   = useState<Release[] | null>(null)
   const [relLoading, setRelLoading] = useState(false)
   const [relError,   setRelError]   = useState<string | null>(null)
   const [episodes,   setEpisodes]   = useState<SonarrEpisode[] | null>(null)
   const [selEpId,    setSelEpId]    = useState<number | null>(null)
 
-  // plex episode info (set when entry is via plex and type === 'episode')
   const [plexEpisode, setPlexEpisode] = useState<{ showTitle: string; season: number; episode: number; title: string } | null>(null)
 
-  // plex panels
   const [showPosters,   setShowPosters]   = useState(false)
   const [showArt,       setShowArt]       = useState(false)
   const [pendingKey,    setPendingKey]    = useState<string | null>(null)
@@ -435,7 +418,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const [showMatch,   setShowMatch]   = useState(false)
   const [showSeries,  setShowSeries]  = useState(false)
 
-  // request modal
   const [requestItem, setRequestItem] = useState<SeerSearchResult | null>(null)
 
   // ── step 1: resolve tmdbId from entry point ─────────────────────────────────
@@ -457,7 +439,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       try {
         if (!entry) return
         if (entry.via === 'radarr') {
-          const [detailRes, profRes] = await Promise.all([
+          const [detailRes] = await Promise.all([
             fetch(`/api/radarr?mediaId=${entry.movieId}`),
             Promise.resolve(null),
           ])
@@ -481,7 +463,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
           setMediaType('tv')
           if (detail?.tmdbId) setTmdbId(detail.tmdbId)
 
-          // If we have a specific episodeId, fetch that episode directly (fastest path)
           if (entry.episodeId) {
             fetch(`/api/sonarr?episodeId=${entry.episodeId}`)
               .then(r => r.json())
@@ -491,7 +472,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                 if (ep.overview) {
                   setEpisodeSynopsis(ep.overview)
                 } else {
-                  // Try Trakt fallback
                   fetch(`/api/sonarr?mediaId=${entry.seriesId}`)
                     .then(r => r.json())
                     .then(d => {
@@ -508,13 +488,11 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
               .catch(() => {})
           }
 
-          // Also fetch full episodes list for the picker UI
           fetch(`/api/sonarr?episodes=${entry.seriesId}`)
             .then(r => r.json())
             .then((eps: SonarrEpisode[]) => {
               setEpisodes(eps)
               if (!entry.episodeId) {
-                // Auto-select next upcoming episode
                 const now = Date.now()
                 const next = eps.filter(e => e.monitored && !e.hasFile && e.airDateUtc && new Date(e.airDateUtc).getTime() > now)
                   .sort((a, b) => new Date(a.airDateUtc!).getTime() - new Date(b.airDateUtc!).getTime())
@@ -545,7 +523,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
             if (detail.summary) setEpisodeSynopsis(detail.summary)
           }
 
-          // Episodes don't carry Guid — fetch from the show (grandparent) instead
           const guidSource = isEpisode && detail?.grandparentRatingKey
             ? await fetch(`/api/plex?ratingKey=${detail.grandparentRatingKey}`)
                 .then(r => r.json()).then(d => d.detail?.Guid ?? []).catch(() => [])
@@ -561,7 +538,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
         } else if (entry.via === 'qbit') {
           setMediaType(entry.mediaType ?? 'movie')
           setTmdbId(entry.tmdbId ?? -1)
-          // Fetch torrent stats directly by hash (?info= returns QBTorrent fields)
           fetch(`/api/qbittorrent?info=${entry.hash}`)
             .then(r => r.json())
             .then(data => { if (data) setQbitDirect(data) })
@@ -570,8 +546,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       } catch { /* ignore */ }
       finally {
         setResolving(false)
-        // If resolve() finished without setting tmdbId, mark as -1 so the
-        // loading condition clears and the drawer renders with partial data
         setTmdbId(prev => prev === null ? -1 : prev)
       }
     }
@@ -579,7 +553,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     resolve()
   }, [entry])
 
-  // ── step 1b: for qbit TV entries, parse S/E from torrent name and fetch episode synopsis ──
+  // ── step 1b: qbit TV episode synopsis ──────────────────────────────────────
 
   useEffect(() => {
     const seriesId = (pipeline?.arr ?? arrDetail)?.id
@@ -600,7 +574,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       .catch(() => {})
   }, [entry?.via, mediaType, qbitDirect?.name, (pipeline?.arr ?? arrDetail)?.id, episodeSynopsis]) // eslint-disable-line
 
-  // ── step 2: fetch pipeline once tmdbId is known ─────────────────────────────
+  // ── step 2: pipeline fetch ──────────────────────────────────────────────────
 
   const fetchPipeline = useCallback(async (id: number, mt: 'movie' | 'tv', attempt = 1) => {
     setPipelineLoading(true)
@@ -609,7 +583,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     try {
       const res  = await fetch(`/api/pipeline?tmdbId=${id}&mediaType=${mt}`, { signal: controller.signal })
       const data = await res.json()
-      // Merge with existing pipeline: don't overwrite a service that previously loaded with a null
       setPipeline(prev => {
         if (!prev) return data
         return {
@@ -622,10 +595,8 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       })
       if (data.arr && !arrDetail) setArrDetail(data.arr)
       if (data.profiles?.length && !profiles.length) setProfiles(data.profiles)
-      // Use episode synopsis from queue item if available and not already set
       const epOverview = data.arr?.episodeDetail?.overview
       if (epOverview) setEpisodeSynopsis(prev => prev || epOverview)
-      // If some services came back null and we have retries left, retry once after a delay
       const hasGaps = !data.arr || !data.plex
       if (hasGaps && attempt < 3) {
         setTimeout(() => fetchPipeline(id, mt, attempt + 1), 4000 * attempt)
@@ -643,7 +614,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     if (tmdbId && tmdbId > 0) fetchPipeline(tmdbId, mediaType)
   }, [tmdbId, mediaType]) // eslint-disable-line
 
-  // ── helpers ──────────────────────────────────────────────────────────────────
+  // ── derived ──────────────────────────────────────────────────────────────────
 
   const arr    = pipeline?.arr    ?? arrDetail
   const qbit   = pipeline?.qbit   ?? null
@@ -651,11 +622,8 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const plex   = pipeline?.plex   ?? null
   const profs  = pipeline?.profiles?.length ? pipeline.profiles : profiles
 
-  // qbitData: prefer pipeline result, fall back to direct fetch (has QBTorrent fields)
   const qbitData = qbit ?? qbitDirect ?? null
 
-  // For TV: use Sonarr's per-episode hasFile as ground truth.
-  // plex returns the series (not the episode), so suppress it when the selected episode isn't imported yet.
   const selEp = episodes?.find(e => e.id === selEpId) ?? null
   const plexForStage = (mediaType === 'tv' && selEp && !selEp.hasFile) ? null : plex
 
@@ -722,17 +690,15 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
       onRefresh()
       if (action === 'delete' && tmdbId) fetchPipeline(tmdbId, mediaType)
       else if (action === 'refresh' && tmdbId) {
-        // Give Plex a moment to process the refresh before re-fetching pipeline
-        setTimeout(() => fetchPipeline(tmdbId, mediaType), 3000)
+        setTimeout(() => fetchPipeline(tmdbId!, mediaType), 3000)
       }
     } finally { setActing(null) }
   }
 
   async function deleteChain() {
-    if (!confirm(`Delete ${title}? Files will be permanently Deld.`)) return
+    if (!confirm(`Delete ${title}? Files will be permanently deleted.`)) return
     setActing('plex-delete')
     try {
-      // Step 1: Arr deletes entry + files
       if (arr?.id) {
         const svc    = mediaType === 'movie' ? 'radarr' : 'sonarr'
         const action = mediaType === 'movie' ? 'deleteMovie' : 'deleteSeries'
@@ -743,7 +709,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
           body: JSON.stringify({ action, ...idField }),
         })
       }
-      // Step 2: Plex deletes — succeeds if file still there, fine if already gone
       if (plex?.ratingKey) {
         await fetch('/api/plex', {
           method: 'POST',
@@ -821,10 +786,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     setActing(null)
   }
 
-  // null = not yet resolved → spinner; -1 = resolved, no tmdb id → show without pipeline data
   const loading = resolving || tmdbId === null || (tmdbId > 0 && pipeline === null)
-  // Suppress series overview when entry is inherently episode-level.
-  // Don't use selEpId here — it's async and causes a race with the pipeline render.
   const isEpisodeMode = entry?.via === 'sonarr'
                      || (entry?.via === 'qbit' && mediaType === 'tv')
                      || !!plexEpisode
@@ -839,7 +801,8 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
         onClick={onClose}
       />
       <div
-        className={`fixed top-0 right-0 bottom-0 z-50 w-full md:w-[480px] bg-[#16162a] border-l-2 border-[#2a2a4a] shadow-[-8px_0_32px_rgba(0,0,0,0.6)] transition-[transform,visibility] duration-200 font-mono ${isOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}`}
+        className={`fixed top-0 right-0 bottom-0 z-50 w-full md:w-[480px] border-l shadow-[-8px_0_32px_rgba(0,0,0,0.15)] transition-[transform,visibility] duration-200 font-mono ${isOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}`}
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border-hi)' }}
       >
         {backdrop && (
           <div className="absolute top-0 left-0 right-0 h-80 pointer-events-none" style={{ zIndex: 0 }}>
@@ -847,13 +810,20 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
           </div>
         )}
 
-
         <div className="relative z-10 overflow-y-auto h-full p-6">
           {/* header */}
           <div className="flex justify-between items-center mb-6">
-            <span className="text-[#7070a8] text-xs">{`/* unified -- detail */`}</span>
+            <span className="section-label">unified // detail</span>
             <button onClick={onClose} className="btn-xs">close</button>
           </div>
+
+          {!loading && entry && (
+            <div className="mb-6 overflow-hidden">
+              <PipelineMiniMap
+                arr={arr} qbit={qbitData} seer={seer} plex={plexForStage}
+                mediaType={mediaType} loading={pipelineLoading} />
+            </div>
+          )}
 
           {loading && <Spinner />}
 
@@ -863,11 +833,11 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
               <div className="flex gap-4 mb-6">
                 {poster && (
                   <div className="relative flex-shrink-0 z-30">
-                    <img src={poster} alt={title} className="w-36 aspect-[2/3] object-cover border border-[#1a1a2e]" />
+                    <img src={poster} alt={title} className="w-36 aspect-[2/3] object-cover" style={{ border: '1px solid var(--border)' }} />
                     {plex?.ratingKey && (
                       <button
                         onClick={() => { setShowPosters(v => !v); setShowArt(false); setShowMatch(false) }}
-                        className={`absolute bottom-1 right-1 text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showPosters ? 'border-white text-white bg-black/80' : 'border-[#444] text-[#777] bg-black/60 hover:border-[#aaa] hover:text-[#ccc]'}`}
+                        className={`absolute bottom-1 right-1 text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showPosters ? 'border-white text-white bg-black/80' : 'border-white/40 text-white/60 bg-black/60 hover:border-white/80 hover:text-white/90'}`}
                       >
                         ✎
                       </button>
@@ -877,26 +847,26 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                 <div className="flex-1 min-w-0">
                   {plexEpisode ? (
                     <>
-                      <p className="text-white text-sm font-medium leading-snug">{plexEpisode.showTitle}</p>
-                      <p className="text-[#999] text-xs mt-0.5">
+                      <p className="text-sm font-medium leading-snug" style={{ color: 'var(--text)' }}>{plexEpisode.showTitle}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>
                         S{String(plexEpisode.season).padStart(2,'0')}E{String(plexEpisode.episode).padStart(2,'0')}
-                        {plexEpisode.title && <span className="text-[#bbb]"> — {plexEpisode.title}</span>}
+                        {plexEpisode.title && <span style={{ color: 'var(--text)' }}> — {plexEpisode.title}</span>}
                       </p>
                     </>
                   ) : (
-                    <p className="text-white text-sm font-medium leading-snug">
+                    <p className="text-sm font-medium leading-snug" style={{ color: 'var(--text)' }}>
                       {title}
-                      {year && <span className="text-[#ccc] ml-2 font-normal">({year})</span>}
+                      {year && <span className="ml-2 font-normal" style={{ color: 'var(--text-dim)' }}>({year})</span>}
                     </p>
                   )}
                   {arr?.genres?.length > 0 && (
-                    <p className="text-[#bbb] text-xs mt-0.5">{arr.genres.slice(0, 3).join(', ')}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>{arr.genres.slice(0, 3).join(', ')}</p>
                   )}
                   {imdbRating && (
-                    <p className="text-[#999] text-xs mt-0.5">imdb {imdbRating.toFixed(1)}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--dim)' }}>imdb {imdbRating.toFixed(1)}</p>
                   )}
                   {(episodeSynopsis || (!isEpisodeMode && arr?.overview)) && (
-                    <p className="text-[#999] text-[10px] leading-relaxed mt-2 line-clamp-5">
+                    <p className="text-[10px] leading-relaxed mt-2 line-clamp-5" style={{ color: 'var(--text-dim)' }}>
                       {episodeSynopsis || arr?.overview}
                     </p>
                   )}
@@ -910,13 +880,14 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           if (data.detail) setPlexImgData({ thumb: data.detail.thumb, art: data.detail.art })
                           setImgBust(v => v + 1)
                         }}
-                        className="text-[9px] font-mono px-1.5 py-0.5 border border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc] transition-colors"
+                        className="btn-xs"
                       >
                         ↺
                       </button>
                       <button
                         onClick={() => { setShowArt(v => !v); setShowPosters(false); setShowMatch(false) }}
-                        className={`text-[9px] font-mono px-1.5 py-0.5 border transition-colors ${showArt ? 'border-white text-white bg-black/70' : 'border-[#444] text-[#777] bg-black/40 hover:border-[#aaa] hover:text-[#ccc]'}`}
+                        className="btn-xs"
+                        style={showArt ? { borderColor: 'var(--border-hi)', color: 'var(--text)' } : undefined}
                       >
                         ✎ art
                       </button>
@@ -925,97 +896,84 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                 </div>
               </div>
 
-              {/* ── pipeline mini-map ── */}
-              <div className="mb-6 overflow-hidden">
-                <PipelineMiniMap
-                  arr={arr} qbit={qbitData} seer={seer} plex={plexForStage}
-                  mediaType={mediaType} loading={pipelineLoading} />
-              </div>
-
-              {/* ── pipeline ── */}
+              {/* pipeline service blocks */}
               <div className="mb-6">
                 <SectionHeader label="pipeline" />
-                <div className="space-y-4">
+                <div className="space-y-3">
 
-                  {/* radarr / sonarr row */}
+                  {/* arr */}
                   {arr && (
-                    <div className="space-y-1.5 text-xs border-l-2 border-[#2a2a4a] pl-3">
-                      <p className="text-[#7070a8] text-[10px] uppercase tracking-wider">{mediaType === 'movie' ? 'radarr' : 'sonarr'}</p>
-
-                      {/* monitored toggle */}
+                    <ServicePanel label={mediaType === 'movie' ? 'radarr' : 'sonarr'}>
                       <div className="flex items-center gap-2">
-                        <span className="text-[#bbb] w-20">monitored:</span>
+                        <span className="w-20" style={{ color: 'var(--dim)' }}>monitored</span>
                         <button
                           onClick={() => arrAction('toggleMonitor', { monitored: !arr.monitored })}
                           disabled={!!acting}
-                          className={`text-xs ${arr.monitored ? 'text-yellow-400' : 'text-[#ccc]'}`}
+                          style={{ color: arr.monitored ? 'var(--s-today)' : 'var(--dim)' }}
                         >
                           {arr.monitored ? '●' : '○'}
                         </button>
                       </div>
 
-                      {/* quality profile */}
                       {profs.length > 0 && (
                         <div className="flex items-center gap-2">
-                          <span className="text-[#bbb] w-20">profile:</span>
+                          <span className="w-20" style={{ color: 'var(--dim)' }}>profile</span>
                           <select
                             value={arr.qualityProfileId ?? ''}
                             onChange={e => changeQuality(Number(e.target.value))}
                             disabled={qualActing}
-                            className="bg-[#0f0f1a] border border-[#1a1a2e] text-white text-xs font-mono px-2 py-0.5 focus:outline-none focus:border-[#888] disabled:opacity-50"
+                            className="text-xs font-mono px-2 py-0.5 focus:outline-none disabled:opacity-50 border"
+                            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text)' }}
                           >
                             {profs.map((p: any) => (
                               <option key={p.id} value={p.id}>{p.name}</option>
                             ))}
                           </select>
-                          {qualActing && <span className="text-[#bbb] text-xs">...</span>}
+                          {qualActing && <span style={{ color: 'var(--dim)' }}>...</span>}
                         </div>
                       )}
 
-                      {/* imported file quality */}
                       {arr.movieFile?.quality?.quality?.name && (
                         <div className="flex items-center gap-2">
-                          <span className="text-[#bbb] w-20">file:</span>
-                          <span className="text-green-300">{arr.movieFile.quality.quality.name}</span>
-                          {arr.movieFile.size && <span className="text-[#999]">{fmtSize(arr.movieFile.size)}</span>}
+                          <span className="w-20" style={{ color: 'var(--dim)' }}>file</span>
+                          <span style={{ color: 'var(--s-done)' }}>{arr.movieFile.quality.quality.name}</span>
+                          {arr.movieFile.size && <span style={{ color: 'var(--dim)' }}>{fmtSize(arr.movieFile.size)}</span>}
                         </div>
                       )}
 
-                      {/* active queue item */}
                       {qitem && (
-                        <div className="space-y-1 mt-1">
+                        <div className="space-y-1">
                           <div className="flex gap-2">
-                            <span className="text-[#bbb] w-20">status:</span>
-                            <span className="text-white">{qitem.status}</span>
+                            <span className="w-20" style={{ color: 'var(--dim)' }}>status</span>
+                            <span style={{ color: 'var(--text)' }}>{qitem.status}</span>
                           </div>
                           {qitem.quality?.quality?.name && (
                             <div className="flex gap-2">
-                              <span className="text-[#bbb] w-20">grabbed:</span>
-                              <span className="text-green-300">{qitem.quality.quality.name}</span>
+                              <span className="w-20" style={{ color: 'var(--dim)' }}>grabbed</span>
+                              <span style={{ color: 'var(--s-done)' }}>{qitem.quality.quality.name}</span>
                             </div>
                           )}
                           <div className="flex items-center gap-2">
-                            <span className="text-[#bbb] w-20">progress:</span>
+                            <span className="w-20" style={{ color: 'var(--dim)' }}>progress</span>
                             <ProgressBar pct={pct} />
-                            <span className="text-[#999]">{pct.toFixed(0)}%</span>
+                            <span style={{ color: 'var(--dim)' }}>{pct.toFixed(0)}%</span>
                           </div>
                           <div className="flex gap-2">
-                            <span className="text-[#bbb] w-20">size:</span>
-                            <span className="text-[#ccc]">{fmtSize(qitem.size)}</span>
+                            <span className="w-20" style={{ color: 'var(--dim)' }}>size</span>
+                            <span style={{ color: 'var(--text-dim)' }}>{fmtSize(qitem.size)}</span>
                           </div>
                         </div>
                       )}
 
-                      {/* arr actions */}
-                      <div className="flex flex-wrap gap-1.5 mt-2">
+                      <div className="flex flex-wrap gap-1.5 pt-1">
                         {arr.id && (
-                          <button onClick={() => arrAction('search')} disabled={!!acting} className="btn-xs text-violet-400">
-                            {acting === 'search' ? '...' : 'grep'}
+                          <button onClick={() => arrAction('search')} disabled={!!acting} className="btn-xs">
+                            {acting === 'search' ? '...' : 'search'}
                           </button>
                         )}
                         {(mediaType === 'movie' ? arr.id : selEpId) && (
                           <button onClick={searchReleases} disabled={relLoading} className="btn-xs">
-                            {relLoading ? '...' : 'search'}
+                            {relLoading ? '...' : 'interactive search'}
                           </button>
                         )}
                         {qitem?.id && (
@@ -1036,14 +994,14 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                         )}
                       </div>
 
-                      {/* sonarr episode picker */}
                       {mediaType === 'tv' && episodes !== null && episodes.length > 0 && (
-                        <div className="mt-2">
-                          <span className="text-[#bbb] text-xs block mb-1">episode:</span>
+                        <div className="pt-1">
+                          <span className="block mb-1" style={{ color: 'var(--dim)' }}>episode</span>
                           <select
                             value={selEpId ?? ''}
                             onChange={e => setSelEpId(Number(e.target.value))}
-                            className="bg-[#0f0f1a] border border-[#1a1a2e] text-white text-xs font-mono px-2 py-1 w-full focus:outline-none focus:border-[#888]"
+                            className="text-xs font-mono px-2 py-1 w-full focus:outline-none border"
+                            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text)' }}
                           >
                             {Array.from(new Set(episodes.filter(e => e.seasonNumber > 0 && e.monitored).map(e => e.seasonNumber)))
                               .sort((a, b) => a - b).map(season => (
@@ -1060,44 +1018,42 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           </select>
                         </div>
                       )}
-                    </div>
+                    </ServicePanel>
                   )}
 
-                  {/* qbittorrent row */}
+                  {/* qbittorrent */}
                   {(qbitData || entry?.via === 'qbit') && (
-                    <div className="space-y-1.5 text-xs border-l-2 border-[#2a2a4a] pl-3">
-                      <p className="text-[#7070a8] text-[10px] uppercase tracking-wider">qbittorrent</p>
+                    <ServicePanel label="qbittorrent">
                       {qbitData ? (
                         <>
                           {qbitData.name && entry?.via === 'qbit' && (
-                            <p className="text-[#ccc] text-xs break-all leading-relaxed">{qbitData.name}</p>
+                            <p className="text-xs break-all leading-relaxed" style={{ color: 'var(--text-dim)' }}>{qbitData.name}</p>
                           )}
                           <div className="flex items-center gap-2">
-                            <span className="text-[#bbb] w-20">progress:</span>
+                            <span className="w-20" style={{ color: 'var(--dim)' }}>progress</span>
                             <ProgressBar pct={(qbitData.progress ?? 0) * 100} />
-                            <span className="text-[#999]">{((qbitData.progress ?? 0) * 100).toFixed(0)}%</span>
+                            <span style={{ color: 'var(--dim)' }}>{((qbitData.progress ?? 0) * 100).toFixed(0)}%</span>
                           </div>
                           {qbitData.size > 0 && (
                             <div className="flex gap-2">
-                              <span className="text-[#bbb] w-20">downloaded:</span>
-                              <span className="text-[#ccc]">{fmtSize(qbitData.downloaded ?? 0)}</span>
-                              <span className="text-[#555]">of</span>
-                              <span className="text-[#ccc]">{fmtSize(qbitData.size)}</span>
+                              <span className="w-20" style={{ color: 'var(--dim)' }}>downloaded</span>
+                              <span style={{ color: 'var(--text-dim)' }}>{fmtSize(qbitData.downloaded ?? 0)}</span>
+                              <span style={{ color: 'var(--dim)' }}>of</span>
+                              <span style={{ color: 'var(--text-dim)' }}>{fmtSize(qbitData.size)}</span>
                             </div>
                           )}
                           {((qbitData.dlspeed ?? 0) > 0 || (qbitData.upspeed ?? 0) > 0) && (
                             <div className="flex gap-3">
-                              <span className="text-green-400">↓ {fmtSpeed(qbitData.dlspeed ?? 0)}</span>
-                              <span className="text-blue-400">↑ {fmtSpeed(qbitData.upspeed ?? 0)}</span>
+                              <span style={{ color: 'var(--s-dl)' }}>↓ {fmtSpeed(qbitData.dlspeed ?? 0)}</span>
+                              <span style={{ color: 'var(--s-sonarr)' }}>↑ {fmtSpeed(qbitData.upspeed ?? 0)}</span>
                             </div>
                           )}
                           <div className="flex gap-2">
-                            <span className="text-[#bbb] w-20">state:</span>
-                            <span className="text-white">{qbitData.state}</span>
+                            <span className="w-20" style={{ color: 'var(--dim)' }}>state</span>
+                            <span style={{ color: 'var(--text)' }}>{qbitData.state}</span>
                           </div>
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            <button onClick={() => qbitAction(isPaused ? 'resume' : 'pause')} disabled={!!acting}
-                              className="btn-xs">
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            <button onClick={() => qbitAction(isPaused ? 'resume' : 'pause')} disabled={!!acting} className="btn-xs">
                               {acting === `qbit-${isPaused ? 'resume' : 'pause'}` ? '...' : isPaused ? 'resume' : 'pause'}
                             </button>
                             <button onClick={() => { if (confirm(`Delete torrent?`)) qbitAction('delete', { deleteFiles: false }) }}
@@ -1107,14 +1063,13 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           </div>
                         </>
                       ) : (
-                        <p className="text-[#555] text-xs">loading...</p>
+                        <p className="text-xs" style={{ color: 'var(--dimmer)' }}>loading...</p>
                       )}
-                    </div>
+                    </ServicePanel>
                   )}
 
-                  {/* plex row */}
-                  <div className="space-y-1.5 text-xs border-l-2 border-[#2a2a4a] pl-3">
-                    <p className="text-[#7070a8] text-[10px] uppercase tracking-wider">plex</p>
+                  {/* plex */}
+                  <ServicePanel label="plex">
                     {plex ? (
                       <>
                         {(() => {
@@ -1124,33 +1079,41 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           const br     = fmtBitrate(m?.bitrate)
                           return (
                             <div className="space-y-1">
-                              {res    && <div className="flex gap-2"><span className="text-[#bbb] w-20">resolution:</span><span className="text-green-300">{res}</span></div>}
-                              {codecs && <div className="flex gap-2"><span className="text-[#bbb] w-20">codec:</span><span className="text-[#ccc]">{codecs}</span></div>}
-                              {m?.container && <div className="flex gap-2"><span className="text-[#bbb] w-20">container:</span><span className="text-[#ccc]">{m.container}</span></div>}
-                              {br    && <div className="flex gap-2"><span className="text-[#bbb] w-20">bitrate:</span><span className="text-[#ccc]">{br}</span></div>}
-                              {m?.Part?.[0]?.size && <div className="flex gap-2"><span className="text-[#bbb] w-20">size:</span><span className="text-[#ccc]">{fmtSize(m.Part[0].size!)}</span></div>}
+                              {res    && <div className="flex gap-2"><span className="w-20" style={{ color: 'var(--dim)' }}>resolution</span><span style={{ color: 'var(--s-done)' }}>{res}</span></div>}
+                              {codecs && <div className="flex gap-2"><span className="w-20" style={{ color: 'var(--dim)' }}>codec</span><span style={{ color: 'var(--text-dim)' }}>{codecs}</span></div>}
+                              {m?.container && <div className="flex gap-2"><span className="w-20" style={{ color: 'var(--dim)' }}>container</span><span style={{ color: 'var(--text-dim)' }}>{m.container}</span></div>}
+                              {br    && <div className="flex gap-2"><span className="w-20" style={{ color: 'var(--dim)' }}>bitrate</span><span style={{ color: 'var(--text-dim)' }}>{br}</span></div>}
+                              {m?.Part?.[0]?.size && <div className="flex gap-2"><span className="w-20" style={{ color: 'var(--dim)' }}>size</span><span style={{ color: 'var(--text-dim)' }}>{fmtSize(m.Part[0].size!)}</span></div>}
                             </div>
                           )
                         })()}
-                        <div className="flex flex-wrap gap-1.5 mt-1">
+                        <div className="flex flex-wrap gap-1.5 pt-1">
                           <button onClick={() => plexAction('refresh')} disabled={!!acting} className="btn-xs">
                             {acting === 'plex-refresh' ? '...' : 'refresh'}
                           </button>
-                          <button onClick={() => { setShowMatch(v => !v); setShowPosters(false); setShowArt(false); setPendingKey(null) }}
-                            className="btn-xs" style={showMatch ? { borderColor: 'var(--border-hi)', color: 'var(--text)' } : undefined}>fix match</button>
+                          <button
+                            onClick={() => { setShowMatch(v => !v); setShowPosters(false); setShowArt(false); setPendingKey(null) }}
+                            className="btn-xs"
+                            style={showMatch ? { borderColor: 'var(--border-hi)', color: 'var(--text)' } : undefined}
+                          >
+                            fix match
+                          </button>
                           {mediaType === 'tv' && (
-                            <button onClick={() => setShowSeries(v => !v)}
-                              className="btn-xs" style={showSeries ? { borderColor: 'var(--border-hi)', color: 'var(--text)' } : undefined}>series</button>
+                            <button
+                              onClick={() => setShowSeries(v => !v)}
+                              className="btn-xs"
+                              style={showSeries ? { borderColor: 'var(--border-hi)', color: 'var(--text)' } : undefined}
+                            >
+                              series
+                            </button>
                           )}
-                          <button onClick={deleteChain}
-                            disabled={!!acting} className="btn-xs danger">
+                          <button onClick={deleteChain} disabled={!!acting} className="btn-xs danger">
                             {acting === 'plex-delete' ? '...' : 'Del'}
                           </button>
                         </div>
 
                         {pendingKey && (
-                          <button onClick={saveArtwork} disabled={artworkSaving}
-                            className="btn-xs disabled:opacity-50">
+                          <button onClick={saveArtwork} disabled={artworkSaving} className="btn-xs disabled:opacity-50">
                             {artworkSaving ? '...' : 'save'}
                           </button>
                         )}
@@ -1182,29 +1145,26 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                         )}
                       </>
                     ) : (
-                      <p className="text-[#555] text-xs">not in library</p>
+                      <p className="text-xs" style={{ color: 'var(--dimmer)' }}>not in library</p>
                     )}
-                  </div>
+                  </ServicePanel>
 
-                  {/* seer row */}
-                  <div className="space-y-1.5 text-xs border-l-2 border-[#2a2a4a] pl-3">
-                    <p className="text-[#7070a8] text-[10px] uppercase tracking-wider">seer</p>
+                  {/* seer */}
+                  <ServicePanel label="seer">
                     {seer?.mediaInfo?.status != null ? (
                       <div className="flex items-center gap-3">
                         {(() => {
-                          // Overseerr marks a request "Declined" when the item was already in arr
-                          // (duplicate request). Override to "Approved" if arr actually has it.
                           const raw = seer.mediaInfo.status
                           const effective = (raw === 3 && arr) ? 2 : raw
                           return (
-                            <span className={`text-xs ${statusColor[effective] ?? 'text-[#888]'}`}>
+                            <span className="text-xs" style={{ color: statusColor[effective] ?? 'var(--dim)' }}>
                               {statusLabel[effective] ?? String(effective)}
                             </span>
                           )
                         })()}
                         {tmdbId && seer.mediaInfo.status < 4 && !(seer.mediaInfo.status === 3 && arr) && (
                           <button
-                            className="btn-xs text-cyan-600 hover:text-cyan-400"
+                            className="btn-xs"
                             onClick={() => setRequestItem({
                               id: tmdbId,
                               mediaType: mediaType,
@@ -1219,10 +1179,10 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                       </div>
                     ) : (
                       <div className="flex items-center gap-3">
-                        <span className="text-[#555] text-xs">not requested</span>
+                        <span className="text-xs" style={{ color: 'var(--dimmer)' }}>not requested</span>
                         {tmdbId && (
                           <button
-                            className="btn-xs text-cyan-600 hover:text-cyan-400"
+                            className="btn-xs"
                             onClick={() => setRequestItem({
                               id: tmdbId,
                               mediaType: mediaType,
@@ -1235,12 +1195,11 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                         )}
                       </div>
                     )}
-                  </div>
+                  </ServicePanel>
 
                 </div>
               </div>
 
-              {/* release search results */}
               <ReleaseSearchResults
                 releases={releases}
                 loading={relLoading}
