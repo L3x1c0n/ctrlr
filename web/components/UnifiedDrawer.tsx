@@ -320,7 +320,7 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
     if (state === 'warn')  return { borderColor: 'var(--s-today)',  background: 'var(--s-today)'  }
     if (state === 'active') return {
       borderColor: color, background: color,
-      boxShadow: `0 0 0 3px var(--bg-card), 0 0 0 5px ${color}`,
+      boxShadow: `0 0 0 2px var(--bg-card), 0 0 0 4px ${color}`,
     }
     if (state === 'done') return { borderColor: color, background: color, opacity: 0.45 }
     return { borderColor: 'var(--dimmer)', background: 'var(--bg-card)' }
@@ -328,12 +328,15 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-4 mb-2">
+      <div className="grid grid-cols-4 mb-1">
         {nodes.map(n => (
-          <p key={n.label} className="section-label text-center">{n.label}</p>
+          <p key={n.label} className="text-center font-mono uppercase"
+            style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.12em', color: 'var(--dim)' }}>
+            {n.label}
+          </p>
         ))}
       </div>
-      <div className="relative grid grid-cols-4 items-center py-1">
+      <div className="relative grid grid-cols-4 items-center py-0.5">
         <div
           className="absolute h-px"
           style={{ left: '12.5%', right: '12.5%', background: 'var(--border-hi)' }}
@@ -341,15 +344,12 @@ function PipelineMiniMap({ arr, qbit, seer, plex, mediaType, loading }: {
         {nodes.map(n => (
           <div key={n.label} className="flex justify-center">
             <div
-              className="rounded-full border-2 transition-all duration-300"
-              style={{ width: 10, height: 10, ...dotStyle(n.state, n.color) }}
+              className="rounded-full border transition-all duration-300"
+              style={{ width: 7, height: 7, ...dotStyle(n.state, n.color) }}
             />
           </div>
         ))}
       </div>
-      {loading && (
-        <p className="text-[10px] mt-1 text-center" style={{ color: 'var(--dim)' }}>resolving...</p>
-      )}
     </div>
   )
 }
@@ -811,19 +811,19 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
         )}
 
         <div className="relative z-10 overflow-y-auto h-full p-6">
-          {/* header */}
-          <div className="flex justify-between items-center mb-6">
-            <span className="section-label">unified // detail</span>
-            <button onClick={onClose} className="btn-xs">close</button>
-          </div>
-
           {!loading && entry && (
-            <div className="mb-6 overflow-hidden">
+            <div className="mb-4 overflow-hidden">
               <PipelineMiniMap
                 arr={arr} qbit={qbitData} seer={seer} plex={plexForStage}
                 mediaType={mediaType} loading={pipelineLoading} />
             </div>
           )}
+
+          {/* header */}
+          <div className="flex justify-between items-center mb-6">
+            <span className="section-label">unified // detail</span>
+            <button onClick={onClose} className="btn-xs">close</button>
+          </div>
 
           {loading && <Spinner />}
 
