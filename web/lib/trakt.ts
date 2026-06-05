@@ -51,6 +51,34 @@ function writeEnvValues(updates: Record<string, string>) {
 
 let refreshPromise: Promise<void> | null = null
 
+export async function forceRefreshToken(): Promise<{ expiresAt: number }> {
+  const { clientId, clientSecret, refreshToken } = getCredentials()
+  if (!refreshToken || !clientSecret) throw new Error('missing refresh_token or client_secret')
+  const res = await fetch('https://api.trakt.tv/oauth/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent':   'Mozilla/5.0 (compatible; CTRLr/1.0)',
+    },
+    body: JSON.stringify({
+      refresh_token: refreshToken,
+      client_id:     clientId,
+      client_secret: clientSecret,
+      grant_type:    'refresh_token',
+    }),
+  })
+  if (!res.ok) throw new Error(`Trakt refresh HTTP ${res.status}: ${await res.text()}`)
+  const data = await res.json()
+  const expiresAt = Math.floor(Date.now() / 1000) + data.expires_in
+  writeEnvValues({
+    TRAKT_ACCESS_TOKEN:     data.access_token,
+    TRAKT_REFRESH_TOKEN:    data.refresh_token,
+    TRAKT_TOKEN_EXPIRES_AT: String(expiresAt),
+  })
+  console.log('[trakt] token refreshed via forceRefreshToken, expires', new Date(expiresAt * 1000).toISOString())
+  return { expiresAt }
+}
+
 async function refreshAccessToken(): Promise<void> {
   const { clientId, clientSecret, refreshToken } = getCredentials()
   if (!refreshToken || !clientSecret) {
@@ -59,7 +87,10 @@ async function refreshAccessToken(): Promise<void> {
   }
   const res = await fetch('https://api.trakt.tv/oauth/token', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent':   'Mozilla/5.0 (compatible; CTRLr/1.0)',
+    },
     body: JSON.stringify({
       refresh_token: refreshToken,
       client_id:     clientId,
@@ -85,8 +116,8 @@ export async function ensureFreshToken(): Promise<void> {
   const { expiresAt } = getCredentials()
   if (!expiresAt) return
   const nowSec = Math.floor(Date.now() / 1000)
-  // Refresh if less than 3 days remaining
-  if (nowSec < expiresAt - 259200) return
+  // Refresh if less than 5 days remaining (tokens are 7-day; cron runs every 2 days as primary)
+  if (nowSec < expiresAt - 432000) return
   if (!refreshPromise) {
     refreshPromise = refreshAccessToken().finally(() => { refreshPromise = null })
   }

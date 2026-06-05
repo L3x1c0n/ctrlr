@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
-import { ensureFreshToken } from '@/lib/trakt'
+import { forceRefreshToken } from '@/lib/trakt'
 
 export async function GET() {
   try {
-    await ensureFreshToken()
-    return NextResponse.json({ ok: true })
+    const { expiresAt } = await forceRefreshToken()
+    return NextResponse.json({ ok: true, expiresAt, expiresAt_iso: new Date(expiresAt * 1000).toISOString() })
   } catch (e) {
+    console.error('[trakt] cron refresh failed:', e)
     return NextResponse.json({ error: String(e) }, { status: 500 })
   }
 }
