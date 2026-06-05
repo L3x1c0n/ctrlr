@@ -1,90 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { QBTorrent, QBTransferInfo } from '@/types'
 import ProgressBar from '@/components/ProgressBar'
 import Spinner from '@/components/Spinner'
 import UnifiedDrawer, { DrawerEntry } from '@/components/UnifiedDrawer'
 
-const SCRAMBLE_CHARS = '01ﾊﾐﾋｱｳｦ█▓▒░╪┼╬╫╩╦╠═'
-
-function usePeekScramble(name: string, active: boolean) {
-  const [text, setText] = useState(name)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const frameRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    if (!active) {
-      setText(name)
-      if (timerRef.current) clearTimeout(timerRef.current)
-      if (frameRef.current) clearTimeout(frameRef.current)
-      return
-    }
-
-    let cancelled = false
-
-    function scramble(duration: number, onDone: () => void) {
-      const end = Date.now() + duration
-      function tick() {
-        if (cancelled) return
-        if (Date.now() >= end) { onDone(); return }
-        setText(name.split('').map(() =>
-          SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]
-        ).join(''))
-        frameRef.current = setTimeout(tick, 80)
-      }
-      tick()
-    }
-
-    function decode(onDone: () => void) {
-      let iteration = 0
-      function step() {
-        if (cancelled) return
-        setText(
-          name.split('').map((_, i) => {
-            if (i < Math.floor(iteration)) return name[i]
-            return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]
-          }).join('')
-        )
-        iteration += 0.35
-        if (iteration < name.length + 1) {
-          frameRef.current = setTimeout(step, 40)
-        } else {
-          setText(name)
-          onDone()
-        }
-      }
-      step()
-    }
-
-    function cycle() {
-      if (cancelled) return
-      scramble(4000, () => {
-        if (cancelled) return
-        decode(() => {
-          if (cancelled) return
-          timerRef.current = setTimeout(() => { if (!cancelled) cycle() }, 2000)
-        })
-      })
-    }
-
-    cycle()
-
-    return () => {
-      cancelled = true
-      if (timerRef.current) clearTimeout(timerRef.current)
-      if (frameRef.current) clearTimeout(frameRef.current)
-      setText(name)
-    }
-  }, [name, active])
-
-  return text
-}
-
-function ScrambledName({ name, active }: { name: string; active: boolean }) {
-  const text = usePeekScramble(name, active)
-  return <span>{text}</span>
-}
 
 function fmtSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
@@ -233,7 +154,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                 <div className="flex items-center gap-3">
                 <span className="w-5 shrink-0 text-right tabular-nums select-none" style={{ color: 'var(--dim)' }}>{i + 1}</span>
                 <div className="flex-1 min-w-0 truncate group-hover:underline">
-                  <ScrambledName name={t.name} active={t.state === 'downloading'} />
+                  {t.name}
                 </div>
                 <span className="hidden md:block shrink-0 w-[64px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtSize(t.size)}</span>
                 <div className="hidden md:flex items-center gap-2 shrink-0 w-[110px]">
@@ -244,7 +165,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                 </div>
                 <span className="hidden md:block shrink-0 w-[72px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--s-dl)' }}>{fmtSpeed(t.dlspeed)}</span>
                 <span className="hidden md:block shrink-0 w-[52px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtEta(t.eta)}</span>
-                <span className="shrink-0 whitespace-nowrap text-[10px]" style={{ color: stateColor[t.state] ?? 'var(--dim)' }}>{stateLabel[t.state] ?? t.state}</span>
+                <span className="shrink-0 w-[76px] whitespace-nowrap text-[10px]" style={{ color: stateColor[t.state] ?? 'var(--dim)' }}>{stateLabel[t.state] ?? t.state}</span>
                 <div className="shrink-0 flex gap-1.5" onClick={e => e.stopPropagation()}>
                   {t.state.includes('paused') || t.state.includes('Paused') ? (
                     <button onClick={() => action('resume', t.hash)} className="btn-xs" title="resume">{'▶︎'}</button>
