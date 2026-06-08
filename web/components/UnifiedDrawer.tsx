@@ -1003,14 +1003,14 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                             className="text-xs font-mono px-2 py-1 w-full focus:outline-none border"
                             style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text)' }}
                           >
-                            {Array.from(new Set(episodes.filter(e => e.seasonNumber > 0 && e.monitored).map(e => e.seasonNumber)))
+                            {Array.from(new Set(episodes.filter(e => e.seasonNumber > 0).map(e => e.seasonNumber)))
                               .sort((a, b) => a - b).map(season => (
                                 <optgroup key={season} label={`Season ${season}`}>
-                                  {episodes.filter(e => e.seasonNumber === season && e.monitored)
+                                  {episodes.filter(e => e.seasonNumber === season)
                                     .sort((a, b) => a.episodeNumber - b.episodeNumber)
                                     .map(e => (
                                       <option key={e.id} value={e.id}>
-                                        {`S${String(e.seasonNumber).padStart(2,'0')}E${String(e.episodeNumber).padStart(2,'0')} — ${e.title}${e.hasFile ? ' [dl]' : ''}`}
+                                        {`S${String(e.seasonNumber).padStart(2,'0')}E${String(e.episodeNumber).padStart(2,'0')} — ${e.title}${e.hasFile ? ' [dl]' : !e.monitored ? ' [–]' : ''}`}
                                       </option>
                                     ))}
                                 </optgroup>
