@@ -170,6 +170,28 @@ export async function searchReleases(episodeId: number): Promise<Release[]> {
   }
 }
 
+export async function seasonSearch(seriesId: number, seasonNumber: number): Promise<void> {
+  await fetch(`${BASE}/api/v3/command`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'SeasonSearch', seriesId, seasonNumber }),
+    cache: 'no-store',
+  })
+}
+
+export async function updateSeasonMonitoring(seriesId: number, seasonNumber: number, monitored: boolean): Promise<void> {
+  const current = await getSeriesDetail(seriesId)
+  const seasons = (current.seasons ?? []).map((s: any) =>
+    s.seasonNumber === seasonNumber ? { ...s, monitored } : s
+  )
+  await fetch(`${BASE}/api/v3/series/${seriesId}`, {
+    method: 'PUT',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...current, seasons }),
+    cache: 'no-store',
+  })
+}
+
 export async function grabRelease(guid: string, indexerId: number): Promise<void> {
   await fetch(`${BASE}/api/v3/release`, {
     method: 'POST',

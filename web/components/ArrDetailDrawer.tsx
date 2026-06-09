@@ -301,7 +301,7 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
                     disabled={!!acting}
                     className="btn-xs text-violet-400"
                   >
-                    {acting === 'search' ? '...' : 'grep'}
+                    {acting === 'search' ? '...' : 'search'}
                   </button>
                   {searchId && (
                     <button
@@ -326,7 +326,7 @@ export default function ArrDetailDrawer({ service, item, onClose, onRefresh }: P
                       disabled={relLoading}
                       className="btn-xs text-violet-400"
                     >
-                      {relLoading ? '...' : 'grep -i'}
+                      {relLoading ? '...' : 'interactive search'}
                     </button>
                   )}
                   {item?.id && (

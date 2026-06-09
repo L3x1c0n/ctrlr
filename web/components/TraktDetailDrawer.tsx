@@ -219,7 +219,7 @@ export default function TraktDetailDrawer({ item, onClose }: Props) {
                       }}
                       className="btn-xs text-violet-400"
                     >
-                      {acting === 'auto' ? '...' : 'grep'}
+                      {acting === 'auto' ? '...' : 'search'}
                     </button>
                     {(arrIds.movieId || arrIds.episodeId) && (
                       <button
@@ -246,7 +246,7 @@ export default function TraktDetailDrawer({ item, onClose }: Props) {
                         }}
                         className="btn-xs text-violet-400"
                       >
-                        {relLoading ? '...' : 'grep -i'}
+                        {relLoading ? '...' : 'interactive search'}
                       </button>
                     )}
                   </div>

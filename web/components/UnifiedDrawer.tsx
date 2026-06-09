@@ -405,6 +405,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
   const [relError,   setRelError]   = useState<string | null>(null)
   const [episodes,   setEpisodes]   = useState<SonarrEpisode[] | null>(null)
   const [selEpId,    setSelEpId]    = useState<number | null>(null)
+  const [selSeason,  setSelSeason]  = useState<number | null>(null)
 
   const [plexEpisode, setPlexEpisode] = useState<{ showTitle: string; season: number; episode: number; title: string } | null>(null)
 
@@ -430,7 +431,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     }
 
     setTmdbId(null); setArrDetail(null); setProfiles([]); setPipeline(null)
-    setReleases(null); setRelError(null); setEpisodes(null); setSelEpId(null)
+    setReleases(null); setRelError(null); setEpisodes(null); setSelEpId(null); setSelSeason(null)
     setShowPosters(false); setShowArt(false); setShowMatch(false); setShowSeries(false); setPendingKey(null)
     setPlexEpisode(null); setQbitDirect(null); setEpisodeSynopsis(null); setPlexImgData(null)
     setResolving(true)
@@ -773,6 +774,47 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     } finally { setRelLoading(false) }
   }
 
+  function selectSeason(seasonNum: number) {
+    if (selSeason === seasonNum) { setSelSeason(null); return }
+    setSelSeason(seasonNum)
+    if (!episodes) return
+    const seasonEps = episodes
+      .filter(e => e.seasonNumber === seasonNum)
+      .sort((a, b) => a.episodeNumber - b.episodeNumber)
+    const target = seasonEps.find(e => !e.hasFile) ?? seasonEps[0]
+    if (target) setSelEpId(target.id)
+  }
+
+  async function toggleSeasonMonitor(seasonNumber: number, monitored: boolean) {
+    if (!arr?.id) return
+    setActing('season-mon')
+    try {
+      await fetch('/api/sonarr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'updateSeasonMonitor', seriesId: arr.id, seasonNumber, monitored }),
+      })
+      if (tmdbId) fetchPipeline(tmdbId, mediaType)
+    } finally { setActing(null) }
+  }
+
+  async function doSearch() {
+    if (mediaType === 'tv' && selSeason != null && arr?.id) {
+      setActing('search')
+      try {
+        await fetch('/api/sonarr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'seasonSearch', seriesId: arr.id, seasonNumber: selSeason }),
+        })
+        onRefresh()
+        if (tmdbId) fetchPipeline(tmdbId, mediaType)
+      } finally { setActing(null) }
+    } else {
+      arrAction('search')
+    }
+  }
+
   async function grabRelease(guid: string, indexerId: number, key: string) {
     const svc = mediaType === 'movie' ? 'radarr' : 'sonarr'
     setActing(key)
@@ -785,6 +827,22 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
     onRefresh()
     setActing(null)
   }
+
+  useEffect(() => {
+    if (!selEpId || !episodes) return
+    const ep = episodes.find(e => e.id === selEpId)
+    if (ep) setSelSeason(ep.seasonNumber)
+  }, [selEpId, episodes])
+
+  // fetch episodes for any TV drawer that has a sonarr series ID, regardless of entry via
+  const sonarrSeriesId = mediaType === 'tv' ? ((pipeline?.arr ?? arrDetail)?.id ?? null) : null
+  useEffect(() => {
+    if (!sonarrSeriesId || episodes !== null) return
+    fetch(`/api/sonarr?episodes=${sonarrSeriesId}`)
+      .then(r => r.json())
+      .then((eps: SonarrEpisode[]) => setEpisodes(eps))
+      .catch(() => setEpisodes([]))
+  }, [sonarrSeriesId, episodes])
 
   const loading = resolving || tmdbId === null || (tmdbId > 0 && pipeline === null)
   const isEpisodeMode = entry?.via === 'sonarr'
@@ -909,9 +967,15 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                         <button
                           onClick={() => arrAction('toggleMonitor', { monitored: !arr.monitored })}
                           disabled={!!acting}
-                          style={{ color: arr.monitored ? 'var(--s-today)' : 'var(--dim)' }}
+                          title={arr.monitored ? 'monitored' : 'unmonitored'}
+                          style={{ padding: '4px 6px', margin: '-4px -6px' }}
                         >
-                          {arr.monitored ? '●' : '○'}
+                          <svg width="11" height="13" viewBox="0 0 11 13" style={{ color: arr.monitored ? 'var(--s-today)' : 'var(--dimmer)', display: 'block' }}>
+                            {arr.monitored
+                              ? <path d="M1 1h9v11l-4.5-3L1 12V1z" fill="currentColor"/>
+                              : <path d="M1 1h9v11l-4.5-3L1 12V1z" fill="none" stroke="currentColor" strokeWidth="1.2"/>
+                            }
+                          </svg>
                         </button>
                       </div>
 
@@ -965,9 +1029,88 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                         </div>
                       )}
 
+                      {mediaType === 'tv' && (arr?.seasons as any[])?.filter((s: any) => s.seasonNumber > 0).length > 0 && (
+                        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 6 }}>
+                          {(arr.seasons as any[])
+                            .filter((s: any) => s.seasonNumber > 0)
+                            .sort((a: any, b: any) => a.seasonNumber - b.seasonNumber)
+                            .map((s: any) => {
+                              const fileCount  = s.statistics?.episodeFileCount ?? 0
+                              const total      = s.statistics?.totalEpisodeCount ?? 0
+                              const isExpanded = selSeason === s.seasonNumber
+                              const seasonEps  = isExpanded && episodes
+                                ? episodes.filter(e => e.seasonNumber === s.seasonNumber).sort((a, b) => a.episodeNumber - b.episodeNumber)
+                                : []
+                              return (
+                                <div key={s.seasonNumber}>
+                                  <div
+                                    className="flex items-center gap-2 py-1.5 cursor-pointer"
+                                    style={{ borderBottom: '1px solid var(--border)' }}
+                                    onClick={() => selectSeason(s.seasonNumber)}
+                                  >
+                                    <svg width="10" height="10" viewBox="0 0 10 10" style={{ flexShrink: 0, color: isExpanded ? 'var(--dim)' : 'var(--dimmer)', transition: 'transform 0.15s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                                      <polyline points="3,2 7,5 3,8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                    <span className="w-6 shrink-0 tabular-nums" style={{ color: isExpanded ? 'var(--text)' : 'var(--dim)' }}>
+                                      S{String(s.seasonNumber).padStart(2, '0')}
+                                    </span>
+                                    <span className="flex-1 tabular-nums" style={{ fontSize: 10, color: 'var(--dimmer)' }}>
+                                      {fileCount}/{total}
+                                    </span>
+                                    <button
+                                      onClick={e => { e.stopPropagation(); toggleSeasonMonitor(s.seasonNumber, !s.monitored) }}
+                                      disabled={acting === 'season-mon'}
+                                      title={s.monitored ? 'monitored' : 'unmonitored'}
+                                      style={{ padding: '4px 6px', margin: '-4px -6px' }}
+                                    >
+                                      <svg width="11" height="13" viewBox="0 0 11 13" style={{ color: s.monitored ? 'var(--s-today)' : 'var(--dimmer)', display: 'block' }}>
+                                        {s.monitored
+                                          ? <path d="M1 1h9v11l-4.5-3L1 12V1z" fill="currentColor"/>
+                                          : <path d="M1 1h9v11l-4.5-3L1 12V1z" fill="none" stroke="currentColor" strokeWidth="1.2"/>
+                                        }
+                                      </svg>
+                                    </button>
+                                  </div>
+                                  {isExpanded && episodes === null && (
+                                    <div className="py-1 pl-5" style={{ color: 'var(--dim)', fontSize: 10, borderBottom: '1px solid var(--border)' }}>loading...</div>
+                                  )}
+                                  {isExpanded && seasonEps.map(ep => {
+                                    const isSel = ep.id === selEpId
+                                    return (
+                                      <div
+                                        key={ep.id}
+                                        className="flex items-center gap-2 py-1 cursor-pointer"
+                                        style={{
+                                          borderBottom: '1px solid var(--border)',
+                                          borderLeft: isSel ? '2px solid var(--s-today)' : '2px solid transparent',
+                                          paddingLeft: 18,
+                                        }}
+                                        onClick={() => setSelEpId(ep.id)}
+                                      >
+                                        <span className="shrink-0 tabular-nums" style={{ color: 'var(--dim)', fontSize: 10, minWidth: 28 }}>
+                                          E{String(ep.episodeNumber).padStart(2, '0')}
+                                        </span>
+                                        <span className="flex-1 truncate" style={{ color: 'var(--dimmer)', fontSize: 10 }}>
+                                          {ep.title}
+                                        </span>
+                                        <svg width="9" height="11" viewBox="0 0 11 13" style={{ flexShrink: 0, color: ep.hasFile ? 'var(--s-done)' : !ep.monitored ? 'var(--dimmer)' : 'transparent' }}>
+                                          {ep.hasFile
+                                            ? <path d="M1 1h9v11l-4.5-3L1 12V1z" fill="currentColor"/>
+                                            : <path d="M1 1h9v11l-4.5-3L1 12V1z" fill="none" stroke="currentColor" strokeWidth="1.2"/>
+                                          }
+                                        </svg>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )
+                            })}
+                        </div>
+                      )}
+
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {arr.id && (
-                          <button onClick={() => arrAction('search')} disabled={!!acting} className="btn-xs">
+                          <button onClick={doSearch} disabled={!!acting} className="btn-xs">
                             {acting === 'search' ? '...' : 'search'}
                           </button>
                         )}
@@ -993,31 +1136,6 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
                           </>
                         )}
                       </div>
-
-                      {mediaType === 'tv' && episodes !== null && episodes.length > 0 && (
-                        <div className="pt-1">
-                          <span className="block mb-1" style={{ color: 'var(--dim)' }}>episode</span>
-                          <select
-                            value={selEpId ?? ''}
-                            onChange={e => setSelEpId(Number(e.target.value))}
-                            className="text-xs font-mono px-2 py-1 w-full focus:outline-none border"
-                            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text)' }}
-                          >
-                            {Array.from(new Set(episodes.filter(e => e.seasonNumber > 0).map(e => e.seasonNumber)))
-                              .sort((a, b) => a - b).map(season => (
-                                <optgroup key={season} label={`Season ${season}`}>
-                                  {episodes.filter(e => e.seasonNumber === season)
-                                    .sort((a, b) => a.episodeNumber - b.episodeNumber)
-                                    .map(e => (
-                                      <option key={e.id} value={e.id}>
-                                        {`S${String(e.seasonNumber).padStart(2,'0')}E${String(e.episodeNumber).padStart(2,'0')} — ${e.title}${e.hasFile ? ' [dl]' : !e.monitored ? ' [–]' : ''}`}
-                                      </option>
-                                    ))}
-                                </optgroup>
-                              ))}
-                          </select>
-                        </div>
-                      )}
                     </ServicePanel>
                   )}
 
