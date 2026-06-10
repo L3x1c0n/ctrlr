@@ -14,44 +14,43 @@ function fmtBytes(bytes: number): string {
   return `${(bytes / 1024).toFixed(0)}K`
 }
 
-function barColor(pct: number): string {
-  if (pct >= 90) return '#f43f5e'
-  if (pct >= 70) return '#fbbf24'
-  return '#4ade80'
+function Dot({ status }: { status: ServiceStatus['status'] }) {
+  const color = status === 'up' ? 'var(--s-done)' : status === 'warn' ? 'var(--s-today)' : 'var(--s-danger)'
+  return (
+    <span
+      className="inline-block rounded-full shrink-0"
+      style={{ width: 6, height: 6, background: color }}
+    />
+  )
 }
 
 function Bar({ pct, label, sub }: { pct: number; label: string; sub: string }) {
-  const color = barColor(pct)
+  const color = pct >= 90 ? 'var(--s-danger)' : pct >= 70 ? 'var(--s-today)' : 'var(--dim)'
   return (
     <div>
-      <div className="flex justify-between font-mono text-xs mb-0.5">
-        <span className="text-[#888]">{label}</span>
+      <div className="flex justify-between font-mono text-xs mb-1">
+        <span style={{ color: 'var(--dim)' }}>{label}</span>
         <span style={{ color }}>{sub}</span>
       </div>
-      <div className="h-1.5 bg-[#1a1a2e] rounded-sm overflow-hidden">
+      <div style={{ height: 2, background: 'var(--bg-inset)', borderRadius: 1, overflow: 'hidden' }}>
         <div
-          className="h-full rounded-sm transition-all duration-700"
-          style={{ width: `${Math.min(pct, 100)}%`, background: color, boxShadow: `0 0 6px ${color}88` }}
+          style={{
+            width: `${Math.min(pct, 100)}%`,
+            height: '100%',
+            background: color,
+            borderRadius: 1,
+            transition: 'width 0.7s',
+          }}
         />
       </div>
     </div>
   )
 }
 
-function Dot({ status }: { status: ServiceStatus['status'] }) {
-  const color = status === 'up' ? '#4ade80' : status === 'warn' ? '#fbbf24' : '#f43f5e'
-  return (
-    <span
-      className="inline-block rounded-full shrink-0"
-      style={{ width: 7, height: 7, background: color, boxShadow: `0 0 5px ${color}` }}
-    />
-  )
-}
-
 export default function SystemStatus() {
-  const [data, setData]       = useState<SystemData | null>(null)
-  const [open, setOpen]       = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [data, setData]             = useState<SystemData | null>(null)
+  const [open, setOpen]             = useState(false)
+  const [loading, setLoading]       = useState(true)
   const [restarting, setRestarting] = useState<string | null>(null)
 
   async function restart(key: string) {
@@ -71,8 +70,7 @@ export default function SystemStatus() {
   async function load() {
     try {
       const res = await fetch('/api/system', { cache: 'no-store' })
-      const d   = await res.json()
-      setData(d)
+      setData(await res.json())
     } catch {}
     finally { setLoading(false) }
   }
@@ -92,60 +90,62 @@ export default function SystemStatus() {
   const cpuPct    = sys ? Math.min(Math.round((sys.cpuLoad1 / (sys.cpuCount || 1)) * 100), 100) : 0
   const iowaitPct = sys?.ioWaitPct ?? 0
 
+  const downCount = data?.services.filter(s => s.status === 'down').length ?? 0
+
   return (
-    <div className="border border-[#1a1a2e] mt-4">
-      {/* always-visible traffic lights strip */}
+    <div style={{ borderTop: '1px solid var(--border)', marginTop: 16 }}>
+
+      {/* always-visible strip */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full px-3 py-2 flex items-center gap-3 hover:bg-[#0d0d1a] transition-colors"
+        className="w-full px-3 py-2 flex items-center gap-3 font-mono text-xs"
+        style={{ background: 'transparent' }}
       >
-        <span className="font-mono text-xs text-[#6a9a7a] shrink-0">// sys</span>
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+        <span style={{ color: 'var(--dim)', flexShrink: 0 }}>// sys</span>
+
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           {loading ? (
-            <span className="text-[#444] font-mono text-xs">checking...</span>
+            <span style={{ color: 'var(--dimmer)' }}>checking...</span>
           ) : (
             data?.services.map(s => (
-              <div key={s.key} className="flex items-center gap-1 min-w-0">
+              <div key={s.key} className="flex items-center gap-1.5 min-w-0">
                 <Dot status={s.status} />
-                <span className="font-mono text-xs text-[#666] whitespace-nowrap hidden sm:inline">{s.name}</span>
+                <span className="hidden sm:inline whitespace-nowrap" style={{ color: 'var(--dim)' }}>{s.name}</span>
               </div>
             ))
           )}
         </div>
-        {/* overall health summary */}
-        {data && !loading && (() => {
-          const down = data.services.filter(s => s.status === 'down').length
-          return (
-            <span className={`font-mono text-xs shrink-0 ${down > 0 ? 'text-[#f43f5e]' : 'text-[#4ade80]'}`}>
-              {down > 0 ? `${down} down` : 'all up'}
-            </span>
-          )
-        })()}
-        <span className="font-mono text-xs text-[#444] shrink-0">{open ? '▴' : '▾'}</span>
+
+        {data && !loading && (
+          <span style={{ color: downCount > 0 ? 'var(--s-danger)' : 'var(--s-done)', flexShrink: 0 }}>
+            {downCount > 0 ? `${downCount} down` : 'all up'}
+          </span>
+        )}
+        <span style={{ color: 'var(--dimmer)', flexShrink: 0 }}>{open ? '▴' : '▾'}</span>
       </button>
 
       {/* collapsible detail */}
       {open && data && (
-        <div className="border-t border-[#1a1a2e] px-3 py-3 space-y-4">
+        <div style={{ borderTop: '1px solid var(--border)' }} className="px-3 py-3 space-y-5">
 
-          {/* service table */}
+          {/* services */}
           <div>
-            <p className="font-mono text-xs text-[#6a9a7a] mb-2">{'/* services */'}</p>
-            <div className="space-y-1">
+            <p className="section-label mb-2">{'/* services */'}</p>
+            <div className="space-y-1.5">
               {data.services.map(s => (
                 <div key={s.key} className="flex items-center gap-2 font-mono text-xs">
                   <Dot status={s.status} />
-                  <span className="text-white w-[72px] shrink-0">{s.name}</span>
-                  <span className="text-[#555] w-[56px] shrink-0 text-right tabular-nums">
+                  <span className="shrink-0" style={{ color: 'var(--text)', width: 72 }}>{s.name}</span>
+                  <span className="shrink-0 tabular-nums text-right" style={{ color: 'var(--dimmer)', width: 52 }}>
                     {s.latency != null ? `${s.latency}ms` : '—'}
                   </span>
-                  <span className="text-[#666] flex-1 shrink-0">{s.version ?? ''}</span>
+                  <span className="flex-1" style={{ color: 'var(--dim)' }}>{s.version ?? ''}</span>
                   <button
                     onClick={() => restart(s.key)}
                     disabled={restarting === s.key}
-                    className="btn-xs text-[#555] hover:text-[#f87171] disabled:opacity-40 shrink-0"
+                    className="btn-xs danger shrink-0"
                   >
-                    {restarting === s.key ? '...' : '--restart'}
+                    {restarting === s.key ? '...' : 'restart'}
                   </button>
                 </div>
               ))}
@@ -154,9 +154,9 @@ export default function SystemStatus() {
 
           {/* system metrics */}
           {sys && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2.5">
-                <p className="font-mono text-xs text-[#6a9a7a]">{'/* memory */'}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-3">
+                <p className="section-label">{'/* memory + cpu */'}</p>
                 <Bar
                   pct={memPct}
                   label="ram"
@@ -169,39 +169,23 @@ export default function SystemStatus() {
                     sub={`${fmtBytes(sys.swapUsed * kb)} / ${fmtBytes(sys.swapTotal * kb)}`}
                   />
                 )}
-                <Bar
-                  pct={cpuPct}
-                  label="cpu"
-                  sub={`load ${sys.cpuLoad1.toFixed(2)}`}
-                />
-                <Bar
-                  pct={diskPct}
-                  label="disk /"
-                  sub={`${fmtBytes(sys.diskUsed)} / ${fmtBytes(sys.diskTotal)}`}
-                />
-                <Bar
-                  pct={iowaitPct}
-                  label="iowait"
-                  sub={`${iowaitPct}%`}
-                />
+                <Bar pct={cpuPct}    label="cpu"    sub={`load ${sys.cpuLoad1.toFixed(2)}`} />
+                <Bar pct={diskPct}   label="disk /" sub={`${fmtBytes(sys.diskUsed)} / ${fmtBytes(sys.diskTotal)}`} />
+                <Bar pct={iowaitPct} label="iowait" sub={`${iowaitPct}%`} />
               </div>
 
-              <div className="space-y-2.5">
-                <p className="font-mono text-xs text-[#6a9a7a]">{'/* process rss */'}</p>
+              <div className="space-y-3">
+                <p className="section-label">{'/* process rss */'}</p>
                 {sys.processes.map(p => {
                   const pct = sys.memTotal > 0 ? Math.round((p.rss / sys.memTotal) * 100) : 0
                   return (
-                    <Bar
-                      key={p.name}
-                      pct={pct}
-                      label={p.name.toLowerCase()}
-                      sub={fmtBytes(p.rss * kb)}
-                    />
+                    <Bar key={p.name} pct={pct} label={p.name.toLowerCase()} sub={fmtBytes(p.rss * kb)} />
                   )
                 })}
               </div>
             </div>
           )}
+
         </div>
       )}
     </div>
