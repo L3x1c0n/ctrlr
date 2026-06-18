@@ -879,7 +879,7 @@ export default function UnifiedDrawer({ entry, onClose, onRefresh }: Props) {
 
           {/* header */}
           <div className="flex justify-between items-center mb-6">
-            <span className="section-label">unified // detail</span>
+            <span className="section-label">detail</span>
             <button onClick={onClose} className="btn-xs">close</button>
           </div>
 

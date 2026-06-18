@@ -19,6 +19,12 @@ const SECRET_KEYS = new Set(['RADARR_API_KEY', 'SONARR_API_KEY', 'SEER_API_KEY',
 type TraktState = 'idle' | 'waiting' | 'done' | 'error'
 type ScanState = 'idle' | 'scanning' | 'done' | 'error'
 
+const inputStyle = {
+  background: 'var(--bg-inset)',
+  borderColor: 'var(--border-inset)',
+  color: 'var(--text)',
+}
+
 export default function SettingsForm({ initial }: { initial: Record<string, string> }) {
   const [values, setValues] = useState(initial)
   const [saved, setSaved] = useState(false)
@@ -76,10 +82,7 @@ export default function SettingsForm({ initial }: { initial: Record<string, stri
   async function connectTrakt() {
     setTraktError(null)
     setTraktState('idle')
-
-    // First save current values so client_id and client_secret are on disk
     await save()
-
     const res = await fetch('/api/trakt/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -92,7 +95,6 @@ export default function SettingsForm({ initial }: { initial: Record<string, stri
     setTraktState('waiting')
     window.open('https://trakt.tv/activate', '_blank')
 
-    // Poll every 5 seconds
     const interval = data.interval ?? 5
     const expires = Date.now() + (data.expires_in ?? 600) * 1000
     const poll = async () => {
@@ -103,12 +105,8 @@ export default function SettingsForm({ initial }: { initial: Record<string, stri
         body: JSON.stringify({ action: 'poll', device_code: data.device_code }),
       })
       const d = await r.json()
-      if (d.ok) {
-        setTraktState('done')
-        setTraktCode(null)
-      } else {
-        setTimeout(poll, interval * 1000)
-      }
+      if (d.ok) { setTraktState('done'); setTraktCode(null) }
+      else setTimeout(poll, interval * 1000)
     }
     setTimeout(poll, interval * 1000)
   }
@@ -116,20 +114,21 @@ export default function SettingsForm({ initial }: { initial: Record<string, stri
   return (
     <div className="space-y-8">
       {error && <p className="text-danger font-mono text-sm border border-danger px-4 py-3">{error}</p>}
-      {saved && <p className="text-green-400 font-mono text-sm">Saved.</p>}
+      {saved && <p className="font-mono text-sm" style={{ color: 'var(--s-done)' }}>Saved.</p>}
 
       {FIELDS.map(({ section, keys }) => (
         <div key={section}>
-          <h2 className="text-[#999] font-mono text-xs uppercase tracking-wider mb-3">{section}</h2>
+          <h2 className="section-label mb-3">{section}</h2>
           <div className="space-y-2">
             {keys.map((key) => (
               <div key={key} className="flex gap-3 items-center">
-                <label className="font-mono text-xs text-[#999] w-48 flex-shrink-0">{key}</label>
+                <label className="font-mono text-xs w-48 flex-shrink-0" style={{ color: 'var(--dim)' }}>{key}</label>
                 <input
                   type={SECRET_KEYS.has(key) ? 'password' : 'text'}
                   value={values[key] ?? ''}
                   onChange={(e) => { setValues((v) => ({ ...v, [key]: e.target.value })); setSaved(false) }}
-                  className="flex-1 bg-[#0f0f1a] border border-[#1a1a2e] text-white font-mono text-sm px-3 py-1.5 focus:outline-none focus:border-[#888]"
+                  className="flex-1 font-mono text-sm px-3 py-1.5 focus:outline-none border"
+                  style={inputStyle}
                   spellCheck={false}
                   autoComplete="off"
                 />
@@ -137,31 +136,33 @@ export default function SettingsForm({ initial }: { initial: Record<string, stri
             ))}
           </div>
           {section === 'Trakt' && (
-            <div className="mt-3 border border-[#1a1a2e] px-4 py-3 font-mono text-sm">
+            <div className="mt-3 px-4 py-3 font-mono text-sm" style={{ border: '1px solid var(--border)' }}>
               {traktState === 'idle' && (
                 <div className="flex items-center gap-4">
                   {initial.TRAKT_ACCESS_TOKEN ? (
-                    <span className="text-green-400">Connected</span>
+                    <span style={{ color: 'var(--s-done)' }}>Connected</span>
                   ) : null}
-                  <button onClick={connectTrakt} className="text-blue-400 hover:text-blue-300">
+                  <button onClick={connectTrakt} className="btn-xs">
                     {initial.TRAKT_ACCESS_TOKEN ? 'Reconnect →' : 'Connect Trakt Account →'}
                   </button>
                 </div>
               )}
               {traktState === 'waiting' && traktCode && (
                 <div>
-                  <p className="text-white mb-1">Go to <span className="text-blue-400">trakt.tv/activate</span> and enter:</p>
-                  <p className="text-yellow-400 text-2xl tracking-widest my-2">{traktCode}</p>
-                  <p className="text-[#999] text-xs">Waiting for authorisation...</p>
+                  <p className="mb-1" style={{ color: 'var(--text)' }}>
+                    Go to <span style={{ color: 'var(--s-sonarr)' }}>trakt.tv/activate</span> and enter:
+                  </p>
+                  <p className="text-2xl tracking-widest my-2" style={{ color: 'var(--s-today)' }}>{traktCode}</p>
+                  <p className="text-xs" style={{ color: 'var(--dim)' }}>Waiting for authorisation...</p>
                 </div>
               )}
               {traktState === 'done' && (
-                <p className="text-green-400">Connected. Hit Restart Service to apply.</p>
+                <p style={{ color: 'var(--s-done)' }}>Connected. Hit Restart Service to apply.</p>
               )}
               {traktState === 'error' && (
                 <div>
                   <p className="text-danger mb-2">{traktError}</p>
-                  <button onClick={connectTrakt} className="text-blue-400 hover:text-blue-300">Try again →</button>
+                  <button onClick={connectTrakt} className="btn-xs">Try again →</button>
                 </div>
               )}
               {traktError && traktState !== 'error' && <p className="text-danger mt-2">{traktError}</p>}
@@ -171,7 +172,7 @@ export default function SettingsForm({ initial }: { initial: Record<string, stri
       ))}
 
       <div>
-        <h2 className="text-[#999] font-mono text-xs uppercase tracking-wider mb-3">Manual Scan</h2>
+        <h2 className="section-label mb-3">Manual Scan</h2>
         <div className="flex gap-3">
           {(['radarr', 'sonarr'] as const).map((svc) => {
             const state = svc === 'radarr' ? radarrScan : sonarrScan
@@ -180,24 +181,25 @@ export default function SettingsForm({ initial }: { initial: Record<string, stri
                 key={svc}
                 onClick={() => rescan(svc)}
                 disabled={state === 'scanning'}
-                className="bg-[#1a1a2e] text-[#7070a8] font-mono text-sm px-4 py-2 hover:bg-[#252540] disabled:opacity-50"
+                className="btn-xs disabled:opacity-50"
               >
-                {state === 'scanning' ? `${svc} scanning...` : state === 'done' ? `${svc} // queued` : state === 'error' ? `${svc} // error` : `rescan ${svc}`}
+                {state === 'scanning' ? `${svc} scanning...` : state === 'done' ? `${svc} queued` : state === 'error' ? `${svc} error` : `rescan ${svc}`}
               </button>
             )
           })}
         </div>
-        <p className="text-[#555] font-mono text-xs mt-2">Triggers a full filesystem rescan in each service. Use when files are missing or not importing.</p>
+        <p className="font-mono text-xs mt-2" style={{ color: 'var(--dim)' }}>
+          Triggers a full filesystem rescan in each service. Use when files are missing or not importing.
+        </p>
       </div>
 
       <div className="flex gap-3">
-        <button onClick={save} className="bg-[#1a1a2e] text-white font-mono text-sm px-6 py-2 hover:bg-[#252540]">
-          Save
-        </button>
+        <button onClick={save} className="btn-xs">Save</button>
         <button
           onClick={restart}
           disabled={restarting}
-          className="bg-yellow-400 text-black font-mono text-sm px-6 py-2 hover:bg-yellow-300 disabled:opacity-50"
+          className="btn-xs disabled:opacity-50"
+          style={{ background: 'var(--s-today)', color: 'var(--bg)', borderColor: 'transparent' }}
         >
           {restarting ? 'Restarting...' : 'Restart Service'}
         </button>

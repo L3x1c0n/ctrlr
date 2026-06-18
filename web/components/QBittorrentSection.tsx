@@ -5,6 +5,7 @@ import { QBTorrent, QBTransferInfo } from '@/types'
 import ProgressBar from '@/components/ProgressBar'
 import Spinner from '@/components/Spinner'
 import UnifiedDrawer, { DrawerEntry } from '@/components/UnifiedDrawer'
+import AddTorrentModal from '@/components/AddTorrentModal'
 
 
 function fmtSize(bytes: number): string {
@@ -59,19 +60,23 @@ const stateLabel: Record<string, string> = {
   metaDL:       'metadata',
 }
 
+interface Category { name: string; savePath: string }
+
 interface Props {
   onTransferUpdate: (t: QBTransferInfo) => void
 }
 
 export default function QBittorrentSection({ onTransferUpdate }: Props) {
-  const [torrents, setTorrents] = useState<QBTorrent[]>([])
-  const [transfer, setTransfer] = useState<QBTransferInfo | null>(null)
-  const [posters,    setPosters]    = useState<Record<string, string>>({})
-  const [tmdbIds,    setTmdbIds]    = useState<Record<string, number>>({})
-  const [mediaTypes, setMediaTypes] = useState<Record<string, 'movie' | 'tv'>>({})
-  const [error,      setError]      = useState<string | null>(null)
-  const [loading,    setLoading]    = useState(true)
-  const [selected,   setSelected]   = useState<DrawerEntry | null>(null)
+  const [torrents,    setTorrents]    = useState<QBTorrent[]>([])
+  const [transfer,    setTransfer]    = useState<QBTransferInfo | null>(null)
+  const [posters,     setPosters]     = useState<Record<string, string>>({})
+  const [tmdbIds,     setTmdbIds]     = useState<Record<string, number>>({})
+  const [mediaTypes,  setMediaTypes]  = useState<Record<string, 'movie' | 'tv'>>({})
+  const [categories,  setCategories]  = useState<Record<string, Category>>({})
+  const [error,       setError]       = useState<string | null>(null)
+  const [loading,     setLoading]     = useState(true)
+  const [selected,    setSelected]    = useState<DrawerEntry | null>(null)
+  const [showAdd,     setShowAdd]     = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [refreshing,    setRefreshing]    = useState(false)
 
@@ -106,6 +111,13 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
     return () => clearInterval(id)
   }, [fetch_])
 
+  useEffect(() => {
+    fetch('/api/qbittorrent?categories')
+      .then(r => r.json())
+      .then(d => setCategories(d ?? {}))
+      .catch(() => {})
+  }, [])
+
   async function action(act: string, hash: string, extra?: object) {
     await fetch('/api/qbittorrent', {
       method: 'POST',
@@ -114,6 +126,17 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
     })
     await fetch_()
   }
+
+  async function changeCategory(hash: string, category: string) {
+    await fetch('/api/qbittorrent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'setCategory', hash, category }),
+    })
+    await fetch_()
+  }
+
+  const catList = Object.values(categories)
 
   return (
     <>
@@ -129,6 +152,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
                   <span style={{ color: 'var(--s-play)' }}>↑ {fmtSpeed(transfer.up_info_speed)}</span>
                 </span>
               )}
+              <button onClick={() => setShowAdd(true)} className="btn-xs">+ add</button>
               <button onClick={async () => { setRefreshing(true); await fetch_(); setRefreshing(false) }} disabled={refreshing} className="btn-xs">
                 {refreshing ? '...' : '↺'}
               </button>
@@ -152,43 +176,61 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
               >
                 {/* main row */}
                 <div className="flex items-center gap-3">
-                <span className="w-5 shrink-0 text-right tabular-nums select-none" style={{ color: 'var(--dim)' }}>{i + 1}</span>
-                <div className="flex-1 min-w-0 truncate group-hover:underline">
-                  {t.name}
+                  <span className="w-5 shrink-0 text-right tabular-nums select-none" style={{ color: 'var(--dim)' }}>{i + 1}</span>
+                  <div className="flex-1 min-w-0 truncate group-hover:underline">
+                    {t.name}
+                  </div>
+                  <span className="hidden md:block shrink-0 w-[64px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtSize(t.size)}</span>
+                  <div className="hidden md:flex items-center gap-2 shrink-0 w-[110px]">
+                    <div className="flex-1" style={{ minWidth: 0 }}>
+                      <ProgressBar pct={t.progress * 100} color={stateColor[t.state] ?? 'var(--s-play)'} height={6} />
+                    </div>
+                    <span className="tabular-nums shrink-0 w-[28px] text-right" style={{ color: 'var(--dim)' }}>{Math.round(t.progress * 100)}%</span>
+                  </div>
+                  <span className="hidden md:block shrink-0 w-[72px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--s-dl)' }}>{fmtSpeed(t.dlspeed)}</span>
+                  <span className="hidden md:block shrink-0 w-[52px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtEta(t.eta)}</span>
+                  <span className="shrink-0 w-[68px] whitespace-nowrap text-[10px]" style={{ color: stateColor[t.state] ?? 'var(--dim)' }}>{stateLabel[t.state] ?? t.state}</span>
+                  <div className="shrink-0 flex gap-1.5" onClick={e => e.stopPropagation()}>
+                    {t.state.includes('paused') || t.state.includes('Paused') ? (
+                      <button onClick={() => action('resume', t.hash)} className="btn-xs" title="resume">{'▶︎'}</button>
+                    ) : (
+                      <button onClick={() => action('pause', t.hash)} className="btn-xs" title="pause">{'⏸︎'}</button>
+                    )}
+                    {pendingDelete === t.hash ? (
+                      <>
+                        <button onClick={() => { setPendingDelete(null); action('delete', t.hash, { deleteFiles: false }) }} className="btn-xs danger">Del</button>
+                        <button onClick={() => { if (confirm(`Delete ${t.name} AND files?`)) { setPendingDelete(null); action('delete', t.hash, { deleteFiles: true }) } }} className="btn-xs danger">Del +</button>
+                        <button onClick={() => setPendingDelete(null)} className="btn-xs">×</button>
+                      </>
+                    ) : (
+                      <button onClick={() => setPendingDelete(t.hash)} className="btn-xs danger">Del</button>
+                    )}
+                  </div>
                 </div>
-                <span className="hidden md:block shrink-0 w-[64px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtSize(t.size)}</span>
-                <div className="hidden md:flex items-center gap-2 shrink-0 w-[110px]">
-                  <div className="flex-1" style={{ minWidth: 0 }}>
+                {/* second line: progress (mobile) + category selector */}
+                <div className="flex items-center gap-2 mt-1.5 pl-8" onClick={e => e.stopPropagation()}>
+                  <div className="md:hidden flex-1">
                     <ProgressBar pct={t.progress * 100} color={stateColor[t.state] ?? 'var(--s-play)'} height={6} />
                   </div>
-                  <span className="tabular-nums shrink-0 w-[28px] text-right" style={{ color: 'var(--dim)' }}>{Math.round(t.progress * 100)}%</span>
-                </div>
-                <span className="hidden md:block shrink-0 w-[72px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--s-dl)' }}>{fmtSpeed(t.dlspeed)}</span>
-                <span className="hidden md:block shrink-0 w-[52px] text-right whitespace-nowrap tabular-nums" style={{ color: 'var(--dim)' }}>{fmtEta(t.eta)}</span>
-                <span className="shrink-0 w-[76px] whitespace-nowrap text-[10px]" style={{ color: stateColor[t.state] ?? 'var(--dim)' }}>{stateLabel[t.state] ?? t.state}</span>
-                <div className="shrink-0 flex gap-1.5" onClick={e => e.stopPropagation()}>
-                  {t.state.includes('paused') || t.state.includes('Paused') ? (
-                    <button onClick={() => action('resume', t.hash)} className="btn-xs" title="resume">{'▶︎'}</button>
-                  ) : (
-                    <button onClick={() => action('pause', t.hash)} className="btn-xs" title="pause">{'⏸︎'}</button>
+                  <span className="md:hidden shrink-0 tabular-nums text-[10px] w-[28px] text-right" style={{ color: 'var(--dim)' }}>{Math.round(t.progress * 100)}%</span>
+                  {catList.length > 0 && (
+                    <select
+                      value={t.category ?? ''}
+                      onChange={e => changeCategory(t.hash, e.target.value)}
+                      className="font-mono text-[10px] px-1 py-0.5 focus:outline-none border ml-auto"
+                      style={{
+                        background: 'var(--bg-inset)',
+                        borderColor: 'var(--border)',
+                        color: 'var(--dim)',
+                        maxWidth: 120,
+                      }}
+                    >
+                      <option value="">no category</option>
+                      {catList.map(c => (
+                        <option key={c.name} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
                   )}
-                  {pendingDelete === t.hash ? (
-                    <>
-                      <button onClick={() => { setPendingDelete(null); action('delete', t.hash, { deleteFiles: false }) }} className="btn-xs danger">Del</button>
-                      <button onClick={() => { if (confirm(`Delete ${t.name} AND files?`)) { setPendingDelete(null); action('delete', t.hash, { deleteFiles: true }) } }} className="btn-xs danger">Del +</button>
-                      <button onClick={() => setPendingDelete(null)} className="btn-xs">×</button>
-                    </>
-                  ) : (
-                    <button onClick={() => setPendingDelete(t.hash)} className="btn-xs danger">Del</button>
-                  )}
-                </div>
-                </div>
-                {/* mobile progress bar — second line */}
-                <div className="md:hidden flex items-center gap-2 mt-1.5 pl-8">
-                  <div className="flex-1">
-                    <ProgressBar pct={t.progress * 100} color={stateColor[t.state] ?? 'var(--s-play)'} height={6} />
-                  </div>
-                  <span className="shrink-0 tabular-nums text-[10px] w-[28px] text-right" style={{ color: 'var(--dim)' }}>{Math.round(t.progress * 100)}%</span>
                 </div>
               </div>
             ))}
@@ -197,6 +239,7 @@ export default function QBittorrentSection({ onTransferUpdate }: Props) {
       </section>
 
       <UnifiedDrawer entry={selected} onClose={() => setSelected(null)} onRefresh={fetch_} />
+      <AddTorrentModal open={showAdd} onClose={() => setShowAdd(false)} onAdded={fetch_} />
     </>
   )
 }

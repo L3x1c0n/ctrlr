@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 
+const inputCls = 'font-mono text-sm px-3 py-1.5 w-full focus:outline-none border'
+const inputStyle = { background: 'var(--bg-inset)', borderColor: 'var(--border-inset)', color: 'var(--text)' }
+
 export default function PasswordForm() {
   const [current,  setCurrent]  = useState('')
   const [next,     setNext]     = useState('')
@@ -31,32 +34,27 @@ export default function PasswordForm() {
     }
   }
 
-  const field = 'bg-[#0f0f1a] border border-[#1a1a2e] text-white font-mono text-sm px-3 py-1.5 w-full focus:outline-none focus:border-[#888]'
-
   return (
     <form onSubmit={submit} className="space-y-3">
       <div>
-        <label className="text-[#888] font-mono text-xs uppercase tracking-wider block mb-1">Current password</label>
-        <input type="password" value={current} onChange={e => setCurrent(e.target.value)} className={field} required />
+        <label className="font-mono text-xs uppercase tracking-wider block mb-1" style={{ color: 'var(--dim)' }}>Current password</label>
+        <input type="password" value={current} onChange={e => setCurrent(e.target.value)} className={inputCls} style={inputStyle} required />
       </div>
       <div>
-        <label className="text-[#888] font-mono text-xs uppercase tracking-wider block mb-1">New password</label>
-        <input type="password" value={next} onChange={e => setNext(e.target.value)} className={field} required />
+        <label className="font-mono text-xs uppercase tracking-wider block mb-1" style={{ color: 'var(--dim)' }}>New password</label>
+        <input type="password" value={next} onChange={e => setNext(e.target.value)} className={inputCls} style={inputStyle} required />
       </div>
       <div>
-        <label className="text-[#888] font-mono text-xs uppercase tracking-wider block mb-1">Confirm new password</label>
-        <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} className={field} required />
+        <label className="font-mono text-xs uppercase tracking-wider block mb-1" style={{ color: 'var(--dim)' }}>Confirm new password</label>
+        <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} className={inputCls} style={inputStyle} required />
       </div>
       <div className="flex items-center gap-4 pt-1">
-        <button
-          type="submit"
-          disabled={status === 'saving'}
-          className="btn-xs text-blue-400"
-        >
-          {status === 'saving' ? '...' : '--set-password'}
+        <button type="submit" disabled={status === 'saving'} className="btn-xs">
+          {status === 'saving' ? '...' : 'set password'}
         </button>
         {msg && (
-          <span className={`font-mono text-xs ${status === 'ok' ? 'text-green-400' : 'text-danger'}`}>
+          <span className={`font-mono text-xs ${status === 'ok' ? '' : 'text-danger'}`}
+            style={status === 'ok' ? { color: 'var(--s-done)' } : undefined}>
             {msg}
           </span>
         )}

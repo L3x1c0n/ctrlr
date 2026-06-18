@@ -6,11 +6,15 @@ import Spinner from '@/components/Spinner'
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w500'
 
+const mediaStatusColor: Record<number, string> = {
+  1: 'var(--dim)',
+  2: 'var(--s-today)',
+  3: 'var(--s-sonarr)',
+  4: 'var(--s-sonarr)',
+  5: 'var(--s-done)',
+}
 const mediaStatusLabel: Record<number, string> = {
   1: 'unknown', 2: 'pending', 3: 'processing', 4: 'partial', 5: 'available',
-}
-const mediaStatusColor: Record<number, string> = {
-  1: 'text-[#888]', 2: 'text-yellow-400', 3: 'text-blue-400', 4: 'text-blue-400', 5: 'text-green-400',
 }
 
 interface Detail {
@@ -80,42 +84,47 @@ export default function DiscoverDetailDrawer({ item, onClose, onRequested }: Pro
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* backdrop */}
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
 
-      <div className="relative w-full sm:max-w-lg bg-[#0A0A0F] border border-[#1a1a2e] font-mono text-xs z-10 max-h-[90vh] overflow-y-auto">
+      <div
+        className="relative w-full sm:max-w-lg font-mono text-xs z-10 max-h-[90vh] overflow-y-auto"
+        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-hi)' }}
+      >
         {/* header */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1a1a2e]">
-          <span className="text-[#6a9a7a]">
-            /* <span className="text-white">{item.mediaType === 'tv' ? 'tv' : 'movie'}</span> :: detail */
+        <div
+          className="flex items-center justify-between px-4 py-2.5"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
+          <span className="section-label">
+            {item.mediaType === 'tv' ? 'tv' : 'movie'} · detail
           </span>
-          <button onClick={onClose} className="btn-xs text-[#ccc] hover:text-white">--close</button>
+          <button onClick={onClose} className="btn-xs">close</button>
         </div>
 
         {loading && <div className="px-4 py-6"><Spinner /></div>}
 
         {!loading && (
           <div className="flex gap-4 p-4">
-            {/* poster */}
             {poster ? (
               <img
                 src={`${TMDB_IMG}${poster}`}
                 alt={title}
-                className="w-24 shrink-0 object-cover border border-[#1a1a2e]"
-                style={{ aspectRatio: '2/3' }}
+                className="w-24 shrink-0 object-cover"
+                style={{ aspectRatio: '2/3', border: '1px solid var(--border)' }}
               />
             ) : (
-              <div className="w-24 shrink-0 border border-[#1a1a2e] bg-[#0f0f1a] flex items-center justify-center text-[#333]"
-                style={{ aspectRatio: '2/3' }}>
+              <div
+                className="w-24 shrink-0 flex items-center justify-center"
+                style={{ aspectRatio: '2/3', background: 'var(--bg-inset)', border: '1px solid var(--border)', color: 'var(--dimmer)' }}
+              >
                 {item.mediaType === 'tv' ? 'tv' : '▣'}
               </div>
             )}
 
-            {/* info */}
             <div className="flex-1 min-w-0 space-y-2">
               <div>
-                <p className="text-white text-sm font-medium leading-tight">{title}</p>
-                <div className="flex flex-wrap gap-x-3 mt-1 text-[#888]">
+                <p className="text-sm font-medium leading-tight" style={{ color: 'var(--text)' }}>{title}</p>
+                <div className="flex flex-wrap gap-x-3 mt-1" style={{ color: 'var(--dim)' }}>
                   {year && <span>{year}</span>}
                   {runtime && <span>{runtime}m</span>}
                   {seasons && <span>{seasons}s</span>}
@@ -123,30 +132,28 @@ export default function DiscoverDetailDrawer({ item, onClose, onRequested }: Pro
                 </div>
               </div>
 
-              {genres && <p className="text-[#555]">{genres}</p>}
+              {genres && <p style={{ color: 'var(--dim)' }}>{genres}</p>}
 
-              {/* status */}
               {status != null && (
-                <p className={mediaStatusColor[status]}>
-                  // {mediaStatusLabel[status] ?? 'unknown'}
+                <p style={{ color: mediaStatusColor[status] ?? 'var(--dim)' }}>
+                  {mediaStatusLabel[status] ?? 'unknown'}
                 </p>
               )}
 
-              {/* actions */}
               <div className="flex gap-2 pt-1">
                 {isAvail && (
-                  <span className="text-green-400">// available in plex</span>
+                  <span style={{ color: 'var(--s-done)' }}>available in plex</span>
                 )}
                 {isReq && !isAvail && (
-                  <span className="text-yellow-400">// already requested</span>
+                  <span style={{ color: 'var(--s-today)' }}>already requested</span>
                 )}
                 {!isAvail && !isReq && (
                   <button
                     onClick={addRequest}
                     disabled={adding || added}
-                    className="btn-xs text-blue-400 disabled:opacity-50"
+                    className="btn-xs disabled:opacity-50"
                   >
-                    {added ? '// queued' : adding ? '...' : '--add'}
+                    {added ? 'queued' : adding ? '...' : 'add'}
                   </button>
                 )}
               </div>
@@ -154,10 +161,9 @@ export default function DiscoverDetailDrawer({ item, onClose, onRequested }: Pro
           </div>
         )}
 
-        {/* overview */}
         {!loading && overview && (
-          <div className="px-4 pb-4 border-t border-[#0f0f1a]">
-            <p className="text-[#888] mt-3 leading-relaxed">{overview}</p>
+          <div className="px-4 pb-4" style={{ borderTop: '1px solid var(--border)' }}>
+            <p className="mt-3 leading-relaxed" style={{ color: 'var(--dim)' }}>{overview}</p>
           </div>
         )}
       </div>

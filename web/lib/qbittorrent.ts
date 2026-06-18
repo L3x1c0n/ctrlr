@@ -220,3 +220,32 @@ export async function getTorrentDetail(hash: string) {
   const [properties, files] = await Promise.all([propsRes.json(), filesRes.json()])
   return { properties, files }
 }
+
+export async function addTorrentFormData(form: FormData): Promise<void> {
+  await authedFetch('/api/v2/torrents/add', { method: 'POST', body: form })
+}
+
+export async function addTorrentMagnet(url: string, category?: string, paused?: boolean): Promise<void> {
+  const params = new URLSearchParams({ urls: url })
+  if (category) params.append('category', category)
+  if (paused)   params.append('paused', 'true')
+  await authedFetch('/api/v2/torrents/add', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  })
+}
+
+export async function setCategory(hash: string, category: string): Promise<void> {
+  await authedFetch('/api/v2/torrents/setCategory', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `hashes=${hash}&category=${encodeURIComponent(category)}`,
+  })
+}
+
+export async function getCategories(): Promise<Record<string, { name: string; savePath: string }>> {
+  const res = await authedFetch('/api/v2/torrents/categories')
+  if (!res.ok) return {}
+  return res.json()
+}
